@@ -1,0 +1,12 @@
+error_log
+access_log
+wiki
+mediawiki-*
+hlstatsx
+dl
+cache
+include/content.html
+include/config.private.php
+fastdl
+roster/
+test.php
