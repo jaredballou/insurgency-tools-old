@@ -19,7 +19,7 @@ echo "This is where I am going to list and document the tools I have been workin
 
 if ((!file_exists($cache_file)) || !$filemtime || (time() - $filemtime >= $cache_life)) {
 	$data = GetGithubURL("users/{$githubuser}/repos");
-var_dump($data);
+//var_dump($data);
 	$list = json_decode($data,true);
 	$data = array();
 	foreach ($list as $repo)
