@@ -16,7 +16,7 @@ MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/"
 
 TD=$DATADIR/theaters/$VERSION
 PD=$DATADIR/playlists/$VERSION
-
+BLACKLIST=$DATADIR/maps/maps-blacklist.txt
 #If theater files for this Steam version don't exist, unpack desired VPK files and copy theaters to data
 #This is not the "best" way to track versions, but it works for now
 if [ ! -d $TD ]; then
@@ -34,23 +34,37 @@ if [ ! -d $TD ]; then
 fi
 #Copy map source files
 echo "Updating maps from repo"
-$RSYNC -z --progress --ignore-existing --exclude='*.bz2' --exclude='archive/' $MAPSRCURL $GAMEDIR/maps/
+for EXT in bsp nav txt
+do
+	$RSYNC -z --progress --ignore-existing --exclude='archive/' --exclude-from $BLACKLIST ${MAPSRCURL}/*.${EXT} $GAMEDIR/maps/
+done
+echo "Removing blacklisted map assets from data directory"
+for MAP in $(cat $BLACKLIST | cut -d'.' -f1)
+do
+	rm $DATADIR/maps/src/${MAP}_d.vmf -vf
+	rm $DATADIR/maps/{parsed,navmesh,.}/${MAP}.* -vf
+	rm $GAMEDIR/maps/${MAP}.bsp.zip -vf
+done
 echo Updating decompiled maps as needed
 for MAP in $GAMEDIR/maps/*.bsp
 do
-	SRCFILE=$DATADIR/maps/src/$(basename $MAP .bsp)_d.vmf
-	ZIPFILE=$MAP.zip
-	if [ ! -e $SRCFILE ] || [ $MAP -nt $SRCFILE ]
+	BASENAME=$(basename $MAP .bsp)
+	if [ $(grep -c "^${BASENAME}.*\$" $BLACKLIST) -eq 0 ]
 	then
-		echo "Decompile $MAP to $SRCFILE"
-		$BSPSRC "$MAP" -o "$SRCFILE"
-	fi
-	if [ ! -e $ZIPFILE ] || [ $MAP -nt $ZIPFILE ]
-	then
-		echo "Extract files from $MAP to $ZIPFILE"
-		$PAKRAT -dump "$MAP"
-		echo Extracting map files from ZIP
-		unzip -o "$ZIPFILE" -x '*.vhv' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "$GAMEDIR/maps/out"
+		SRCFILE=$DATADIR/maps/src/${BASENAME}_d.vmf
+		ZIPFILE=$MAP.zip
+		if [ ! -e $SRCFILE ] || [ $MAP -nt $SRCFILE ]
+		then
+			echo "Decompile $MAP to $SRCFILE"
+			$BSPSRC "$MAP" -o "$SRCFILE"
+		fi
+		if [ ! -e $ZIPFILE ] || [ $MAP -nt $ZIPFILE ]
+		then
+			echo "Extract files from $MAP to $ZIPFILE"
+			$PAKRAT -dump "$MAP"
+			echo Extracting map files from ZIP
+			unzip -o "$ZIPFILE" -x '*.vhv' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "$GAMEDIR/maps/out"
+		fi
 	fi
 done
 echo "Synchronizing extracted map files with data tree"
@@ -61,10 +75,15 @@ do
 		$RSYNC -c $GAMEDIR/maps/out/$SRCDIR $DATADIR/$SRCDIR
 	fi
 done
-$RSYNC -c $GAMEDIR/maps/out/maps/ $GAMEDIR/maps/
 echo Copying map text files
-$RSYNC $GAMEDIR/maps/*.txt $DATADIR/maps/
-
+for TXT in $GAMEDIR/maps/*.txt $GAMEDIR/maps/out/maps/*.txt
+do
+	BASENAME=$(basename $TXT .txt)
+	if [ $(grep -c "^${BASENAME}.*\$" $BLACKLIST) -eq 0 ]
+	then
+		cp $TXT $DATADIR/maps/
+	fi
+done
 echo Create PNG files for VTF files
 VTFS=$(find $DATADIR/materials/ -type f | grep '\.vtf$')
 echo "Begin loop"
