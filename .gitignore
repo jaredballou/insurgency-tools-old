@@ -5,6 +5,7 @@ mediawiki-*
 hlstatsx
 dl
 cache
+sourcemod
 include/content.html
 include/config.private.php
 fastdl
