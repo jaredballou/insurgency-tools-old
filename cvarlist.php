@@ -2,6 +2,9 @@
 require "include/header.php";
 $dirs = glob("data/cvarlist/*");
 foreach ($dirs as $dir) {
+	if (!is_dir($dir)) {
+		continue;
+	}
 	$ver = basename($dir);
 	$files = glob("{$dir}/*.csv");
 	foreach ($files as $file) {
@@ -24,7 +27,11 @@ if ($_REQUEST['listtype']) {
 		$listtype = $_REQUEST['listtype'];
 	}
 }
-
+if ((!$version) || (!$listtype)) {
+	echo "Data not found";
+	include "include/footer.php";
+	exit;
+}
 $listfile = "data/cvarlist/{$version}/{$listtype}.csv";
 $settingfile = "data/cvarlist/{$version}/{$listtype}.txt";
 
