@@ -254,4 +254,92 @@ function formatBytes($bytes, $precision = 2) {
 
     return round($bytes, $precision) . ' ' . $units[$pow];
 }
+
+//stats functions
+function multi_diff($name1,$arr1,$name2,$arr2) {
+	$result = array();
+	$merged = $arr1+$arr2;//array_merge($arr1,$arr2);
+	foreach ($merged as $k=>$v){
+		if(!isset($arr2[$k])) {
+			$result[$k] = array($name1 => $arr1[$k], $name2 => NULL);
+		} else if(!isset($arr1[$k])) {
+			$result[$k] = array($name1 => NULL,$name2 => $arr2[$k]);
+		} else {
+			if(is_array($arr1[$k]) && is_array($arr2[$k])){
+				$diff = multi_diff($name1, $arr1[$k], $name2, $arr2[$k]);
+				if(!empty($diff)) {
+					$result[$k] = $diff;
+				}
+			} else if ($arr1[$k] !== $arr2[$k]) {
+				$result[$k] = array($name1 => $arr1[$k],$name2 => $arr2[$k]);
+			}
+		}
+	}
+	return $result;
+}
+/* getfile
+Takes flat filename and parses it. If #base directives are included, pull those and merge contents on top
+*/
+function getfile($filename,$version='',$path='') {
+	global $custom_theater_paths,$newest_version,$theaterpath;
+	if ($version == '')
+		$version = $newest_version;
+	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "data/theaters/{$version}");
+	$filepath.="/".basename($filename);
+	$data = file_get_contents($filepath);
+	$thisfile = parseKeyValues($data);
+//var_dump($filename,$version,$path,$filepath);//,$data,$thisfile);
+	$theater = $thisfile["theater"];
+	//If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
+	//This appears to be the way the game processes these files it appears.
+	if (isset($thisfile["#base"])) {
+		$basedata = array();
+		if (is_array($thisfile["#base"])) {
+			$bases = $thisfile["#base"];
+		} else {
+			$bases = array($thisfile["#base"]);
+		}
+		foreach ($bases as $base) {
+			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
+		}
+		$theater = array_replace_recursive($basedata,$theater);
+	}
+	//Include parts that might be conditional in their parents, basically put everything in flat arrays
+	//This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
+	foreach ($theater as $sec => $data) {
+		foreach ($data as $key => $val) {
+			if (($key[0] == '?') && (is_array($val))) {
+				unset($theater[$sec][$key]);
+				$theater[$sec] = array_replace_recursive($theater[$sec],$val);
+			}
+		}
+	}
+	return $theater;
+}
+/* getvgui
+Display the icon for an object
+*/
+function getvgui($name,$type='img',$path='vgui/inventory') {
+	$rp = "data/materials/{$path}/{$name}";
+	if (file_exists("{$rp}.vmt")) {
+//echo "found file<br>";
+		$vmf = file_get_contents("{$rp}.vmt");
+//var_dump($vmf);
+		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
+//var_dump($matches);
+		$rp = "data/materials/".$matches[1][0];
+	}
+
+//var_dump($rp);
+	if (file_exists("{$rp}.png")) {
+		if ($type == 'img')
+			return "<img src='{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
+		if ($type == 'bare')
+			return "{$rp}.png";
+		if ($type == 'css')
+			return " style=\"background-image: url('{$rp}.png');\" class='vgui'";
+	}
+}
+
 ?>
+

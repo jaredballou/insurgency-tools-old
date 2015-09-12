@@ -1,4 +1,6 @@
-<?php include "functions.php"; ?><!DOCTYPE html>
+<?php 
+ob_start();
+include "functions.php"; ?><!DOCTYPE html>
 <html lang="en">
   <head>
 <?php
@@ -31,6 +33,7 @@ body, html, .container {
 	height: 100%;
 	min-height:100%;
 }
+<?php if (isset($css_content)) { echo $css_content; } ?>
 </style>
 <script type="text/javascript" class="init">
 	$('a.toggle-vis').on( 'click', function (e) {
@@ -42,6 +45,7 @@ body, html, .container {
 		// Toggle the visibility
 		column.visible( ! column.visible() );
 	} );
+<?php if (isset($js_content)) { echo $js_content; } ?>
 </script>
 
 <?php
