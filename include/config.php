@@ -1,4 +1,6 @@
 <?php
+$theaterpath='';
+$custom_theater_paths = array('Custom' => '/opt/fastdl/scripts/theaters');
 //MySQL Server connection settings
 $mysql_server   = 'localhost';
 $mysql_username = 'username';

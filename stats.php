@@ -3,142 +3,6 @@ $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
 require_once "include/header.php";
 
-//require_once "include/functions.php";
-//getspreadgraph('0.2 0.2 0.2');
-//exit;
-
-//Include kv reader
-//require_once "kvreader2.php";
-
-$langfiles = glob("data/resource/insurgency_*.txt");
-$langfiles = glob("data/resource/insurgency_english.txt");
-$theaterpath='';
-$custom_theater_paths = array('Custom' => '/opt/fastdl/scripts/theaters');
-//$reader = new KVReader();
-//Load languages
-$lang = array();
-$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents('data/sourcemod/configs/languages.cfg')));
-$data = parseKeyValues($data);//$reader->read($data);
-$langcode = array();
-foreach ($data['Languages'] as $code => $name) {
-	$name = strtolower($name);
-	$langcode[$name] = $code;
-}
-
-foreach ($langfiles as $langfile) {
-
-	$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents($langfile)));
-//var_dump($data);
-	$data = parseKeyValues($data);//$reader->read($data);
-	foreach ($data["lang"]["Tokens"] as $key => $val) {
-		if ($_REQUEST['command'] != 'smtrans') {
-			$key = "#".strtolower($key);
-		}
-		$key = trim($key);
-		if ($key) {
-//var_dump($data["lang"]["Language"],$key,$val);
-			//Sometimes NWI declares a strint twice!
-			if (is_array($val))
-				$val = $val[0];
-			$lang[$data["lang"]["Language"]][$key] = $val;
-		}
-	}
-}
-//var_dump($lang);
-//exit;
-$language = "English";
-if ($_REQUEST['language']) {
-	if (in_array($_REQUEST['language'],$lang)) {
-		$language = $_REQUEST['language'];
-	}
-}
-
-//var_dump($lang);
-//Load versions
-$versions = array();
-$dirs = glob("data/theaters/*");
-foreach ($dirs as $dir) {
-	$versions[] = basename($dir);
-}
-asort($versions);
-$newest_version = $version = end($versions);
-/*
-foreach ($custom_theater_paths as $name => $path) {
-	if (file_exists($path)) {
-		$versions[] = $name;
-	}
-}
-*/
-if ($_REQUEST['version']) {
-	if (in_array($_REQUEST['version'],$versions)) {
-		$version = $_REQUEST['version'];
-	}
-}
-$version_compare = $version;
-if ($_REQUEST['version_compare']) {
-	if (in_array($_REQUEST['version_compare'],$versions)) {
-		$version_compare = $_REQUEST['version_compare'];
-	}
-}
-
-$range_units = array(
-	'U' => 'Game Units',
-	'M' => 'Meters',
-	'FT' => 'Feet',
-	'YD' => 'Yards',
-	'IN' => 'Inches'
-);
-$range_unit = 'M';
-if ($_REQUEST['range_unit']) {
-	if (array_key_exists($_REQUEST['range_unit'],$range_units)) {
-		$range_unit = $_REQUEST['range_unit'];
-	}
-}
-$range = 10;
-if ($_REQUEST['range']) {
-	$_REQUEST['range'] = dist($_REQUEST['range'],$range_unit,'IN',0);
-	if (($_REQUEST['range'] >= 0) && ($_REQUEST['range'] <= 20000)) {
-		$range = $_REQUEST['range'];
-	}
-}
-//Always set local range to units to match game
-//var_dump($range,$range_unit);
-//if (array_key_exists($version,$custom_theater_paths)) {
-//	$files = glob("{$custom_theater_paths[$version]}/*.theater");
-//} else {
-	$files = glob("data/theaters/{$version}/*.theater");
-//}
-foreach ($files as $file) {
-	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
-		continue;
-	}
-	$theaters[] = basename($file,".theater");
-}
-foreach ($custom_theater_paths as $name => $path) {
-	if (file_exists($path)) {
-		$ctfiles = glob("{$path}/*.theater");
-		foreach ($ctfiles as $ctfile) {
-			$label = basename($ctfile,".theater");
-			$theaters[] = "{$name} {$label}";
-		}
-	}
-}
-
-//Load theater files
-$theaterfile = "default";
-if ($_REQUEST['theater']) {
-	if (strpos($_REQUEST['theater']," ")) {
-		$bits = explode(" ",$_REQUEST['theater'],2);
-		if (in_array($bits[0],array_keys($custom_theater_paths))) {
-			$theaterpath = $custom_theater_paths[$bits[0]];
-			$theaterfile = $bits[1];
-		}
-	} elseif (in_array($_REQUEST['theater'],$theaters)) {
-		$theaterfile = $_REQUEST['theater'];
-	}
-}
-//Load theater now so we can create other arrays and validate
-$theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 //var_dump($theater);
 if ($version != $version_compare) {
 	$theater_compare = getfile("{$theaterfile}.theater",$version_compare,$theaterpath);
@@ -218,9 +82,10 @@ foreach ($theater["weapon_upgrades"] as $upname => $data) {
 	}
 	$item = getobject("weapon_upgrades",$upname,1);
 	if (isset($item["allowed_weapons"])) {
-		$arr = (is_array(current($item["allowed_weapons"]))) ? current($item["allowed_weapons"]) : $item["allowed_weapons"];
-		foreach ($arr as $wpn) {
-			$upgrades[$wpn][$upname] = $item;
+		foreach ($item["allowed_weapons"] as $order => $wpnitem) {
+			foreach ($wpnitem as $type=>$wpn) {
+				$upgrades[$wpn][$upname] = $item;
+			}
 		}
 	}
 }
@@ -387,6 +252,7 @@ DisplayStatTable();
 //echo "done\n";
 echo "		</form>";
 require "include/footer.php";
+var_dump($theater);
 exit;
 
 
@@ -545,11 +411,10 @@ function GenerateStatTable() {
 			$fn = 'Upgrades';
 		}
 		//Add ammo and upgrade links to weapon items
-		$weapons = $upgrade['allowed_weapons']['weapon'];
-		if (!is_array($weapons))
-			$weapons = array($weapons);
-		foreach ($weapons as $wpnname) {
-			$stats['Weapons']['items'][$wpnname][$fn].=$link;
+		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
+			foreach ($witem as $type => $wpnname) {
+				$stats['Weapons']['items'][$wpnname][$fn].=$link;
+			}
 		}
 		$thisitem['Img'] = $img;
 		$thisitem['Name'] = getlookup($upgrade['print_name']);
@@ -633,13 +498,13 @@ function GenerateStatTable() {
 		$thisitem['Name'] = getlookup($classdata['print_name']);
 		$thisitem['Team'] = printval($classdata,"team");
 		$thisitem['Models'] = printval($classdata,"models");
-		foreach ($classdata["buy_order"] as $type => $items) {
-			foreach ($items as $item) {
+		foreach ($classdata["buy_order"] as $order => $buyitem) {
+			foreach ($buyitem as $type => $item) {
 				$thisitem['Buy order'].= "<a href='#{$item}'>{$item}</a><br>";
 			}
 		}
-		foreach ($classdata["allowed_items"] as $type => $items) {
-			foreach ($items as $item) {
+		foreach ($classdata["allowed_items"] as $order => $aitem) {
+			foreach ($aitem as $type => $item) {
 				$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
 			}
 		}
@@ -657,11 +522,8 @@ function GenerateStatTable() {
 		foreach ($teamdata['squads'] as $squad => $squaddata) {
 			$sn = getlookup($squad);
 			$thisitem.="<tr><td><h3>{$sn}</h3></td></tr><tr><td>\n";
-			foreach ($squaddata as $position => $class) {
-				if (!is_array($class)) {
-					$class = array($class);
-				}
-				foreach ($class as $cn) {
+			foreach ($squaddata as $order => $slot) {
+				foreach ($slot as $position => $class) {
 					$classname = getlookup($position);
 					$thisitem.="<a href='#{$cn}'>{$classname}<br>\n";
 				}

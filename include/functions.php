@@ -1,5 +1,118 @@
 <?php
 include "config.php";
+$langfiles = glob("data/resource/insurgency_*.txt");
+$langfiles = glob("data/resource/insurgency_english.txt");
+$lang = array();
+$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents('data/sourcemod/configs/languages.cfg')));
+$data = parseKeyValues($data);//$reader->read($data);
+$langcode = array();
+$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
+
+foreach ($data['Languages'] as $code => $name) {
+	$name = strtolower($name);
+	$langcode[$name] = $code;
+}
+
+foreach ($langfiles as $langfile) {
+	$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents($langfile)));
+	$data = parseKeyValues($data);//$reader->read($data);
+	foreach ($data["lang"]["Tokens"] as $key => $val) {
+		if ($_REQUEST['command'] != 'smtrans') {
+			$key = "#".strtolower($key);
+		}
+		$key = trim($key);
+		if ($key) {
+			//Sometimes NWI declares a strint twice!
+			if (is_array($val))
+				$val = $val[0];
+			$lang[$data["lang"]["Language"]][$key] = $val;
+		}
+	}
+}
+$language = "English";
+if ($_REQUEST['language']) {
+	if (in_array($_REQUEST['language'],$lang)) {
+		$language = $_REQUEST['language'];
+	}
+}
+
+//Load versions
+$versions = array();
+$dirs = glob("data/theaters/*");
+foreach ($dirs as $dir) {
+	if (is_dir($dir)) {
+		$versions[] = basename($dir);
+	}
+}
+asort($versions);
+$newest_version = $version = end($versions);
+
+if ($_REQUEST['version']) {
+	if (in_array($_REQUEST['version'],$versions)) {
+		$version = $_REQUEST['version'];
+	}
+}
+$version_compare = $version;
+if ($_REQUEST['version_compare']) {
+	if (in_array($_REQUEST['version_compare'],$versions)) {
+		$version_compare = $_REQUEST['version_compare'];
+	}
+}
+
+$range_units = array(
+	'U' => 'Game Units',
+	'M' => 'Meters',
+	'FT' => 'Feet',
+	'YD' => 'Yards',
+	'IN' => 'Inches'
+);
+$range_unit = 'M';
+if ($_REQUEST['range_unit']) {
+	if (array_key_exists($_REQUEST['range_unit'],$range_units)) {
+		$range_unit = $_REQUEST['range_unit'];
+	}
+}
+$range = 10;
+if ($_REQUEST['range']) {
+	$_REQUEST['range'] = dist($_REQUEST['range'],$range_unit,'IN',0);
+	if (($_REQUEST['range'] >= 0) && ($_REQUEST['range'] <= 20000)) {
+		$range = $_REQUEST['range'];
+	}
+}
+$files = glob("data/theaters/{$version}/*.theater");
+foreach ($files as $file) {
+	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
+		continue;
+	}
+	$theaters[] = basename($file,".theater");
+}
+foreach ($custom_theater_paths as $name => $path) {
+	if (file_exists($path)) {
+		$ctfiles = glob("{$path}/*.theater");
+		foreach ($ctfiles as $ctfile) {
+			$label = basename($ctfile,".theater");
+			$theaters[] = "{$name} {$label}";
+		}
+	}
+}
+
+//Load theater files
+$theaterfile = "default";
+if ($_REQUEST['theater']) {
+	if (strpos($_REQUEST['theater']," ")) {
+		$bits = explode(" ",$_REQUEST['theater'],2);
+		if (in_array($bits[0],array_keys($custom_theater_paths))) {
+			$theaterpath = $custom_theater_paths[$bits[0]];
+			$theaterfile = $bits[1];
+		}
+	} elseif (in_array($_REQUEST['theater'],$theaters)) {
+		$theaterfile = $_REQUEST['theater'];
+	}
+}
+//Load theater now so we can create other arrays and validate
+$theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
+
+
 function rglob($pattern, $flags = 0) {
 	$files = glob($pattern, $flags); 
 	foreach (glob(dirname($pattern).'/*', GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
@@ -16,8 +129,59 @@ function delTree($dir='') {
 	}
 	return rmdir($dir);
 }
+function is_numeric_array($array) {
+	foreach ($array as $key => $value) {
+		if (!is_numeric($value)) return false;
+	}
+	return true;
+}
+function kvwrite($arr) {
+	$str = "";
+	kvwriteSegment($str, $arr);
+	return $str;
+}
+function kvwriteFile($file, $arr) {
+	$contents = kvwrite($arr);
+	$fh = fopen($file, 'w');
+	fwrite($fh, $contents);
+	fclose($fh);
+}
+function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
+	global $ordered_fields;
+	$indent = str_repeat(chr(9), $tier);
+	// TODO check for a certain key to keep it in the same tier instead of going into the next?
+//var_dump($str,$arr,$tier,$tree);
+	foreach ($arr as $key => $value) {
+		if (is_array($value)) {
+			$tree[$tier+1] = $key;
+			$key = '"' . $key . '"';
+			$str .= $indent . $key  . "\n" . $indent. "{\n";
+			if (((in_array($tree[3],$ordered_fields) !== false) || (in_array($tree[4],$ordered_fields) !== false)) && (is_numeric_array(array_keys($value)))) {
+//				echo "Ordered<br>\n";
+				foreach ($value as $idx=>$item) {
+					foreach ($item as $k => $v) {
+						$str .= chr(9) . $indent . '"' . $k . '"' . chr(9) . '"' . $v . "\"\n";
+					}
+				}
+//var_dump($tree,$key,$value);
+			} else {
+//				echo "Array<br>\n";
+				kvwriteSegment($str, $value, $tier+1,$tree);
+			}
+			$str .= $indent . "}\n";
+			unset($tree[$tier+1]);
+		} else {
+//			echo "String<br>\n";
+//var_dump($tree,$key,$value);
+			$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
+		}
+	}
+//var_dump($str);
+	return $str;
+}
 function parseKeyValues($KVString,$debug=false)
 {
+	global $ordered_fields;
 	$len = strlen($KVString);
 	if ($debug) $len = 2098;
 
@@ -52,13 +216,18 @@ function parseKeyValues($KVString,$debug=false)
 				{
 					if (strlen($quoteKey) && strlen($quoteValue))
 					{
-						if (isset($ptr[$quoteKey])) {
-							if (!is_array($ptr[$quoteKey])) {
-								$ptr[$quoteKey] = array($ptr[$quoteKey]);
-							}
-							$ptr[$quoteKey][] = $quoteValue;
+						//Make ordered array for these items
+						if (in_array($tree[3],$ordered_fields)) {
+							$ptr[] = array($quoteKey => $quoteValue);
 						} else {
-							$ptr[$quoteKey] = $quoteValue;
+							if (isset($ptr[$quoteKey])) {
+								if (!is_array($ptr[$quoteKey])) {
+									$ptr[$quoteKey] = array($ptr[$quoteKey]);
+								}
+								$ptr[$quoteKey][] = $quoteValue;
+							} else {
+								$ptr[$quoteKey] = $quoteValue;
+							}
 						}
 						$quoteKey = "";
 						$quoteValue = "";
