@@ -217,7 +217,7 @@ function parseKeyValues($KVString,$debug=false)
 					if (strlen($quoteKey) && strlen($quoteValue))
 					{
 						//Make ordered array for these items
-						if (in_array($tree[3],$ordered_fields)) {
+						if ((count($tree) > 3) && (in_array($tree[3],$ordered_fields))) {
 							$ptr[] = array($quoteKey => $quoteValue);
 						} else {
 							if (isset($ptr[$quoteKey])) {
@@ -342,9 +342,7 @@ function prettyPrint( $json )
 
     return $result;
 }
-if (!function_exists('recurse'))
-{
-    function recurse($array, $array1)
+    function theater_recurse($array, $array1)
     {  
       foreach ($array1 as $key => $value)
       {
@@ -357,16 +355,13 @@ if (!function_exists('recurse'))
         // overwrite the value in the base array
         if (is_array($value))
         {
-          $value = recurse($array[$key], $value);
+          $value = theater_recurse($array[$key], $value);
         }
         $array[$key] = $value;
       }
       return $array;
     }
-}
-if (!function_exists('array_replace_recursive'))
-{
-  function array_replace_recursive($array, $array1)
+  function theater_array_replace_recursive($array, $array1)
   {
     // handle the arguments, merge one by one
     $args = func_get_args();
@@ -379,15 +374,12 @@ if (!function_exists('array_replace_recursive'))
     {
       if (is_array($args[$i]))
       {
-        $array = recurse($array, $args[$i]);
+        $array = theater_recurse($array, $args[$i]);
       }
     }
     return $array;
   }
-}
-if(!function_exists('array_replace'))
-{
-  function array_replace()
+  function theater_array_replace()
   {
     $args = func_get_args();
     $num_args = func_num_args();
@@ -409,7 +401,6 @@ if(!function_exists('array_replace'))
     }
     return $res;
   }
-}
 function formatBytes($bytes, $precision = 2) { 
     $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
@@ -471,7 +462,7 @@ function getfile($filename,$version='',$path='') {
 		foreach ($bases as $base) {
 			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
 		}
-		$theater = array_replace_recursive($basedata,$theater);
+		$theater = theater_array_replace_recursive($basedata,$theater);
 	}
 	//Include parts that might be conditional in their parents, basically put everything in flat arrays
 	//This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
@@ -479,7 +470,7 @@ function getfile($filename,$version='',$path='') {
 		foreach ($data as $key => $val) {
 			if (($key[0] == '?') && (is_array($val))) {
 				unset($theater[$sec][$key]);
-				$theater[$sec] = array_replace_recursive($theater[$sec],$val);
+				$theater[$sec] = theater_array_replace_recursive($theater[$sec],$val);
 			}
 		}
 	}
