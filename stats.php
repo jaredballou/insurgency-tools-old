@@ -11,26 +11,26 @@ if ($version != $version_compare) {
 	$sections = array();
 	DisplayCompare($changes,$sections,$version,$version_compare);
 //var_dump($changes,version,$theater,$version_compare,$theater_compare);
-	exit;
+	closePage();
 }
 
 //var_dump(current($theater));
 
 if ($_REQUEST['command'] == 'weaponlog') {
 	DisplayLoggerConfig();
-	exit;
+	closePage();
 }
 if ($_REQUEST['command'] == 'wiki') {
 	DisplayWikiView();
-	exit;
+	closePage();
 }
 if ($_REQUEST['command'] == 'hlstats') {
 	DisplayHLStatsX();
-	exit;
+	closePage();
 }
 if ($_REQUEST['command'] == 'smtrans') {
 	DisplaySMTranslation();
-	exit;
+	closePage();
 }
 
 //var_dump("mark\n");
@@ -45,6 +45,7 @@ foreach($theater["weapons"] as $wpnname => $data) {
 	//var_dump("mark-in2\n");
 	$object = getobject("weapons",$wpnname,1);
 	//var_dump("mark-in3\n");
+	ksort($object);
 	$weapons[$wpnname] = $object;
 }
 //var_dump("mark\n");
@@ -262,11 +263,16 @@ GenerateStatTable();
 DisplayStatTable();
 //echo "done\n";
 echo "		</form>";
-require "include/footer.php";
-//var_dump($theater);
-exit;
+closePage();
 
-
+function closePage() {
+	require "include/footer.php";
+	if (isset($_REQUEST['dump'])) {
+		global $theater;
+		var_dump($theater);
+	}
+	exit;
+}
 
 function DisplayStatTable() {
 	global $stats,$tableclasses;
@@ -691,7 +697,7 @@ function damageatrange($dmg,$range,$dec=2) {
 	}
 }
 //echo damageatrange(array("800" => "36", "2000" => "18", "7000" => "5"),1400);
-//exit;
+//closePage();
 /*
 getgraph
 */
@@ -855,7 +861,7 @@ function getrecoilgraph($recoil,$size=100,$maxspread=10,$margin = 0) {
 	$rx = ($half - $lateral[0]) * $step;
 	$ry = ($half - $vertical[0]) * $step;
 //var_dump($c,$maxspread,$lateral,$vertical,$step,$half,$rwidth,$rheight,$rx,$ry);
-//exit;
+//closePage();
 //								<rect x='{$half}' y='{$half}' height='{$size}' width='{$size}' style='fill:rgb(255,255,200);stroke-width:3;stroke:rgb(0,0,0)' />
 
 	$svg = "							<svg xmlns='http://www.w3.org/2000/svg' height='".($size+$margin)."' width='".($size+$margin)."'>
