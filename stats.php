@@ -3,18 +3,18 @@ $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
 require_once "include/header.php";
 
-//var_dump($theater);
+//var_dump(current($theater));
 if ($version != $version_compare) {
 	$theater_compare = getfile("{$theaterfile}.theater",$version_compare,$theaterpath);
 	$changes = multi_diff($version,$theater,$version_compare,$theater_compare);
-echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Value</th><th>{$version}</th><th>{$version_compare}</th></tr>\n";
-$sections = array();
-DisplayCompare($changes,$sections,$version,$version_compare);
+	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Value</th><th>{$version}</th><th>{$version_compare}</th></tr>\n";
+	$sections = array();
+	DisplayCompare($changes,$sections,$version,$version_compare);
 //var_dump($changes,version,$theater,$version_compare,$theater_compare);
-
-exit;
+	exit;
 }
 
+//var_dump(current($theater));
 
 if ($_REQUEST['command'] == 'weaponlog') {
 	DisplayLoggerConfig();
@@ -33,17 +33,25 @@ if ($_REQUEST['command'] == 'smtrans') {
 	exit;
 }
 
+//var_dump("mark\n");
 //Load weapon items
 $weapons = array();
+//var_dump("mark\n");
 foreach($theater["weapons"] as $wpnname => $data) {
+	//var_dump("mark-in1\n");
 	if (isset($data["IsBase"])) {
 		continue;
 	}
+	//var_dump("mark-in2\n");
 	$object = getobject("weapons",$wpnname,1);
+	//var_dump("mark-in3\n");
 	$weapons[$wpnname] = $object;
 }
+//var_dump("mark\n");
 ksort($weapons);
+//var_dump("mark\n");
 $weapon = current($weapons);
+//var_dump("mark\n");
 if ($_REQUEST['weapon']) {
 //var_dump($_REQUEST['weapon']);
 	if (array_key_exists($_REQUEST['weapon'],$weapons)) {
@@ -54,6 +62,7 @@ if ($_REQUEST['weapon']) {
 //Load weapon_upgrade items
 $weapon_upgrades = array();
 $weapon_upgrade_slots = array();
+//var_dump(current($theater));
 foreach($theater["weapon_upgrades"] as $wpnname => $data) {
 	if (isset($data["IsBase"])) {
 		continue;
@@ -67,13 +76,14 @@ foreach($theater["weapon_upgrades"] as $wpnname => $data) {
 ksort($weapon_upgrades);
 ksort($weapon_upgrade_slots);
 //var_dump($weapon_upgrades);
+//var_dump(current($theater));
 $weapon_upgrade = current($weapon_upgrades);
 if ($_REQUEST['weapon_upgrade']) {
 	if (array_key_exists($_REQUEST['weapon_upgrade'],$weapon_upgrades)) {
 		$weapon_upgrade = $_REQUEST['weapon_upgrade'];
 	}
 }
-
+//var_dump("made it");
 //Begin main program
 //Process weapon upgrades first so we can connect them to the weapons
 foreach ($theater["weapon_upgrades"] as $upname => $data) {
@@ -125,6 +135,7 @@ $(document).ready(function() {
 } );
 </script>
 <?php
+//var_dump("YES");
 startbody();
 echo "
 		<form action='{$_SERVER['PHP_SELF']}' method='get'>
@@ -252,7 +263,7 @@ DisplayStatTable();
 //echo "done\n";
 echo "		</form>";
 require "include/footer.php";
-var_dump($theater);
+//var_dump($theater);
 exit;
 
 
@@ -932,7 +943,7 @@ function getobject($type,$key,$recurse=0) {
 	//Merge in imports
 	if (isset($object["import"])) {
 		//Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
-		$object = array_replace(getobject($type,$object["import"],$recurse),$object);
+		$object = theater_array_replace(getobject($type,$object["import"],$recurse),$object);
 		//If the main object was not IsBase, then remove the entry if it is in the output. Isbase must be set explicitly per-item in theater.
 		if ((!isset($isbase)) && (isset($object['IsBase']))) {
 			unset($object['IsBase']);

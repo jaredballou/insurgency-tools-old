@@ -1,5 +1,5 @@
 <?php 
-ob_start();
+//ob_start();
 include "functions.php"; ?><!DOCTYPE html>
 <html lang="en">
   <head>
