@@ -1,5 +1,10 @@
 <?php
 include "config.php";
+/*
+	BEGIN COMMON EXECUTION CODE
+	This section is run by every script, so it shouldn't do too much.
+*/
+//Load custom library paths for include
 parseLibPath();
 
 $langfiles = glob("data/resource/insurgency_*.txt");
@@ -10,16 +15,22 @@ $data = parseKeyValues($data);//$reader->read($data);
 $langcode = array();
 $ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
 
+//Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 foreach ($data['Languages'] as $code => $name) {
-	$name = strtolower($name);
-	$langcode[$name] = $code;
+	$names = (is_array($name)) ? $name : array($name);
+	foreach ($names as $name) {
+		$name = strtolower($name);
+		$langcode[$name] = $code;
+	}
 }
 
+$command = @$_REQUEST['command'];
+//Load all language files
 foreach ($langfiles as $langfile) {
 	$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents($langfile)));
 	$data = parseKeyValues($data);//$reader->read($data);
 	foreach ($data["lang"]["Tokens"] as $key => $val) {
-		if ($_REQUEST['command'] != 'smtrans') {
+		if ($command != 'smtrans') {
 			$key = "#".strtolower($key);
 		}
 		$key = trim($key);
@@ -31,8 +42,9 @@ foreach ($langfiles as $langfile) {
 		}
 	}
 }
+//Set language
 $language = "English";
-if ($_REQUEST['language']) {
+if (isset($_REQUEST['language'])) {
 	if (in_array($_REQUEST['language'],$lang)) {
 		$language = $_REQUEST['language'];
 	}
@@ -49,18 +61,20 @@ foreach ($dirs as $dir) {
 asort($versions);
 $newest_version = $version = end($versions);
 
-if ($_REQUEST['version']) {
+if (isset($_REQUEST['version'])) {
 	if (in_array($_REQUEST['version'],$versions)) {
 		$version = $_REQUEST['version'];
 	}
 }
+//Set version_compare to version, these two need to be identical if we're not doing the version compare dump command
 $version_compare = $version;
-if ($_REQUEST['version_compare']) {
+if (isset($_REQUEST['version_compare'])) {
 	if (in_array($_REQUEST['version_compare'],$versions)) {
 		$version_compare = $_REQUEST['version_compare'];
 	}
 }
 
+//Units of measurement
 $range_units = array(
 	'U' => 'Game Units',
 	'M' => 'Meters',
@@ -68,19 +82,22 @@ $range_units = array(
 	'YD' => 'Yards',
 	'IN' => 'Inches'
 );
+//Set range unit
 $range_unit = 'M';
-if ($_REQUEST['range_unit']) {
+if (isset($_REQUEST['range_unit'])) {
 	if (array_key_exists($_REQUEST['range_unit'],$range_units)) {
 		$range_unit = $_REQUEST['range_unit'];
 	}
 }
+//Set range
 $range = 10;
-if ($_REQUEST['range']) {
+if (isset($_REQUEST['range'])) {
 	$_REQUEST['range'] = dist($_REQUEST['range'],$range_unit,'IN',0);
 	if (($_REQUEST['range'] >= 0) && ($_REQUEST['range'] <= 20000)) {
 		$range = $_REQUEST['range'];
 	}
 }
+//Populate $theaters array with all the theater files in the selected version
 $files = glob("data/theaters/{$version}/*.theater");
 foreach ($files as $file) {
 	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
@@ -88,6 +105,7 @@ foreach ($files as $file) {
 	}
 	$theaters[] = basename($file,".theater");
 }
+//Add all custom theaters to the list, these do NOT depend on version, they will always be added
 foreach ($custom_theater_paths as $name => $path) {
 	if (file_exists($path)) {
 		$ctfiles = glob("{$path}/*.theater");
@@ -98,9 +116,11 @@ foreach ($custom_theater_paths as $name => $path) {
 	}
 }
 
-//Load theater files
+//Default theater file to load if nothing is selected
 $theaterfile = "default";
-if ($_REQUEST['theater']) {
+
+//If a theater is specified, find out if it's custom or stock, and set the path accordingly
+if (isset($_REQUEST['theater'])) {
 	if (strpos($_REQUEST['theater']," ")) {
 		$bits = explode(" ",$_REQUEST['theater'],2);
 		if (in_array($bits[0],array_keys($custom_theater_paths))) {
@@ -111,9 +131,13 @@ if ($_REQUEST['theater']) {
 		$theaterfile = $_REQUEST['theater'];
 	}
 }
+
 //Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 
+/*
+	BEGIN FUNCTIONS
+*/
 //rglob - recursively locate all files in a directory according to a pattern
 function rglob($pattern, $files=1,$dirs=0,$flags=0) {
 	$dirname = dirname($pattern);
@@ -133,7 +157,7 @@ function rglob($pattern, $files=1,$dirs=0,$flags=0) {
 		}
 		$files[] = $path;
 	}
-	foreach (glob("{$dirname}/*"), GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
+	foreach (glob("{$dirname}/*", GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
 		$dirfiles = rglob($dir.'/'.$basename, $files,$dirs,$flags);
 		$files = array_merge($files, $dirfiles);
 	}
@@ -570,5 +594,3 @@ function addLibPath($path) {
 		set_include_path(implode(PATH_SEPARATOR,$libpaths));
 	}
 }
-?>
-

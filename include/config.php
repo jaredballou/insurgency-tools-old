@@ -1,30 +1,63 @@
 <?php
+/*
+	CONFIG
+	This should ONLY be declaring default values or doing minimal work to set them.
+	Code should go in functions.php when possible
+	Remember: This file will be updated by Git, so any site-specific settings
+	like passwords or anything private will be overwritten. Use config.private.php
+	to set your own variables.
+*/
+//Get the path of the includes (this file) and the web root
 $includepath=dirname(__FILE__);
 $rootpath=dirname($includepath);
 
-$libpaths = explode(PATH_SEPARATOR,get_include_path());
-$custom_libpaths = array("{$rootpath}/utilities/thirdparty/steam-condenser-php/lib");
+//Servers, in the format 'server.domain.com:27015' - even if it's on the standard port
+$servers = array();
 
+//Steam API Settings
+$appid = 222880;
+$apikey = '';
+
+//Library include paths
+$libpaths = explode(PATH_SEPARATOR,get_include_path());
+
+//Custom libraries to load
+$custom_libpaths = array(
+	"{$rootpath}/utilities/thirdparty/steam-condenser-php",
+	"{$rootpath}/utilities/thirdparty/steam-condenser-php/vendor",
+	"{$rootpath}/utilities/thirdparty/steam-condenser-php/lib",
+	"{$rootpath}/utilities/thirdparty/steam-condenser-php/lib/SteamCondenser"
+);
+
+//Base theater path
 $theaterpath='';
+
+//Custom theater paths
 $custom_theater_paths = array('Custom' => '/opt/fastdl/scripts/theaters');
+
 //MySQL Server connection settings
 $mysql_server   = 'localhost';
 $mysql_username = 'username';
 $mysql_password = 'password';
 $mysql_database = 'database';
 
+//HLStatsX Variables
 $dbprefix = isset($_REQUEST['dbprefix']) ? $_REQUEST['dbprefix'] : 'hlstats';
 $gamecode = isset($_REQUEST['gamecode']) ? $_REQUEST['gamecode'] : 'insurgency';
 $hlstatsx_root='/opt/hlstatsx-community-edition';
 $hlstatsx_heatmaps="{$hlstatsx_root}/web/hlstatsimg/games/{$gamecode}/heatmaps";
 
+//Connect to HLStatsX database if requested
 if (isset($use_hlstatsx_db)) {
 	require "{$hlstatsx_root}/heatmaps/config.inc.php";
 	mysql_connect(DB_HOST,DB_USER,DB_PASS);
 	mysql_select_db(DB_NAME);
 }
 
+
+//Cache directory to stash temporary files. This should be inaccessible via your Web server!
 $cache_dir = 'cache';
+
 //Create cache dir if needed
 if (!file_exists($cache_dir)) {
         mkdir($cache_dir);
@@ -77,6 +110,7 @@ $excludemaps = array(
 	'warehouse_coop_beta_1'
 );
 
+//HLStatsX tables and fields
 $tables = array(
         'Games_Defaults' => array(
                 'allfields'     => array('code', 'parameter', 'value'),
@@ -115,5 +149,5 @@ $tables = array(
                 'fields'        => array('name')
         )
 );
+//Include the private config (never updated by Git) to override or set other variables
 require_once("config.private.php");
-?>
