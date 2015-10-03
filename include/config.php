@@ -1,4 +1,10 @@
 <?php
+$includepath=dirname(__FILE__);
+$rootpath=dirname($includepath);
+
+$libpaths = explode(PATH_SEPARATOR,get_include_path());
+$custom_libpaths = array("{$rootpath}/utilities/thirdparty/steam-condenser-php/lib");
+
 $theaterpath='';
 $custom_theater_paths = array('Custom' => '/opt/fastdl/scripts/theaters');
 //MySQL Server connection settings

@@ -1,3 +1,6 @@
 [submodule "data"]
 	path = data
 	url = git@github.com:jaredballou/insurgency-data.git
+[submodule "utilities/thirdparty/steam-condenser-php"]
+	path = utilities/thirdparty/steam-condenser-php
+	url = https://github.com/koraktor/steam-condenser-php.git

@@ -1,5 +1,7 @@
 <?php
 include "config.php";
+parseLibPath();
+
 $langfiles = glob("data/resource/insurgency_*.txt");
 $langfiles = glob("data/resource/insurgency_english.txt");
 $lang = array();
@@ -112,14 +114,32 @@ if ($_REQUEST['theater']) {
 //Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 
-
-function rglob($pattern, $flags = 0) {
-	$files = glob($pattern, $flags); 
-	foreach (glob(dirname($pattern).'/*', GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
-		$files = array_merge($files, rglob($dir.'/'.basename($pattern), $flags));
+//rglob - recursively locate all files in a directory according to a pattern
+function rglob($pattern, $files=1,$dirs=0,$flags=0) {
+	$dirname = dirname($pattern);
+	$basename = basename($pattern);
+	$glob = glob($pattern, $flags);
+	$files = array();
+	$dirlist = array();
+	foreach ($glob as $path) {
+		if (is_file($path) && (!$files)) {
+			continue;
+		}
+		if (is_dir($path)) {
+			$dirlist[] = $path;
+			if (!$dirs) {
+				continue;
+			}
+		}
+		$files[] = $path;
+	}
+	foreach (glob("{$dirname}/*"), GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
+		$dirfiles = rglob($dir.'/'.$basename, $files,$dirs,$flags);
+		$files = array_merge($files, $dirfiles);
 	}
 	return $files;
 }
+//delTree - recursively DELETE AN ENTIRE DIRECTORY STRUCTURE!!!!
 function delTree($dir='') {
 	if (strlen($dir) < 2)
 		return false;
@@ -129,23 +149,27 @@ function delTree($dir='') {
 	}
 	return rmdir($dir);
 }
+//is_numeric_array - test if all values in an array are numeric
 function is_numeric_array($array) {
 	foreach ($array as $key => $value) {
 		if (!is_numeric($value)) return false;
 	}
 	return true;
 }
+//kvwrite - 
 function kvwrite($arr) {
 	$str = "";
 	kvwriteSegment($str, $arr);
 	return $str;
 }
+//kvwriteFile - 
 function kvwriteFile($file, $arr) {
 	$contents = kvwrite($arr);
 	$fh = fopen($file, 'w');
 	fwrite($fh, $contents);
 	fclose($fh);
 }
+//kvwriteSegment - 
 function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	global $ordered_fields;
 	$indent = str_repeat(chr(9), $tier);
@@ -179,6 +203,7 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 //var_dump($str);
 	return $str;
 }
+//parseKeyValues - 
 function parseKeyValues($KVString,$debug=false)
 {
 	global $ordered_fields;
@@ -286,136 +311,162 @@ function parseKeyValues($KVString,$debug=false)
 	}
 	return $stack;
 }
+//prettyPrint - 
 function prettyPrint( $json )
 {
-    $result = '';
-    $level = 0;
-    $in_quotes = false;
-    $in_escape = false;
-    $ends_line_level = NULL;
-    $json_length = strlen( $json );
+	$result = '';
+	$level = 0;
+	$in_quotes = false;
+	$in_escape = false;
+	$ends_line_level = NULL;
+	$json_length = strlen( $json );
 
-    for( $i = 0; $i < $json_length; $i++ ) {
-        $char = $json[$i];
-        $new_line_level = NULL;
-        $post = "";
-        if( $ends_line_level !== NULL ) {
-            $new_line_level = $ends_line_level;
-            $ends_line_level = NULL;
-        }
-        if ( $in_escape ) {
-            $in_escape = false;
-        } else if( $char === '"' ) {
-            $in_quotes = !$in_quotes;
-        } else if( ! $in_quotes ) {
-            switch( $char ) {
-                case '}': case ']':
-                    $level--;
-                    $ends_line_level = NULL;
-                    $new_line_level = $level;
-                    break;
+	for( $i = 0; $i < $json_length; $i++ ) {
+		$char = $json[$i];
+		$new_line_level = NULL;
+		$post = "";
+		if( $ends_line_level !== NULL ) {
+			$new_line_level = $ends_line_level;
+			$ends_line_level = NULL;
+		}
+		if ( $in_escape ) {
+			$in_escape = false;
+		} else if( $char === '"' ) {
+			$in_quotes = !$in_quotes;
+		} else if( ! $in_quotes ) {
+			switch( $char ) {
+				case '}':
+				case ']':
+					$level--;
+					$ends_line_level = NULL;
+					$new_line_level = $level;
+					break;
+				case '{':
+				case '[':
+					$level++;
+					case ',':
+					$ends_line_level = $level;
+					break;
 
-                case '{': case '[':
-                    $level++;
-                case ',':
-                    $ends_line_level = $level;
-                    break;
+				case ':':
+					$post = " ";
+					break;
 
-                case ':':
-                    $post = " ";
-                    break;
-
-                case " ": case "\t": case "\n": case "\r":
-                    $char = "";
-                    $ends_line_level = $new_line_level;
-                    $new_line_level = NULL;
-                    break;
-            }
-        } else if ( $char === '\\' ) {
-            $in_escape = true;
-        }
-        if( $new_line_level !== NULL ) {
-            $result .= "\n".str_repeat( "\t", $new_line_level );
-        }
-        $result .= $char.$post;
-    }
-
-    return $result;
+				case " ":
+				case "\t":
+				case "\n":
+				case "\r":
+					$char = "";
+					$ends_line_level = $new_line_level;
+					$new_line_level = NULL;
+					break;
+			}
+		} else if ( $char === '\\' ) {
+			$in_escape = true;
+		}
+		if( $new_line_level !== NULL ) {
+			$result .= "\n".str_repeat( "\t", $new_line_level );
+		}
+		$result .= $char.$post;
+	}
+	return $result;
 }
-    function theater_recurse($array, $array1)
-    {  
-      foreach ($array1 as $key => $value)
-      {
-        // create new key in $array, if it is empty or not an array
-        if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key])))
-        {
-          $array[$key] = array();
-        }
-  
-        // overwrite the value in the base array
-        if (is_array($value))
-        {
-          $value = theater_recurse($array[$key], $value);
-        }
-        $array[$key] = $value;
-      }
-      return $array;
-    }
-  function theater_array_replace_recursive($array, $array1)
-  {
-    // handle the arguments, merge one by one
-    $args = func_get_args();
-    $array = $args[0];
-    if (!is_array($array))
-    {
-      return $array;
-    }
-    for ($i = 1; $i < count($args); $i++)
-    {
-      if (is_array($args[$i]))
-      {
-        $array = theater_recurse($array, $args[$i]);
-      }
-    }
-    return $array;
-  }
-  function theater_array_replace()
-  {
-    $args = func_get_args();
-    $num_args = func_num_args();
-    $res = array();
-    for($i=0; $i<$num_args; $i++)
-    {
-      if(is_array($args[$i]))
-      {
-        foreach($args[$i] as $key => $val)
-        {
-          $res[$key] = $val;
-        }
-      }
-      else
-      {
-        trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
-        return NULL;
-      }
-    }
-    return $res;
-  }
+//theater_recurse - 
+function theater_recurse($array, $array1)
+{
+	foreach ($array1 as $key => $value)
+	{
+		// create new key in $array, if it is empty or not an array
+		if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key])))
+		{
+			$array[$key] = array();
+		}
+
+		// overwrite the value in the base array
+		if (is_array($value))
+		{
+			$value = theater_recurse($array[$key], $value);
+		}
+		$array[$key] = $value;
+	}
+	return $array;
+}
+//theater_array_replace_recursive - 
+function theater_array_replace_recursive($array, $array1)
+{
+// handle the arguments, merge one by one
+$args = func_get_args();
+$array = $args[0];
+if (!is_array($array))
+{
+return $array;
+}
+for ($i = 1; $i < count($args); $i++)
+{
+if (is_array($args[$i]))
+{
+$array = theater_recurse($array, $args[$i]);
+}
+}
+return $array;
+}
+//theater_array_replace - 
+function theater_array_replace()
+{
+$args = func_get_args();
+$num_args = func_num_args();
+$res = array();
+for($i=0; $i<$num_args; $i++)
+{
+if(is_array($args[$i]))
+{
+foreach($args[$i] as $key => $val)
+{
+$res[$key] = $val;
+}
+}
+else
+{
+trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
+return NULL;
+}
+}
+return $res;
+}
+//formatBytes - 
 function formatBytes($bytes, $precision = 2) { 
-    $units = array('B', 'KB', 'MB', 'GB', 'TB'); 
+$units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
-    $bytes = max($bytes, 0); 
-    $pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
-    $pow = min($pow, count($units) - 1); 
+$bytes = max($bytes, 0); 
+$pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
+$pow = min($pow, count($units) - 1); 
 
-    // Uncomment one of the following alternatives
-    $bytes /= pow(1024, $pow);
-    // $bytes /= (1 << (10 * $pow)); 
+// Uncomment one of the following alternatives
+$bytes /= pow(1024, $pow);
+// $bytes /= (1 << (10 * $pow)); 
 
-    return round($bytes, $precision) . ' ' . $units[$pow];
+return round($bytes, $precision) . ' ' . $units[$pow];
 }
 
 //stats functions
+/*
+multi_diff
+Compare two arrays recursively, return an array of differences
+Will be an array of differences (key structure identical to source arrays).
+Each element is an array that has two values, key is the nameX variable and value is the value from that source array
+Elements that are identical in both arrays are omitted
+Example:
+$array1 = array('object' => array('name' => 'object1', 'size' => 30, 'owner' => 'nobody'));
+$array2 = array('object' => array('name' => 'object2', 'size' => 40, 'owner' => 'nobody'));
+$result = multi_diff('array1',$array1,'array2',$array2);
+$result will be:
+array(
+	'object' => array(
+		'name' => array('array1' => 'object1','array2' => 'object2'),
+		'size' => array('array1' => 30,'array2' => 40)
+	)
+);
+*/
 function multi_diff($name1,$arr1,$name2,$arr2) {
 	$result = array();
 	$merged = $arr1+$arr2;//array_merge($arr1,$arr2);
@@ -438,7 +489,7 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 	return $result;
 }
 /* getfile
-Takes flat filename and parses it. If #base directives are included, pull those and merge contents on top
+Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
 function getfile($filename,$version='',$path='') {
 	global $custom_theater_paths,$newest_version,$theaterpath;
@@ -501,5 +552,23 @@ function getvgui($name,$type='img',$path='vgui/inventory') {
 	}
 }
 
+//parseLibPath - Load custom library paths, this should only get called after config is loaded but before any other includes are called
+function parseLibPath() {
+	global $custom_libpaths;
+	if (!is_array($custom_libpaths)) {
+		$custom_libpaths = array($custom_libpaths);
+	}
+	foreach ($custom_libpaths as $path) {
+		addLibPath($path);
+	}
+}
+//addLibPath - Add path to include path, this is how we should add new libraries
+function addLibPath($path) {	
+	global $libpaths;
+	if (!in_array($path,$libpaths)) {
+		$libpaths[] = $path;
+		set_include_path(implode(PATH_SEPARATOR,$libpaths));
+	}
+}
 ?>
 
