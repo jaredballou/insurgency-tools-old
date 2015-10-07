@@ -22,6 +22,8 @@ foreach ($servers as $address => $data) {
 	$version_num = preg_replace("/[^0-9]/", "",$version);
 	$version_path = "{$datadir}/{$version_num}";
 	$version_schema = "{$version_path}/schema.json";
+	$playercount = $getServerInfo["numberOfPlayers"];
+	$maxplayers = $getServerInfo["maxPlayers"];
 	if ($version_num == $version_max) {
 		$version_check = $version_max_check;
 	} else if ($version_num > $version_max) {
@@ -44,8 +46,10 @@ foreach ($servers as $address => $data) {
 	} else {
 		$version_check = 'FAIL';
 	}
-	echo "{$address}: \"{$getServerInfo["serverName"]}\": {$version}: {$version_check}\n";
-var_dump($getPing,$getPlayers);//,$getRules,$getServerInfo);
+	echo "{$address}: \"{$getServerInfo["serverName"]}\": ({$playercount}/{$maxplayers}): {$version}: {$version_check}\n";
+//var_dump($getServerInfo);
+
+//$getRules,$getPing,$getPlayers);
 }
 
 exit;

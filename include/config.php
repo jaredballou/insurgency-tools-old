@@ -17,6 +17,11 @@ $servers = array();
 //Steam API Settings
 $appid = 222880;
 $apikey = '';
+$servers = array(
+	'your.server.com:27015' => array(
+		'rcon_password' => 'yourpassword',
+	)
+);
 
 //Library include paths
 $libpaths = explode(PATH_SEPARATOR,get_include_path());
