@@ -1,12 +1,4 @@
-<?php
-$curpage = basename($_SERVER['SCRIPT_FILENAME']);
-$pages = array(
-'stats.php' => 'Stats (Theater Parser)',
-'maps.php' => 'Maps (Overlay Viewer)',
-'cvarlist.php' => 'CVAR List',
-'https://github.com/jaredballou' => 'My Github');
-?>
-<nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+<nav class="navbar navbar-inverse" role="navigation">
       <div class="container">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">

@@ -2,38 +2,26 @@
 </body>
 </html>
 <?php
-$html = ob_get_clean();
-if (0==1) {
+if (isset($use_ob)) {
+	$html = ob_get_clean();
 	$config = array(
-//		'clean'			=> TRUE,
-//		'indent'		=> TRUE,
-//		'output-html'		=> TRUE,
+		'clean'			=> TRUE,
+		'indent'		=> TRUE,
+		'output-html'		=> TRUE,
 		'wrap'			=> 0,
-//		'new-inline-tags'	=> 'li, option',
+		'new-inline-tags'	=> 'li, option',
 		'indent-spaces'		=> 4,
-//		'show-warnings'		=> TRUE,
-//		'indent-cdata'		=> TRUE,
+		'show-warnings'		=> TRUE,
+		'indent-cdata'		=> TRUE,
 	);
 	$tidy = new tidy;
-//	$tidy->parseString($html, $config, 'utf8');
-//	$tidy->cleanRepair();
-//	echo $tidy;
+	$tidy->parseString($html, $config, 'utf8');
+	$tidy->cleanRepair();
+	echo $tidy;
 	$clean = $tidy->repairString($html);
 	echo $clean;
 //print_r($tidy->getConfig());
 } else {
 	echo $html;
-}
-if (0==1) {
-	require_once "include/htmLawed.php";
-	$config = array(
-//		'comment'=>0,
-//		'cdata'=>1,
-		'tidy'=>1,
-//		'schemes'=>'*:*',
-//		'safe'=>0,
-	); 
-	$processed = htmLawed($html, $config); 
-	echo $processed;
 }
 ?>

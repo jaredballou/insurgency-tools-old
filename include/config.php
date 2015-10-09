@@ -14,6 +14,15 @@ $rootpath=dirname($includepath);
 //Servers, in the format 'server.domain.com:27015' - even if it's on the standard port
 $servers = array();
 
+//Page Names
+$curpage = basename($_SERVER['SCRIPT_FILENAME']);
+$pages = array(
+	'stats.php' => 'Stats (Theater Parser)',
+	'maps.php' => 'Maps (Overlay Viewer)',
+	'cvarlist.php' => 'CVAR List',
+	"https://github.com/jaredballou' target='_blank" => 'My Github'
+);
+
 //Steam API Settings
 $appid = 222880;
 $apikey = '';

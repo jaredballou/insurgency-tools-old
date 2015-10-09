@@ -93,10 +93,9 @@ foreach ($theater["weapon_upgrades"] as $upname => $data) {
 	}
 	$item = getobject("weapon_upgrades",$upname,1);
 	if (isset($item["allowed_weapons"])) {
-		foreach ($item["allowed_weapons"] as $order => $wpnitem) {
-			foreach ($wpnitem as $type=>$wpn) {
-				$upgrades[$wpn][$upname] = $item;
-			}
+		$arr = (is_array(current($item["allowed_weapons"]))) ? current($item["allowed_weapons"]) : $item["allowed_weapons"];
+		foreach ($arr as $wpn) {
+			$upgrades[$wpn][$upname] = $item;
 		}
 	}
 }
@@ -428,11 +427,18 @@ function GenerateStatTable() {
 			$fn = 'Upgrades';
 		}
 		//Add ammo and upgrade links to weapon items
-		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
-			foreach ($witem as $type => $wpnname) {
-				$stats['Weapons']['items'][$wpnname][$fn].=$link;
-			}
+//var_dump($upgrade);
+		if (isset($upgrade['allowed_weapons']['weapon'])) {
+			$tmp = $upgrade['allowed_weapons']['weapon'];
+			$upgrade['allowed_weapons'] = (is_array($tmp)) ? $tmp : array($tmp);
+			
 		}
+		$aw = array();
+		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
+			$aw[] = "<a href='#{$witem}'>".getlookup("#{$witem}")."</a>";
+			$stats['Weapons']['items'][$witem][$fn].=$link;
+		}
+		
 		$thisitem['Img'] = $img;
 		$thisitem['Name'] = getlookup($upgrade['print_name']);
 		$thisitem['Slot'] = printval($upgrade,"upgrade_slot");
@@ -440,7 +446,9 @@ function GenerateStatTable() {
 		$thisitem['Cost'] = printval($upgrade,"upgrade_cost");
 		$thisitem['Ammo Type'] = printval($upgrade,"ammo_type_override",1);
 		$thisitem['Abilities'] = printval($upgrade,"weapon_abilities");
-		$thisitem['Weapons'] = printval($upgrade,"allowed_weapons",1);
+		
+		$thisitem['Weapons'] = implode("<br>",$aw);
+//printval($upgrade,"allowed_weapons",1);
 		$stats['Upgrades']['items'][$upname] = $thisitem;
 	}
 	foreach ($theater["ammo"] as $ammoname => $data) {
@@ -960,7 +968,7 @@ function getobject($type,$key,$recurse=0) {
 /* printarray
 Display the damage of bullets, this is used to show damage at distances
 */
-function printarray($object,$index,$prefix='') {
+function printarray($object,$index,$link=0,$nulldisp='&nbsp;',$prefix='') {
 	$data = '';
 	if ($prefix != '') {
 		$prefix.='->';
@@ -977,7 +985,7 @@ function printarray($object,$index,$prefix='') {
 	$dmg = array();
 	foreach ($object[$index] as $rangedist => $rangedmg) {
 		if (is_array($rangedmg)) {
-			$arr[] = printarray($object[$index],$rangedist,$prefix.$rangedist);
+			$arr[] = printarray($object[$index],$rangedist,$link,$nulldisp,$prefix.$rangedist);
 		} else {
 			$disprange = ($graph) ? dist($rangedist,'IN') : $rangedist;
 			$dmg[$rangedist] = $rangedmg;
@@ -1030,15 +1038,15 @@ function printval($object,$index,$link=0,$nulldisp='&nbsp;') {
 	$data = '';
 	if (isset($object[$index])) {
 		if (is_array($object[$index])) {
-			$data.=printarray($object,$index);
+			$data.=printarray($object,$index,$link=0,$nulldisp='&nbsp;');
 		} else {
 			$data.=getlookup($object[$index]);
+			if ($link) {
+				$data = "<a href='#{$object[$index]}'>{$data}</a>";
+			}
 		}
 	} else {
 		$data.=$nulldisp;
-	}
-	if ($link) {
-		$data = "<a href='#{$object[$index]}'>{$data}</a>";
 	}
 	return $data;
 }

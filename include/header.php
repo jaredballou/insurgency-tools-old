@@ -1,12 +1,15 @@
-<?php 
-//ob_start();
-include "functions.php"; ?><!DOCTYPE html>
+<?php
+if (isset($use_ob)) {
+	ob_start();
+}
+include "functions.php";
+if (!$title) {
+	$title = 'Insurgency Tools';
+}
+?><!DOCTYPE html>
 <html lang="en">
   <head>
-<?php
-	if (!$title) { $title = 'Insurgency Tools'; }
-	echo "    <title>{$title}</title>\n";
-?>
+    <title><?php echo $title; ?></title>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
@@ -27,7 +30,7 @@ include "functions.php"; ?><!DOCTYPE html>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 <style>
 body {
-	padding-top: 50px;
+//	padding-top: 50px;
 }
 body, html, .container {
 	height: 100%;
@@ -50,7 +53,8 @@ body, html, .container {
 
 <?php
 function startbody() {
-echo "  </head>\n  <body>\n";
-include "menu.php";
+	global $curpage,$pages;
+	echo "  </head>\n  <body>\n";
+	include "menu.php";
 }
 ?>

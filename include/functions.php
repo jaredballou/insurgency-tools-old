@@ -13,7 +13,7 @@ $lang = array();
 $data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents('data/sourcemod/configs/languages.cfg')));
 $data = parseKeyValues($data);//$reader->read($data);
 $langcode = array();
-$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
+$ordered_fields = array();//'squads','buy_order','allowed_weapons','allowed_items');
 
 //Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 foreach ($data['Languages'] as $code => $name) {
@@ -230,6 +230,108 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 //parseKeyValues - 
 function parseKeyValues($KVString,$debug=false)
 {
+	$len = strlen($KVString);
+	if ($debug) $len = 2098;
+
+	$stack = array();
+
+	$isInQuote = false;
+	$key = "";
+	$value = "";
+	$quoteKey = "";
+	$quoteValue = "";
+	$quoteWhat = "key";
+	$ptr = &$stack;
+	$c="";
+	$parents = array(&$ptr);
+	$tree = array();
+	for ($i=0; $i<$len; $i++)
+	{
+		$l = $c;
+		$c = $KVString[$i]; // current char
+		switch ($c)
+		{
+			case "\r":
+				break;
+			case "\n":
+				if (strlen(trim($key))) {
+					$ptr[$key] = $value;
+					$key = "";
+				}
+				break;
+			case "\"":
+				if ($isInQuote) // so we are CLOSING key or value
+				{
+					if (strlen($quoteKey) && strlen($quoteValue))
+					{
+						if (isset($ptr[$quoteKey])) {
+							if (!is_array($ptr[$quoteKey])) {
+								$ptr[$quoteKey] = array($ptr[$quoteKey]);
+							}
+							$ptr[$quoteKey][] = $quoteValue;
+						} else {
+							$ptr[$quoteKey] = $quoteValue;
+						}
+						$quoteKey = "";
+						$quoteValue = "";
+					}
+					
+					if ($quoteWhat == "key")
+						$quoteWhat = "value";
+					else if ($quoteWhat == "value")
+						$quoteWhat = "key";
+				}
+				$isInQuote = !$isInQuote;
+				break;
+			case "{":
+				if (strlen($quoteKey)) {
+					$tree[] = $quoteKey;
+					$path = implode("/",$tree);
+					$parents[$path] = &$ptr;
+					$ptr = &$ptr[$quoteKey];
+					$quoteKey = "";
+					$quoteWhat = "key";
+				}
+				break;
+			case "}":
+				$ptr = &$parents[$path];
+				$lastkey = array_pop($tree);
+				$path = implode("/",$tree);
+				break;
+				
+			case "\t":
+				break;
+			case "/":
+				if ($KVString[$i+1] == "/") // Comment "//"
+				{
+					while($i < $len && $KVString[$i] != "\n")
+						$i++;
+					continue;
+				}
+			default:
+				if (!$isInQuote && strlen(trim($c)))
+				{
+					$key .= $c;
+				}
+				
+				if ($isInQuote)
+					if ($quoteWhat == "key")
+						$quoteKey .= $c;
+					else
+						$quoteValue .= $c;
+		}
+	}
+	
+	if ($debug) {
+		echo "<hr><pre>";
+		var_dump("stack: ",$stack);
+//		var_dump("ptr: ",$ptr);
+	}
+	return $stack;
+}
+
+function Old_parseKeyValues($KVString,$debug=false)
+{
 	global $ordered_fields;
 	$len = strlen($KVString);
 	if ($debug) $len = 2098;
@@ -266,9 +368,9 @@ function parseKeyValues($KVString,$debug=false)
 					if (strlen($quoteKey) && strlen($quoteValue))
 					{
 						//Make ordered array for these items
-						if ((count($tree) > 3) && (in_array($tree[3],$ordered_fields))) {
-							$ptr[] = array($quoteKey => $quoteValue);
-						} else {
+//						if ((count($tree) > 3) && (in_array($tree[3],$ordered_fields))) {
+//							$ptr[] = array($quoteKey => $quoteValue);
+//						} else {
 							if (isset($ptr[$quoteKey])) {
 								if (!is_array($ptr[$quoteKey])) {
 									$ptr[$quoteKey] = array($ptr[$quoteKey]);
@@ -277,7 +379,7 @@ function parseKeyValues($KVString,$debug=false)
 							} else {
 								$ptr[$quoteKey] = $quoteValue;
 							}
-						}
+//						}
 						$quoteKey = "";
 						$quoteValue = "";
 					}
