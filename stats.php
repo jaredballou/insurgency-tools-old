@@ -435,7 +435,7 @@ function GenerateStatTable() {
 		}
 		$aw = array();
 		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
-			$aw[] = "<a href='#{$witem}'>".getlookup("#{$witem}")."</a>";
+			$aw[] = "<a href='#{$witem}'>{$stats['Weapons']['items'][$witem]['Name']}</a>";
 			$stats['Weapons']['items'][$witem][$fn].=$link;
 		}
 		
