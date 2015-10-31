@@ -4,7 +4,6 @@
 # Author: Daniel Gibbs
 # Website: http://danielgibbs.co.uk
 # Version: 200914
-export LD_LIBRARY_PATH="/home/insserver/serverfiles/bin"
 scriptcfgdir=$(readlink -f $(dirname $0))/cfg.insserver
 rootdir="$(cd "$(dirname "${BASH_SOURCE[0]}" )" && pwd )"
 selfname="$0"
@@ -26,6 +25,7 @@ clientport="27005"
 defaultmap="ministry_coop"
 defaultmode="checkpoint"
 email="you@email.com"
+playlist="custom"
 emailnotification="on"
 engine="source"
 gamename="Insurgency"
@@ -48,7 +48,7 @@ servicename=$(basename $0)
 
 # https://developer.valvesoftware.com/wiki/Command_Line_Options#Source_Dedicated_Server
 fn_parms(){
-parms="-strictportbind -ip ${ip} -port ${port} +clientport ${clientport} +tv_port ${sourcetvport} +map ${defaultmap} ${defaultmode} +mapcyclefile ${mapcyclefile} +servercfgfile ${servercfg} -maxplayers ${maxplayers} -debug"
+parms="-strictportbind -ip ${ip} -port ${port} +clientport ${clientport} +tv_port ${sourcetvport} +sv_playlist ${playlist} +map ${defaultmap} ${defaultmode} +mapcyclefile ${mapcyclefile} +servercfgfile ${servercfg} -maxplayers ${maxplayers} -debug"
 }
 
 #### Advanced Variables ####
@@ -64,6 +64,8 @@ servercfg="${servicename}.cfg"
 servercfgfullpath="${servercfgdir}/${servercfg}"
 defaultcfg="${servercfgdir}/server.cfg"
 backupdir="backups"
+
+export LD_LIBRARY_PATH="${filesdir}:${filesdir}/bin:${LD_LIBRARY_PATH}"
 
 # Server Details
 servername=$(grep -s hostname "${servercfgfullpath}"|sed 's/hostname //g'|sed 's/"//g')
