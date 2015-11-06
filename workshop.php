@@ -1,4 +1,12 @@
 <?php
+/*
+This reads the workshop and dumps all the Workshop files to local disk.
+The original intent of this tool was to create an index of files and
+changes that each mod encompassed, and at each version bump be able to
+see with a fair degree of accuracy what needed to be updated in the mods
+to support the new version. It is currently not being worked on and only
+included as a reference or jumping off point for other tools.
+*/
 include "include/functions.php";
 //Connect to database
 mysql_connect($mysql_server,$mysql_username,$mysql_password);
@@ -18,10 +26,9 @@ GetWorkshopFiles();
 exit;
 
 function GetWorkshopPages($page=0,$numperpage=100) {
-	global $json_pubfiles,$pubfiles;
+	global $json_pubfiles,$pubfiles,$apikey;
 	echo "Fetching page {$page}\n";
 	$url='https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/';
-	$apikey='AF83A7B1AE5974D92E194DB427BFBD86';
 	$args = array(
 		'key' => $apikey,
 		'format' => 'json',

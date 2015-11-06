@@ -1,42 +1,67 @@
 <?php
+//Set paths
+$scriptpath = realpath(dirname(__FILE__));
+$rootpath=dirname(dirname($scriptpath));
+
+//Include key-value reader
+require_once "{$rootpath}/include/kvreader2.php";
+require_once "{$rootpath}/include/functions.php";
+
 //Get all map text files. This could probably be safer.
 $mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
-$files = glob("../../data/resource/overviews/{$mapfilter}.txt");
-//Include key-value reader
-require_once "../../include/kvreader2.php";
-require_once "../../include/functions.php";
+$files = glob("{$rootpath}/data/resource/overviews/{$mapfilter}.txt");
+
 //Open all files and add gamemodes and other map info to array
 foreach ($files as $file) {
 	$map = basename($file,".txt");
 	ParseMap($map,isset($_REQUEST['force']));
 }
+if (php_sapi_name() == "cli") {
+	$linebreak="\n";
+} else {
+	$linebreak="<br>\n";
+}
+//Parse the map into JSON
 function ParseMap($map,$force)
 {
+	echo "Checking {$map}...{$linebreak}";
+	global $rootpath,$linebreak;
 	$maps = array();
 	$controlpoints = array();
 	$map_objects = array();
 	$reader = new KVReader();
-	if (!file_exists("../../data/maps/{$map}.txt")) {
+	//Load cpsetup.txt for map
+	if (!file_exists("{$rootpath}/data/maps/{$map}.txt")) {
 		return;
 	}
-	if (file_exists("../../data/maps/parsed/{$map}.json") && (!$force)) {
+	//Check if we need to run the parser. Unless forced, this will not run if the JSON output is newer than the cpsetup.txt file
+	if (file_exists("{$rootpath}/data/maps/parsed/{$map}.json") && (!$force)) {
 		if (
-			((filemtime("../../data/maps/{$map}.txt")) < (filemtime("../../data/maps/parsed/{$map}.json")))
-			&& ((filemtime("../../data/resource/overviews/{$map}.txt")) < (filemtime("../../data/maps/parsed/{$map}.json")))
-			&& ((filemtime("../../data/maps/src/{$map}_d.vmf")) < (filemtime("../../data/maps/parsed/{$map}.json")))
+			((filemtime("{$rootpath}/data/maps/{$map}.txt")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
+			&& ((filemtime("{$rootpath}/data/resource/overviews/{$map}.txt")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
+			&& ((filemtime("{$rootpath}/data/maps/src/{$map}_d.vmf")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
 		) {
-			echo "Not processing {$map}, no new data<br>\n";
+			echo "Not processing {$map}, no new data{$linebreak}";
 			return;
 		}
 	}
-	$data = $reader->read(strtolower(file_get_contents("../../data/maps/{$map}.txt")));
+
+	//Load cpsetup.txt
+	$data = $reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$map}.txt")));
+
+	//Pull first element from KeyValues (since custom mappers don't reliably use "cpsetup.txt" we don't get it by name)
 	$maps[$map]['gametypes'] = current($data);
+
+	//Parse theater conditions. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
 	if (isset($maps[$map]['gametypes']['theater_conditions'])) {
 		$maps[$map]['theater_conditions'] = $maps[$map]['gametypes']['theater_conditions'];
-		unset($maps[$map]['gametypes']['theater_conditions']);
+		if (is_array($maps[$map]['gametypes']['theater_conditions'])) {
+			unset($maps[$map]['gametypes']['theater_conditions']);
+		}
 	}
+
 	//Get overview information (file, position, scale)
-	$lines = file("../../data/resource/overviews/{$map}.txt", FILE_IGNORE_NEW_LINES);
+	$lines = file("{$rootpath}/data/resource/overviews/{$map}.txt", FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
 		$data = explode("\t",preg_replace('/\s+/', "\t",str_replace('"','',trim($line))));
 		if (isset($data[1])) {
@@ -44,9 +69,10 @@ function ParseMap($map,$force)
 		}
 	}
 
-	if (file_exists("../../data/maps/src/{$map}_d.vmf")) {
+	//Parse the decompiled VMF file
+	if (file_exists("{$rootpath}/data/maps/src/{$map}_d.vmf")) {
                 //Change to lowercase to make array indexing simpler
-                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("../../data/maps/src/{$map}_d.vmf")));
+                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$rootpath}/data/maps/src/{$map}_d.vmf")));
                 $data = preg_replace('/(\s)([a-zA-Z0-9]+)(\s+{)/','${1}"${2}"${3}',"\"map\" {\n{$data}}");
 		$test = $reader->read($data);
                 //Get all entity{} objects, including nested objects
@@ -158,6 +184,7 @@ function ParseMap($map,$force)
 		}
 //var_dump($entlist);
 		//Process all gamedata entities that are referenced by the controlpoints list
+var_dump($entlist);
 		foreach ($entlist as $id => $entity) {
 			$cp = $entity['pos_name'];//(isset($entity['controlpoint'])) ? $entity['controlpoint'] : $entity['targetname'];
 			foreach ($entity as $key => $val) {
@@ -204,12 +231,16 @@ function ParseMap($map,$force)
 				$maps[$map]['gametypes'][$gtname]['spawnzones'][$szname] = $sz;
 			}
 		}
-		unset($maps[$map]['gametypes'][$gtname]['points']);
-		unset($maps[$map]['gametypes'][$gtname]['entities']);
+		if (is_array($maps[$map]['gametypes'][$gtname]['points'])) {
+			unset($maps[$map]['gametypes'][$gtname]['points']);
+		}
+		if (is_array($maps[$map]['gametypes'][$gtname]['entities'])) {
+			unset($maps[$map]['gametypes'][$gtname]['entities']);
+		}
 	}
 	$json = prettyPrint(json_encode($maps[$map]));
-	file_put_contents("../../data/maps/parsed/{$map}.json",$json);
-	echo "Parsed {$map}<br>\n";
+	file_put_contents("{$rootpath}/data/maps/parsed/{$map}.json",$json);
+	echo "Parsed {$map}{$linebreak}";
 }
 
 exit;

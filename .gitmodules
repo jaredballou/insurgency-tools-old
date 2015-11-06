@@ -4,3 +4,6 @@
 [submodule "utilities/thirdparty/steam-condenser-php"]
 	path = utilities/thirdparty/steam-condenser-php
 	url = https://github.com/koraktor/steam-condenser-php.git
+[submodule "theaters"]
+	path = theaters
+	url = git@github.com:jaredballou/insurgency-theaters.git

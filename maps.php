@@ -1,4 +1,11 @@
 <?php
+/*
+This tool displays a web-friendly representation of map overviews. It allows
+creation of custom overlays and points. It relies on the map parser to generate
+JSON files of the data from the decompiled map, overview data files, and other
+sources pulled from game. It needs a LOT of work and is not very well built at
+this point.
+*/
 //Maps array holds all map data
 $maps = array();
 $controlpoints = array();

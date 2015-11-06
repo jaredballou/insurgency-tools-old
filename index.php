@@ -1,6 +1,12 @@
 <?php
+/*
+This is the landing page. It reads my GitHub account via the public API, gets
+and then displays the content in a single page. It uses caching to keep the
+request count low and not spam GitHub.
+*/
 $title = "Jared Ballou's Insurgency Tools";
 require "include/header.php";
+//User to pull the data for
 $githubuser = 'jaredballou';
 /*
 $apiuser = '';

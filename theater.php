@@ -1,10 +1,39 @@
 <?php
+/*
+This tool takes a number of mutators (settings per section to change) and
+snippets (small segments of a theater file) and combines them to generate one
+complete theater. This is integrated with another SourceMod plugin which
+includes most of this functionality as an in-game menu that admins can use to
+generate custom theaters on the fly. It is still very much in-progress and help
+would be welcomed on this one.
+*/
 require_once "include/Spyc.php";
 $title="Theater Creator";
+$css_content = "
+.title {
+	align: center;
+	font-size: 200%;
+	font-weight: bold;
+}
+.help {
+	margin: 15px;
+}
+.section {
+	font-size: 175%;
+	font-weight: bold;
+}
+.subsection {
+	font-size: 150%;
+	font-weight: bold;
+}
+.desc {
+	font-style: italic;
+}
+";
 //$css_content = "div { margin: 5px; }\n";
-$snippet_path = "/opt/fastdl/scripts/theaters/snippets";
 $sections = array();
 include "include/header.php";
+$snippet_path = "{$rootpath}/theaters/snippets";
 startbody();
 function ShowWeaponOptions($wpntype) {
 	$str = "<select name='weapon_groups[{$wpntype}]'>\n";
@@ -16,7 +45,7 @@ function ShowWeaponOptions($wpntype) {
 	return $str;
 }
 function LoadSnippets(&$snippets,$path='') {
-	global $sections,$snippet_path;
+	global $sections,$snippet_path,$version;
 	if ($path == '') { $path = $snippet_path; }
 	$files = glob("{$path}/*");
 	foreach ($files as $file) {
@@ -32,7 +61,7 @@ function LoadSnippets(&$snippets,$path='') {
 						$snippets[$path_parts['filename']] = Spyc::YAMLLoad($file);
 						break;
 					case 'theater':
-						$snippets[$path_parts['filename']] = getfile($file,'1.9.0.0',$path_parts['dirname']);
+						$snippets[$path_parts['filename']] = getfile($file,$version,$path_parts['dirname']);
 						break;
 				}
 			}
@@ -40,41 +69,54 @@ function LoadSnippets(&$snippets,$path='') {
 	}
 }
 function DisplayTheaterCreationMenu() {
-	global $snippets,$sections,$theaters,$theatername,$theaterfile;
+	global $snippets,$sections,$theaters,$theatername,$theaterfile,$version,$versions;
 	$str = "<div><form action='theater.php' method='GET'>\n";
-	$str.="<b>Base Theater:</b> <select name='theater'>";
+	$str.="<div class='title'>Theater Generator</div>\n";
+	$str.="<div class='help'>This tool is designed to give average users and server admins the ability to create custom theater files for their servers, without needing to understand how to modify them. Theater files are the way that Insurgency tracks practically all player/item/weapon stats and settings, allowing a good amount of customization and changing of gameplay to your tastes. The tool works in two ways. \"Mutators\" that simply read the theater files directly from game data and make changes to them based upon some simple rules. \"Snippets\" are short sections of theater files that make a tweak to gameplay in a more detailed manner, such as giving all players a specific kit or removing the ability to slide, for example. As more players use this tool, we will be accepting snippets and mutators from the community to increase the utility of this tool, so please feel free to <a href='http://steamcommunity.com/id/jballou'>add me on steam</a> if you want to contribute.</div>\n";
+	//Theater selection
+	$str.="<div class='theaterselect'><b>Base Theater:</b> <select name='theater'>";
 	foreach ($theaters as $theatername) {
 		$sel = (($theatername == $theaterfile) || ($theatername == $_REQUEST['theater'])) ? ' SELECTED' : '';
 		$str.="					<option{$sel}>{$theatername}</option>\n";
 	}
-	$str.="</select><br>\n";
+	$str.="</select>\n";
+	$str.="<b>Version:</b> <select name='version'>\n";
+	foreach ($versions as $vid) {
+		$sel = ($vid == $version) ? ' SELECTED' : '';
+		$str.="<option{$sel}>{$vid}</option>\n";
+	}
+	$str.="</select></div>\n";
 
 	foreach ($snippets as $sname => $sdata) {
+		//Skip if this is a directory
 		if (in_array($sname,$sections)) {
 		} else {
-			$str.="<div><h2>{$sname}</h2>";
+			$name = (isset($sdata['name'])) ? $sdata['name'] : $sname;
+			$desc = (isset($sdata['desc'])) ? "{$sdata['desc']}<br>" : '';
+			$str.="<div class='section'>{$name}</div>\n<div class='desc'>{$desc}</div>\n";
 			switch ($sname) {
 				case 'mutators':
-					foreach ($sdata as $mutator => $mdata) {
-//var_dump($sdata,$mutator,$settings);
-						$str.="<div><h3><input type='checkbox' name='mutator[{$mutator}]'>{$mutator}</h3>";
-						foreach ($mdata as $section => $sdata) {
-//							$str.="<div>{$section}<br>";
+					foreach ($sdata['settings'] as $mutator => $mdata) {
+						$name = (isset($mdata['name'])) ? $mdata['name'] : $mutator;
+						$desc = (isset($mdata['desc'])) ? "{$mdata['desc']}<br>" : '';
+						$str.="<div class='subsection'><input type='checkbox' name='mutator[{$mutator}]'>{$name}</div>\n<div class='desc'>{$desc}</div>\n";
+						foreach ($mdata['settings'] as $section => $sdata) {
+							$str.="<ul>\n";
 							foreach ($sdata as $setting => $default) {
-								$str.="<div>{$section}.{$setting}: <input type='text' name='setting[{$mutator}][{$section}][{$setting}]' value='{$default}'><br></div>";
+								$str.="<li>{$section}.{$setting}: <input type='text' name='setting[{$mutator}][{$section}][{$setting}]' value='{$default}'></li>";
 							}
-//							$str.="</div>";
+							$str.="</ul>\n";
 						}
 						$str.="</div>";
 					}
 					break;
 				case 'weapon_groups':
-					foreach ($sdata as $wpntype => $weapons) {
-						$str.="<div>{$wpntype}: ".ShowWeaponOptions($wpntype)."<br>";
+					foreach ($sdata['settings'] as $wpntype => $weapons) {
+						$str.="<div class='subsection'>{$wpntype}: ".ShowWeaponOptions($wpntype)."</div>\n<ul>\n";
 						foreach ($weapons as $weapon) {
-							$str.="{$weapon}<br>";
+							$str.="<li>{$weapon}</li>";
 						}
-						$str.="</div>";
+						$str.="</ul>";
 					}
 					break;
 				default:

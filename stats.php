@@ -1,4 +1,10 @@
 <?php
+/*
+This tool reads the game's theater files and produces a table of information
+to represent the stats of in-game items as well as possible. It is slow, prone
+to breaking when the theater format and sections are changes and renamed, and
+should probably be rewritten from scratch at some point.
+*/
 $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
 require_once "include/header.php";
@@ -11,26 +17,26 @@ if ($version != $version_compare) {
 	$sections = array();
 	DisplayCompare($changes,$sections,$version,$version_compare);
 //var_dump($changes,version,$theater,$version_compare,$theater_compare);
-	closePage();
+	closePage(1);
 }
 
 //var_dump(current($theater));
 
 if ($_REQUEST['command'] == 'weaponlog') {
 	DisplayLoggerConfig();
-	closePage();
+	closePage(1);
 }
 if ($_REQUEST['command'] == 'wiki') {
 	DisplayWikiView();
-	closePage();
+	closePage(1);
 }
 if ($_REQUEST['command'] == 'hlstats') {
 	DisplayHLStatsX();
-	closePage();
+	closePage(1);
 }
 if ($_REQUEST['command'] == 'smtrans') {
 	DisplaySMTranslation();
-	closePage();
+	closePage(1);
 }
 
 //var_dump("mark\n");
@@ -264,7 +270,7 @@ DisplayStatTable();
 echo "		</form>";
 closePage();
 
-function closePage() {
+function closePage($bare=0) {
 	require "include/footer.php";
 	if (isset($_REQUEST['dump'])) {
 		global $theater;

@@ -1,4 +1,9 @@
-<pre><?php
+<?php
+/*
+This will parse the playlist files and produce a user-friendly list of what
+each playlist does. It will pull data from the cvarlists to get friendly names
+and information about the variables.
+*/
 $title = "Insurgency Playlist Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
 require_once "include/header.php";

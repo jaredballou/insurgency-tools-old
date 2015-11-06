@@ -1,4 +1,8 @@
 <?php
+/*
+This takes the CVAR list CSV files from data and displays them in a simple
+tabular format.
+*/
 require "include/header.php";
 $dirs = glob("data/cvarlist/*");
 foreach ($dirs as $dir) {

@@ -520,58 +520,58 @@ function theater_recurse($array, $array1)
 //theater_array_replace_recursive - 
 function theater_array_replace_recursive($array, $array1)
 {
-// handle the arguments, merge one by one
-$args = func_get_args();
-$array = $args[0];
-if (!is_array($array))
-{
-return $array;
-}
-for ($i = 1; $i < count($args); $i++)
-{
-if (is_array($args[$i]))
-{
-$array = theater_recurse($array, $args[$i]);
-}
-}
-return $array;
+	// handle the arguments, merge one by one
+	$args = func_get_args();
+	$array = $args[0];
+	if (!is_array($array))
+	{
+		return $array;
+	}
+	for ($i = 1; $i < count($args); $i++)
+	{
+		if (is_array($args[$i]))
+		{
+			$array = theater_recurse($array, $args[$i]);
+		}
+	}
+	return $array;
 }
 //theater_array_replace - 
 function theater_array_replace()
 {
-$args = func_get_args();
-$num_args = func_num_args();
-$res = array();
-for($i=0; $i<$num_args; $i++)
-{
-if(is_array($args[$i]))
-{
-foreach($args[$i] as $key => $val)
-{
-$res[$key] = $val;
-}
-}
-else
-{
-trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
-return NULL;
-}
-}
-return $res;
+	$args = func_get_args();
+	$num_args = func_num_args();
+	$res = array();
+	for($i=0; $i<$num_args; $i++)
+	{
+		if(is_array($args[$i]))
+		{
+			foreach($args[$i] as $key => $val)
+			{
+				$res[$key] = $val;
+			}
+		}
+		else
+		{
+			trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
+			return NULL;
+		}
+	}
+	return $res;
 }
 //formatBytes - 
 function formatBytes($bytes, $precision = 2) { 
-$units = array('B', 'KB', 'MB', 'GB', 'TB'); 
+	$units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
-$bytes = max($bytes, 0); 
-$pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
-$pow = min($pow, count($units) - 1); 
+	$bytes = max($bytes, 0); 
+	$pow = floor(($bytes ? log($bytes) : 0) / log(1024)); 
+	$pow = min($pow, count($units) - 1); 
 
-// Uncomment one of the following alternatives
-$bytes /= pow(1024, $pow);
-// $bytes /= (1 << (10 * $pow)); 
+	// Uncomment one of the following alternatives
+	$bytes /= pow(1024, $pow);
+	// $bytes /= (1 << (10 * $pow)); 
 
-return round($bytes, $precision) . ' ' . $units[$pow];
+	return round($bytes, $precision) . ' ' . $units[$pow];
 }
 
 //stats functions

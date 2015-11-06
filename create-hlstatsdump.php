@@ -1,4 +1,9 @@
 <?php
+/*
+This script creates an HLStatsX-compatable MySQL dump. It uses the game files
+in data to get the information and then dumps it in an idempotent query to
+create or update the items in HLStatsX.
+*/
 $use_hlstatsx_db = 1;
 include "include/header.php";
 $values = array();
