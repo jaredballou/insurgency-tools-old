@@ -13,24 +13,23 @@ foreach ($dirs as $dir) {
 	$files = glob("{$dir}/*.csv");
 	foreach ($files as $file) {
 		$fn = basename($file,".csv");
-		$versions[$ver][$fn] = $fn;
+		$lists[$ver][$fn] = $fn;
 	}
 }
-//asort($versions);
-
-$version = end(array_keys($versions));
+//asort($lists);
+$version = end(array_keys($lists));
 if ($_REQUEST['version']) {
-	if (in_array($_REQUEST['version'],array_keys($versions))) {
+	if (in_array($_REQUEST['version'],array_keys($lists))) {
 		$version = $_REQUEST['version'];
 	}
 }
-
-$listtype = end($versions[$version]);
+$listtype = end($lists[$version]);
 if ($_REQUEST['listtype']) {
-	if (in_array($_REQUEST['listtype'],array_keys($versions[$version]))) {
+	if (in_array($_REQUEST['listtype'],array_keys($lists[$version]))) {
 		$listtype = $_REQUEST['listtype'];
 	}
 }
+//var_dump($lists,$version,$listtype);
 if ((!$version) || (!$listtype)) {
 	echo "Data not found";
 	include "include/footer.php";
@@ -91,12 +90,12 @@ foreach ($dfields as $idx => $cell) {
 startbody();
 echo "<h2>Version {$version} - {$listtype}</h2>\n";
 echo "<form><select name='version'>";
-foreach ($versions as $ver => $lists) {
+foreach (array_keys($lists) as $ver) {
 	$sel = ($ver == $version) ? ' SELECTED' : '';
 	echo "				<option{$sel}>{$ver}</option>\n";
 }
 echo "</select><select name='listtype'>";
-foreach ($versions[$version] as $list) {
+foreach ($lists[$version] as $list) {
 	$sel = ($list == $listtype) ? ' SELECTED' : '';
 	echo "				<option{$sel}>{$list}</option>\n";
 }
