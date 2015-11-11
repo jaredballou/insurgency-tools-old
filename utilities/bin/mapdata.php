@@ -11,21 +11,21 @@ require_once "{$rootpath}/include/functions.php";
 $mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
 $files = glob("{$rootpath}/data/resource/overviews/{$mapfilter}.txt");
 
-//Open all files and add gamemodes and other map info to array
-foreach ($files as $file) {
-	$map = basename($file,".txt");
-	ParseMap($map,isset($_REQUEST['force']));
-}
 if (php_sapi_name() == "cli") {
 	$linebreak="\n";
 } else {
 	$linebreak="<br>\n";
 }
+//Open all files and add gamemodes and other map info to array
+foreach ($files as $file) {
+	$map = basename($file,".txt");
+	ParseMap($map,isset($_REQUEST['force']));
+}
 //Parse the map into JSON
 function ParseMap($map,$force)
 {
-	echo "Checking {$map}...{$linebreak}";
 	global $rootpath,$linebreak;
+	echo "Checking {$map}...{$linebreak}";
 	$maps = array();
 	$controlpoints = array();
 	$map_objects = array();
@@ -188,7 +188,7 @@ var_dump($entlist);
 		foreach ($entlist as $id => $entity) {
 			$cp = $entity['pos_name'];//(isset($entity['controlpoint'])) ? $entity['controlpoint'] : $entity['targetname'];
 			foreach ($entity as $key => $val) {
-				if ((!isset($maps[$map]['gametypes'][$gtname]['points'][$cp][$key])) || (($entity['targetname'] == $cp) && ($key != 'classname')) || (($entity['targetname'] != $cp) && ($key == 'classname'))) {
+				if ((!isset($maps[$map]['gametypes'][$gtname]['points'][$cp][$key])) || ((@$entity['targetname'] == $cp) && ($key != 'classname')) || ((@$entity['targetname'] != $cp) && ($key == 'classname'))) {
 					$maps[$map]['gametypes'][$gtname]['points'][$cp][$key] = $val;
 				}
 			}

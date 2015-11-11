@@ -99,8 +99,26 @@ foreach ($lists[$version] as $list) {
 	$sel = ($list == $listtype) ? ' SELECTED' : '';
 	echo "				<option{$sel}>{$list}</option>\n";
 }
-echo "</select><input type='submit' value='Load'></form>\n";
+echo "</select><input type='submit' name='command' value='Load'><br><input type='submit' name='command' value='Dump Config'></form>\n";
 echo "CSV lists created by running 'cvarlist log cvartlist.csv' in client console<br>\n";
+if ($_REQUEST['command'] == 'Dump Config') {
+	echo "<textarea cols='80' rows='40'>\n";
+	foreach ($data as $row) {
+		$prefix = '';
+		if ($row['Value'] == 'cmd')
+			continue;
+		if ($row['Help Text'] || $row['CHEAT']) {
+			$help = " //{$row['Help Text']}";
+			if ($row['CHEAT']) {
+				$prefix = 'sm_cvar ';
+				$help.=" CHEAT";
+			}
+		}
+		echo "{$prefix}{$row['Name']} \"{$row['Value']}\"{$help}\n";
+	}
+	echo "</textarea>\n";
+
+} else {
 echo "<table class='display' id='cvarlist'>\n";
 echo "<thead><tr>{$header}</tr>\n</thead>\n<tbody>\n";
 foreach ($data as $row) {
@@ -114,7 +132,6 @@ foreach ($data as $row) {
 	}
 	echo "</tr>\n";
 }
-fclose($f);
 echo "</tbody></table>\n";
 ?>
 
@@ -124,4 +141,9 @@ $(document).ready(function() {
 //		$('#cvarlist').column([ 3,4,5,6,7,8,9,10,11,12,13,14,15,16,17 ]).visible(0);
 } );
 </script>
-<?php require "include/footer.php"; exit;?>
+<?php
+}
+fclose($f);
+require "include/footer.php";
+exit;
+?>
