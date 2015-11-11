@@ -46,6 +46,7 @@ function extractfiles()
 	$RSYNC $GAMEDIR/insurgency_misc_dir/scripts/theaters/ $TD/
 	$RSYNC $GAMEDIR/insurgency_misc_dir/scripts/playlists/ $PD/
 	$RSYNC $GAMEDIR/insurgency_misc_dir/resource/ $DATADIR/resource/
+	$RSYNC $GAMEDIR/insurgency_misc_dir/maps/ $DATADIR/maps/
 	$RSYNC $GAMEDIR/insurgency_materials_dir/materials/vgui/ $DATADIR/materials/vgui/
 	$RSYNC $GAMEDIR/insurgency_materials_dir/materials/overviews/ $DATADIR/materials/overviews/
 }
