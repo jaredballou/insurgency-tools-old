@@ -22,7 +22,7 @@
       </div>
     </nav>
 <?php
-if (gethostname() == 'stats') {
-	echo "<div style='text-align: center; font-weight: bold;'>Development Site - These tools are being actively worked on and tested, latest stable versions at <a href='http://jballou.com/insurgency/'>http://jballou.com/insurgency</a></div>\n";
+if ($_SERVER['HTTP_HOST'] == 'ins.jballou.com') {
+	echo "<div style='text-align: center; font-weight: bold;'>Development Site - These tools are being actively worked on and tested, latest stable versions at <a href='http://jballou.com/insurgency{$_SERVER['SCRIPT_URL']}'>http://jballou.com/insurgency</a></div>\n";
 }
 ?>
