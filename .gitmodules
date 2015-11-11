@@ -7,3 +7,6 @@
 [submodule "theaters"]
 	path = theaters
 	url = git@github.com:jaredballou/insurgency-theaters.git
+[submodule "utilities/thirdparty/php-vpk-reader"]
+	path = utilities/thirdparty/php-vpk-reader
+	url = https://github.com/Aphexx/php-vpk-reader.git
