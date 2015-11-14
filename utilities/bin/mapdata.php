@@ -52,11 +52,13 @@ function ParseMap($map,$force)
 	//Pull first element from KeyValues (since custom mappers don't reliably use "cpsetup.txt" we don't get it by name)
 	$maps[$map]['gametypes'] = current($data);
 
-	//Parse theater conditions. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
-	if (isset($maps[$map]['gametypes']['theater_conditions'])) {
-		$maps[$map]['theater_conditions'] = $maps[$map]['gametypes']['theater_conditions'];
-		if (is_array($maps[$map]['gametypes']['theater_conditions'])) {
-			unset($maps[$map]['gametypes']['theater_conditions']);
+	//Parse other sections that are not game modes. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
+	foreach (array('theater_conditions','navfile','nightlighting') as $section) {
+		if (isset($maps[$map]['gametypes'][$section])) {
+			$maps[$map][$section] = $maps[$map]['gametypes'][$section];
+			if (is_array($maps[$map]['gametypes'][$section])) {
+				unset($maps[$map]['gametypes'][$section]);
+			}
 		}
 	}
 
