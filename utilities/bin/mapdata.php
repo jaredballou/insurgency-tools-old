@@ -1,13 +1,13 @@
 <?php
-//Set paths
+// Set paths
 $scriptpath = realpath(dirname(__FILE__));
 $rootpath=dirname(dirname($scriptpath));
 
-//Include key-value reader
+// Include key-value reader
 require_once "{$rootpath}/include/kvreader2.php";
 require_once "{$rootpath}/include/functions.php";
 
-//Get all map text files. This could probably be safer.
+// Get all map text files. This could probably be safer.
 $mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
 $files = glob("{$rootpath}/data/resource/overviews/{$mapfilter}.txt");
 
@@ -16,12 +16,12 @@ if (php_sapi_name() == "cli") {
 } else {
 	$linebreak="<br>\n";
 }
-//Open all files and add gamemodes and other map info to array
+// Open all files and add gamemodes and other map info to array
 foreach ($files as $file) {
 	$map = basename($file,".txt");
 	ParseMap($map,isset($_REQUEST['force']));
 }
-//Parse the map into JSON
+// Parse the map into JSON
 function ParseMap($map,$force)
 {
 	global $rootpath,$linebreak;
