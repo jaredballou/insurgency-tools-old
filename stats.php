@@ -7,114 +7,12 @@ should probably be rewritten from scratch at some point.
 */
 $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
-require_once "include/header.php";
-
-//var_dump(current($theater));
-if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
-	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
-	$index = "{$version}/{$theaterfile}";
-	$index_compare = "{$version_compare}/{$theaterfile_compare}";
-
-	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
-	DisplayStatsHeader();
-	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Value</th><th>{$theaterfile} {$version}</th><th>{$theaterfile_compare} {$version_compare}</th></tr>\n";
-	$sections = array();
-	DisplayCompare($changes, $sections, $index, $index_compare);
-//var_dump($changes,version, $theater, $version_compare, $theater_compare);
-	closePage(1);
-}
-
-//var_dump(current($theater));
-
-if ($_REQUEST['command'] == 'weaponlog') {
-	DisplayLoggerConfig();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'wiki') {
-	DisplayWikiView();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'hlstats') {
-	DisplayHLStatsX();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'smtrans') {
-	DisplaySMTranslation();
-	closePage(1);
-}
-
-//var_dump("mark\n");
-//Load weapon items
-$weapons = array();
-//var_dump("mark\n");
-foreach($theater["weapons"] as $wpnname => $data) {
-	//var_dump("mark-in1\n");
-	if (isset($data["IsBase"])) {
-		continue;
-	}
-	//var_dump("mark-in2\n");
-	$object = getobject("weapons", $wpnname,1);
-	//var_dump("mark-in3\n");
-	ksort($object);
-	$weapons[$wpnname] = $object;
-}
-//var_dump("mark\n");
-ksort($weapons);
-//var_dump("mark\n");
-$weapon = current($weapons);
-//var_dump("mark\n");
-if ($_REQUEST['weapon']) {
-//var_dump($_REQUEST['weapon']);
-	if (array_key_exists($_REQUEST['weapon'], $weapons)) {
-		$weapon = $_REQUEST['weapon'];
-	}
-}
-//var_dump($weapon);
-//Load weapon_upgrade items
-$weapon_upgrades = array();
-$weapon_upgrade_slots = array();
-//var_dump(current($theater));
-foreach($theater["weapon_upgrades"] as $wpnname => $data) {
-	if (isset($data["IsBase"])) {
-		continue;
-	}
-	$object = getobject("weapon_upgrades", $wpnname,1);
-	$weapon_upgrades[$wpnname] = $object;
-	if ($object['upgrade_slot'])
-		$weapon_upgrade_slots[$object['upgrade_slot']] = $object['upgrade_slot'];
-}
-//var_dump($weapon_upgrade_slots);
-ksort($weapon_upgrades);
-ksort($weapon_upgrade_slots);
-//var_dump($weapon_upgrades);
-//var_dump(current($theater));
-$weapon_upgrade = current($weapon_upgrades);
-if ($_REQUEST['weapon_upgrade']) {
-	if (array_key_exists($_REQUEST['weapon_upgrade'], $weapon_upgrades)) {
-		$weapon_upgrade = $_REQUEST['weapon_upgrade'];
-	}
-}
-//var_dump("made it");
-//Begin main program
-//Process weapon upgrades first so we can connect them to the weapons
-foreach ($theater["weapon_upgrades"] as $upname => $data) {
-	if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
-		continue;
-	}
-	$item = getobject("weapon_upgrades", $upname,1);
-	if (isset($item["allowed_weapons"])) {
-		$arr = (is_array(current($item["allowed_weapons"]))) ? current($item["allowed_weapons"]) : $item["allowed_weapons"];
-		foreach ($arr as $wpn) {
-			$upgrades[$wpn][$upname] = $item;
-		}
-	}
-}
-?>
-
-<style type="text/css">
+$css_content = '
 	.beta {
 		background: #cc0000;
 		border: 1px solid black;
+		margin: 3px;
+		display: inline-block;
 	}
 	.bodygraph {
 		position: relative;
@@ -140,8 +38,93 @@ foreach ($theater["weapon_upgrades"] as $upname => $data) {
 	table.floatThead-table {
 		background-color: #FFFFFF;
 	}
+';
+require_once "include/header.php";
+
+if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
+	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
+	$index = "{$version}/{$theaterfile}";
+	$index_compare = "{$version_compare}/{$theaterfile_compare}";
+
+	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
+	DisplayStatsHeader();
+	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Setting</th><th>{$index}</th><th>{$index_compare}</th></tr>\n";
+	$sections = array();
+	DisplayCompare($changes, $sections, $index, $index_compare);
+	closePage(1);
 }
-</style>
+
+
+if ($_REQUEST['command'] == 'weaponlog') {
+	DisplayLoggerConfig();
+	closePage(1);
+}
+if ($_REQUEST['command'] == 'wiki') {
+	DisplayWikiView();
+	closePage(1);
+}
+if ($_REQUEST['command'] == 'hlstats') {
+	DisplayHLStatsX();
+	closePage(1);
+}
+if ($_REQUEST['command'] == 'smtrans') {
+	DisplaySMTranslation();
+	closePage(1);
+}
+
+// Load weapon items
+$weapons = array();
+foreach($theater["weapons"] as $wpnname => $data) {
+	if (isset($data["IsBase"])) {
+		continue;
+	}
+	$object = getobject("weapons", $wpnname,1);
+	ksort($object);
+	$weapons[$wpnname] = $object;
+}
+ksort($weapons);
+$weapon = current($weapons);
+if ($_REQUEST['weapon']) {
+	if (array_key_exists($_REQUEST['weapon'], $weapons)) {
+		$weapon = $_REQUEST['weapon'];
+	}
+}
+// Load weapon_upgrade items
+$weapon_upgrades = array();
+$weapon_upgrade_slots = array();
+foreach($theater["weapon_upgrades"] as $wpnname => $data) {
+	if (isset($data["IsBase"])) {
+		continue;
+	}
+	$object = getobject("weapon_upgrades", $wpnname,1);
+	$weapon_upgrades[$wpnname] = $object;
+	if ($object['upgrade_slot'])
+		$weapon_upgrade_slots[$object['upgrade_slot']] = $object['upgrade_slot'];
+}
+ksort($weapon_upgrades);
+ksort($weapon_upgrade_slots);
+$weapon_upgrade = current($weapon_upgrades);
+if ($_REQUEST['weapon_upgrade']) {
+	if (array_key_exists($_REQUEST['weapon_upgrade'], $weapon_upgrades)) {
+		$weapon_upgrade = $_REQUEST['weapon_upgrade'];
+	}
+}
+// Begin main program
+// Process weapon upgrades first so we can connect them to the weapons
+foreach ($theater["weapon_upgrades"] as $upname => $data) {
+	if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+		continue;
+	}
+	$item = getobject("weapon_upgrades", $upname,1);
+	if (isset($item["allowed_weapons"])) {
+		$arr = (is_array(current($item["allowed_weapons"]))) ? current($item["allowed_weapons"]) : $item["allowed_weapons"];
+		foreach ($arr as $wpn) {
+			$upgrades[$wpn][$upname] = $item;
+		}
+	}
+}
+?>
+
 <script type="text/javascript" class="init">
 $(document).ready(function() {
 		$('table.display').dataTable({ saveState: true });
@@ -149,11 +132,11 @@ $(document).ready(function() {
 } );
 </script>
 <?php
-//var_dump("YES");
+// DisplayStatsHeader - Show the page header with all the form fields to control theater display
 function DisplayStatsHeader($startbody=1) {
 	global 
 		$theaterfile, $theaterfile_compare,
-		$version, $version_compare, 
+		$version, $version_compare,
 		$theaterpath, $theaterpath_compare,
 		$theaters, $range, $range_unit, $range_units, $versions;
 	startbody();
@@ -176,26 +159,27 @@ function DisplayStatsHeader($startbody=1) {
 	}
 	echo "</select> ";
 	$curname = '-Current-';
-	echo "Compare [BETA]: <span class='beta'>";
+	echo "<span class='beta'>Compare [BETA] ";
 	echo "Theater: <select name='theater_compare'>\n";
-	$cursel = (($_REQUEST['theater_compare'] == $curname) || ($theaterfile == $theaterfile_compare)) ? ' SELECTED' : '';
-	echo "<option{$cursel}>{$curname}</option>\n";
-	foreach ($theaters as $theatername) {
-		$sel = (($theatername == $theaterfile_compare) && !$cursel) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$theatername}</option>\n";
+	$cursel = (isset($_REQUEST['theater_compare'])) ? $_REQUEST['theater_compare'] : (($theaterfile == $theaterfile_compare) ? $curname : $theaterfile_compare);
+	array_unshift($theaters,$curname);
+	foreach ($theaters as $tid) {
+		$sel = ($tid == $cursel) ? ' SELECTED' : '';
+		echo "<option{$sel}>{$tid}</option>\n";
 	}
+	array_shift($theaters);
 	echo "</select> ";
 	echo "Version: <select name='version_compare'>\n";
-	$cursel = (($_REQUEST['version_compare'] == $curname) || ($version == $version_compare)) ? ' SELECTED' : '';
-	echo "<option{$cursel}>{$curname}</option>\n";
+	$cursel = (isset($_REQUEST['version_compare'])) ? $_REQUEST['version_compare'] : (($version == $version_compare) ? $curname : $version_compare);
+	array_unshift($versions,$curname);
 	foreach ($versions as $vid) {
-		$sel = (($vid == $version_compare) && (!$cursel)) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$vid}</option>\n";
+		$sel = ($vid == $cursel) ? ' SELECTED' : '';
+		echo "<option{$sel}>{$vid}</option>\n";
 	}
+	array_shift($versions);
 	echo "</select>";
 	echo "</span><br>\n";
 
-	//<input type='text' id='range' name='range' readonly style='border:0; color:#f6931f; font-weight:bold;'><div id='slider-range'></div>";
 	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='range'> <select name='range_unit'>\n";
 	foreach ($range_units as $ru => $runame) {
 		$sel = ($range_unit == $ru) ? ' SELECTED' : '';
@@ -204,94 +188,8 @@ function DisplayStatsHeader($startbody=1) {
 	echo "				</select><br>\n";
 	echo "				<input type='submit' value='Parse'>\n			</div>\n";
 }
-$stats = array(
-	'Weapons' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Class' => 0,
-			'CR' => 0,
-			'Length' => 0,
-			'Cost' => 1,
-			'Slot' => 0,
-			'Weight' => 0,
-			'RPM' => 1,
-			'Fire Modes' => 0,
-			'Damage' => 1,
-			'DamageChart' => 1,
-			'Spread' => 0,
-			'Recoil' => 0,
-			'Sway' => 0,
-			'Ammo' => 1,
-			'Magazine' => 1,
-			'Carry' => 1,
-			'Carry Max' => 0,
-			'Upgrades' => 1
-		)
-	),
-	'Upgrades' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Slot' => 0,
-			'CR' => 0,
-			'Cost' => 1,
-			'Ammo Type' => 1,
-			'Abilities' => 0,
-			'Weapons' => 1
-		)
-	),
-	'Ammo' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Carry' => 0,
-			'Mag' => 0,
-			'Damage' => 1,
-			'DamageGraph' => 1,
-			'PenetrationPower' => 1,
-			'PenetrationGraph' => 1,
-			'Tracer' => 0,
-			'Suppression' => 1,
-			'DamageHitgroups' => 1
-		)
-	),
-	'Explosives' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Class' => 0,
-			'FuseTime' => 1,
-			'Cookable' => 1,
-			'Speed' => 0,
-			'Damage' => 1,
-			'DamageGraph' => 1
-		)
-	),
-	'Gear' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Team' => 0,
-			'Slot' => 0,
-			'Cost' => 1,
-			'Weight' => 0,
-			'Ammo' => 1,
-			'DamageHitgroups' => 1
-		)
-	),
-	'Teams' => array(),
-	'Classes' => array(
-		'fields' => array(
-			'Name' => 1,
-			'Team' => 1,
-			'Models' => 1,
-			'Buy order' => 1,
-			'Allowed Items' => 1
-		)
-	)
-);
-//echo "go\n";
 GenerateStatTable();
-//var_dump($stats);
-//echo "what\n";
 DisplayStatTable();
-//echo "done\n";
 echo "		</form>";
 closePage();
 
@@ -305,13 +203,12 @@ function closePage($bare=0) {
 }
 
 function DisplayStatTable($startbody=1) {
-	global $stats, $tableclasses;
+	global $stats_tables, $tableclasses;
 	DisplayStatsHeader($startbody);
-	foreach (array_keys($stats) as $sectionname) {
+	foreach (array_keys($stats_tables) as $sectionname) {
 		echo "<a href='#{$sectionname}'>{$sectionname}</a><br>\n";
 	}
-//class='{$tableclasses}' data-sort-name='{$sectionname}' id='{$sectionname}' data-sort-order='asc'>
-	foreach ($stats as $sectionname => $sectiondata) {
+	foreach ($stats_tables as $sectionname => $sectiondata) {
 		echo "		<a id='{$sectionname}'><h2>{$sectionname}</h2></a>
 		<table class='display row-border' id='table-{$sectionname}' width='100%'>
 			<thead>
@@ -361,9 +258,8 @@ function DisplayStatTable($startbody=1) {
 }
 
 function GenerateStatTable() {
-	global $stats, $theater, $upgrades, $armors, $range;
+	global $stats_tables, $theater, $upgrades, $armors, $range;
 	$armors = array('No Armor' => ($theater['player_settings']['damage']['DamageHitgroups']));
-//var_dump($theater);
 	foreach ($theater["player_gear"] as $gearname => $data) {
 		$gear = getobject("player_gear", $gearname);
 		$img = getvgui($gearname,'css');
@@ -378,7 +274,7 @@ function GenerateStatTable() {
 		if (isset($gear["DamageHitgroups"])) {
 			$thisitem['DamageHitgroups'] = getbodygraph($gear, $gear["DamageHitgroups"],'',0,2);
 		}
-		$stats['Gear']['items'][$gearname] = $thisitem;
+		$stats_tables['Gear']['items'][$gearname] = $thisitem;
 		if ($data["gear_slot"] == 'armor') {
 			$armors[$thisitem['Name']] = $gear["DamageHitgroups"];
 		}
@@ -436,7 +332,7 @@ function GenerateStatTable() {
 		} elseif (isset($item["melee"])) {
 			$thisitem['Damage'] = printval($item["melee"],"MeleeDamage");
 		}
-		$stats['Weapons']['items'][$wpnname] = $thisitem;
+		$stats_tables['Weapons']['items'][$wpnname] = $thisitem;
 	}
 	foreach ($theater["weapon_upgrades"] as $upname => $data) {
 		if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
@@ -446,8 +342,8 @@ function GenerateStatTable() {
 		$img = getvgui($upname,'css');
 		$thisitem = array();
 		if (isset($upgrade['attach_weapon'])) {
-			if (isset($stats['Weapons']['items'][$upgrade['attach_weapon']])) {
-				$stats['Weapons']['items'][$upgrade['attach_weapon']]['Img'] = $img;
+			if (isset($stats_tables['Weapons']['items'][$upgrade['attach_weapon']])) {
+				$stats_tables['Weapons']['items'][$upgrade['attach_weapon']]['Img'] = $img;
 			}
 		}
 		if (substr($upname,0,5) == "ammo_") {
@@ -457,8 +353,7 @@ function GenerateStatTable() {
 			$link = "<a href='#{$upname}'>".getlookup($upgrade['print_name'])." [{$upgrade['upgrade_cost']}]</a><br>";
 			$fn = 'Upgrades';
 		}
-		//Add ammo and upgrade links to weapon items
-//var_dump($upgrade);
+		// Add ammo and upgrade links to weapon items
 		if (isset($upgrade['allowed_weapons']['weapon'])) {
 			$tmp = $upgrade['allowed_weapons']['weapon'];
 			$upgrade['allowed_weapons'] = (is_array($tmp)) ? $tmp : array($tmp);
@@ -466,8 +361,8 @@ function GenerateStatTable() {
 		}
 		$aw = array();
 		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
-			$aw[] = "<a href='#{$witem}'>{$stats['Weapons']['items'][$witem]['Name']}</a>";
-			$stats['Weapons']['items'][$witem][$fn].=$link;
+			$aw[] = "<a href='#{$witem}'>{$stats_tables['Weapons']['items'][$witem]['Name']}</a>";
+			$stats_tables['Weapons']['items'][$witem][$fn].=$link;
 		}
 		
 		$thisitem['Img'] = $img;
@@ -479,11 +374,10 @@ function GenerateStatTable() {
 		$thisitem['Abilities'] = printval($upgrade,"weapon_abilities");
 		
 		$thisitem['Weapons'] = implode("<br>", $aw);
-//printval($upgrade,"allowed_weapons",1);
-		$stats['Upgrades']['items'][$upname] = $thisitem;
+		$stats_tables['Upgrades']['items'][$upname] = $thisitem;
 	}
 	foreach ($theater["ammo"] as $ammoname => $data) {
-		//Hide rockets and grenades (so we can link to them in #explosives), and other items we don't want to see at all
+		// Hide rockets and grenades (so we can link to them in #explosives), and other items we don't want to see at all
 		if ((substr($ammoname,0,7) == "rocket_") || (substr($ammoname,0,8) == "grenade_") || ($ammoname == 'default') || ($ammoname == 'no_carry')) {
 			continue;
 		}
@@ -505,7 +399,7 @@ function GenerateStatTable() {
 		$thisitem['Tracer'] = "Type: {$ammo["tracer_type"]}<br>Frequency: {$ammo["tracer_frequency"]}<br>Low Ammo: {$ammo["tracer_lowammo"]}";
 		$thisitem['Suppression'] = printval($ammo,"SuppressionIncrement");
 		$thisitem['DamageHitgroups'] = getbodygraph($ammo, $ammo["DamageHitgroups"],array_keys($armors));
-		$stats['Ammo']['items'][$ammoname] = $thisitem;
+		$stats_tables['Ammo']['items'][$ammoname] = $thisitem;
 	}
 	foreach ($theater["explosives"] as $explosivename => $data) {
 		if (isset($data["IsBase"])) {
@@ -547,7 +441,7 @@ function GenerateStatTable() {
 				$thisitem['DamageGraph'].= "<br>DetonateFlashDuration: {$explosive["DetonateFlashDuration"]}";
 			}
 		}
-		$stats['Explosives']['items'][$explosivename] = $thisitem;
+		$stats_tables['Explosives']['items'][$explosivename] = $thisitem;
 	}
 	foreach ($theater['player_templates'] as $classname => $classdata) {
 		$thisitem = array();
@@ -564,14 +458,13 @@ function GenerateStatTable() {
 				$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
 			}
 		}
-		$stats['Classes']['items'][$classname] = $thisitem;
+		$stats_tables['Classes']['items'][$classname] = $thisitem;
 	}
-	//Teams are goofy because of display method
-//var_dump($theater['teams']);
+	// Teams are goofy because of display method
 	foreach ($theater['teams'] as $teamname=>$teamdata) {
 		$thisitem = '<table>';
 		$tn = getlookup($teamdata['name']);
-		$stats['Teams']['fields'][$tn] = 1;
+		$stats_tables['Teams']['fields'][$tn] = 1;
 		if (isset($teamdata['logo'])) {
 			$thisitem.="<div style='text-align: center;'><img src='data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
 		}
@@ -587,14 +480,14 @@ function GenerateStatTable() {
 			$thisitem.="</td></tr>\n";
 		}
 		$thisitem.="</table>\n";
-		$stats['Teams']['items'][0][$tn] = $thisitem;
+		$stats_tables['Teams']['items'][0][$tn] = $thisitem;
 	}
-	//Do cleanup and make links between items here
-	foreach (array_keys($stats) as $sectionname) {
-		ksort($stats[$sectionname]['items']);
+	// Do cleanup and make links between items here
+	foreach (array_keys($stats_tables) as $sectionname) {
+		ksort($stats_tables[$sectionname]['items']);
 	}
 }
-//FUNCTIONS
+// FUNCTIONS
 function DisplayLoggerConfig() {
 	echo "<pre>";
 	echo "\"weapons\"\n{\n";
@@ -607,27 +500,23 @@ function DisplaySMTranslation() {
 	echo "<pre>";
 	global $lang, $langcode;
 	$phrases = array();
-//var_dump($langcode, $lang);
 	foreach ($lang as $language => $tokens) {
-//var_dump($language);
 		$lc = strtolower($language);
 		$lc = $langcode[$lc];
 		if ($lc) {
 			foreach ($tokens as $key => $val) {
-//				$key = str_replace('#','', $key);
 				$val = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $val);
 
 				$phrases[$key][$lc] = $val;
 			}
 		}
 	}
-//jballou - commented out until I decide if we even need this
+// jballou - commented out until I decide if we even need this
 /*
 	$reader = new KVReader();
 	ksort($phrases);
 	echo $reader->write(array('Phrases' => $phrases));
 */
-//var_dump($phrases);
 }
 function DisplayWikiView() {
 	$itemtype = $_REQUEST['itemtype'];
@@ -654,7 +543,6 @@ function DisplayHLStatsX() {
 		),
 		'Teams' => array(
 			'allfields' => array('game', 'code', 'name'),
-			//, 'hidden', 'playerlist_bgcolor', 'playerlist_color', 'playerlist_index'),
 			'fields'	=> array('name')
 		),
 		'Roles' => array(
@@ -679,14 +567,12 @@ function DisplayHLStatsX() {
 			continue;
 		}
 		$classname = getlookup($classdata['print_name']);
-		//$values['Roles'][] = "('insurgency','{$classdata['print_name']}','{$classname}')";
 		$shortclass = str_replace(array('template_','_insurgent','_security','_training','_elimination'),'', $class);
 		$values['Roles'][$shortclass] = "('insurgency','{$shortclass}','{$classname}')";
 	}
 	foreach ($theater['teams'] as $team=>$teamdata) {
 		$teamname = getlookup($teamdata['name']);
 		$values['Teams'][] = "('insurgency','{$teamdata['name']}','{$teamname}')";
-		//$values['Teams'][] = "('insurgency','{$team}','{$teamname}')";
 	}
 	$dbprefix = $_REQUEST['dbprefix'] ? $_REQUEST['dbprefix'] : 'hlstats';
 	foreach ($tables as $table => $tdata) {
@@ -714,9 +600,7 @@ function DisplayCompare($changes, $sections, $index, $index_compare) {
 	}
 }
 function damageatrange($dmg, $range, $dec=2) {
-	//0.0254
 	ksort($dmg);
-//var_dump($dmg);
 	foreach ($dmg as $dist => $dmg) {
 		if ($dist >= $range) {
 			if (!isset($mindist)) {
@@ -726,7 +610,6 @@ function damageatrange($dmg, $range, $dec=2) {
 			$diffdmg = ($mindmg - $dmg);
 			$diffrange = ($range - $mindist);
 			$dmgpct = $diffrange/$diffdist;
-//var_dump($diffdist, $diffdmg, $diffrange, $dmgpct);
 			return round(($mindmg - ($dmgpct * $diffdmg)), $dec);
 		}
 		else {
@@ -735,8 +618,6 @@ function damageatrange($dmg, $range, $dec=2) {
 		}
 	}
 }
-//echo damageatrange(array("800" => "36", "2000" => "18", "7000" => "5"),1400);
-//closePage();
 /*
 getgraph
 */
@@ -800,7 +681,6 @@ function getgraph($points, $xname='Damage', $yname='Distance', $type='line', $he
 	foreach ($midpoints as $dist => $dmg) {
 		$x=round((($dist - $gmindist) * $wm)+$margin) + 4;
 		$y=round($height - (($dmg - $gmindmg) * $hm)) - 4;
-//var_dump($x, $y);
 		$ta = ($x < $width) ? 'start' : 'end';
 		if ($xname == 'Speed') {
 			$cap = "{$dist}:".dist($dmg,'IN')."/s";
@@ -820,7 +700,6 @@ Show a graph for DamageRadius stuff
 function getcirclegraph($object, $size=100, $maxdamage=1200, $margin = 0) {
 	$half = $margin / 2;
 	$dm = ($maxdamage / $size);
-//var_dump($dm);
 	$c = ($size+$margin)/2;
 	$step = ($object["DetonateDamage"] / $object["DetonateDamageRadius"]);
 	$dmgradr = (($object["DetonateDamageRadius"] / $maxdamage) * $size)/2;
@@ -841,7 +720,6 @@ function getspreadgraph($vector, $size=100, $maxspread=2, $margin = 0) {
 	$dm = ($maxspread / $size);
 	$c = ($size+$margin)/2;
 	$radr = (($coords[0] / $maxspread) * $size)/2;
-//var_dump($dm, $c, $maxspread, $coords, $radr);
 	$svg = "							<svg xmlns='http://www.w3.org/2000/svg' height='".($size+$margin)."' width='".($size+$margin)."'>
 								<defs>
 									<pattern id='grid' width='9' height='9' patternUnits='userSpaceOnUse'>
@@ -858,19 +736,6 @@ function getspreadgraph($vector, $size=100, $maxspread=2, $margin = 0) {
 Show a graph for recoil
 */
 function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
-//"recoil_lateral_range"													"-1.0 1.25"
-//"recoil_vertical_range"													"3.65 3.75"
-//"recoil_aim_punch"//			"0.7 0.75"
-//"recoil_rest_rate"																			"9"
-//"recoil_rest_delay"//			"0.12"
-//"recoil_roll_range"//			"-1.35 -1.35"
-//"recoil_roll_rest_rate"													"150"
-//"recoil_shot_reset_time"												"0.75"	// Time delay for resetting the shots fired counter for the above (default = 0.3)
-//"recoil_punch_additive_factor"					"0.9"		// How much of the view punch from the previous shot(s) get added to any additional shot fired (default 1.0)
-//"recoil_additional_rest_per_shot"				"5"
-//"recoil_freeaim_frac"														"0.5"
-//"recoil_ironsight_frac"													"0.8"
-
 	$lateral = explode(' ', $recoil['recoil_lateral_range']);
 	$vertical = explode(' ', $recoil['recoil_vertical_range']);
 	asort($lateral);
@@ -899,10 +764,6 @@ function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
 	$rheight = (abs($vertical[1] - $vertical[0]) * $step);
 	$rx = ($half - $lateral[0]) * $step;
 	$ry = ($half - $vertical[0]) * $step;
-//var_dump($c, $maxspread, $lateral, $vertical, $step, $half, $rwidth, $rheight, $rx, $ry);
-//closePage();
-//								<rect x='{$half}' y='{$half}' height='{$size}' width='{$size}' style='fill:rgb(255,255,200);stroke-width:3;stroke:rgb(0,0,0)' />
-
 	$svg = "							<svg xmlns='http://www.w3.org/2000/svg' height='".($size+$margin)."' width='".($size+$margin)."'>
 <defs>
 		<pattern id='grid' width='9' height='9' patternUnits='userSpaceOnUse'>
@@ -920,11 +781,9 @@ function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
 function getbodygraph($object, $hitgroups, $disparmor='', $headers=1, $dec=0) {
 
 	$positions = array('HITGROUP_HEAD' => '78,22','HITGROUP_CHEST' => '78,86','HITGROUP_STOMACH' => '78,136','HITGROUP_LEFTARM' => '122,122','HITGROUP_RIGHTARM' => '32,122','HITGROUP_LEFTLEG' => '56,222','HITGROUP_RIGHTLEG' => '94,222');
-//var_dump($object);
 	global $armors, $range;
 	$graph = '';
 	$header = '';
-//var_dump($hitgroups);
 	if (!is_array($disparmor)) {
 		$disparmor = array($disparmor);
 	}
@@ -978,18 +837,18 @@ Take a type (weapon, ammo, explosive, etc), key (name of item), and boolean for 
 */
 function getobject($type, $key, $recurse=0) {
 	global $theater;
-	//Get object from theater
+	// Get object from theater
 	$object = $theater[$type][$key];
 	if (isset($object['IsBase'])) {
 		if ($object['IsBase'] > 0) {
 			$isbase = 1;
 		}
 	}
-	//Merge in imports
+	// Merge in imports
 	if (isset($object["import"])) {
-		//Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
+		// Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
 		$object = theater_array_replace(getobject($type, $object["import"], $recurse), $object);
-		//If the main object was not IsBase, then remove the entry if it is in the output. Isbase must be set explicitly per-item in theater.
+		// If the main object was not IsBase, then remove the entry if it is in the output. Isbase must be set explicitly per-item in theater.
 		if ((!isset($isbase)) && (isset($object['IsBase']))) {
 			unset($object['IsBase']);
 		}
@@ -1093,17 +952,16 @@ function dist($dist, $fromunits='U', $tounits=null, $suffix=1) {
 	if ((!array_key_exists($tounits, $GLOBALS['range_units'])) || (is_null($tounits))) {
 		$tounits = $GLOBALS['range_unit'];
 	}
-	//If no conversion just return
-	//var_dump($dist, $fromunits, $tounits);
+	// If no conversion just return
 	if ($fromunits != $tounits) {
 		$conv = array(
 			'U' => 1,
 			'IN' => 0.75,
-			'M' => 0.01905, //12 0.0254,
+			'M' => 0.01905,
 			'FT' => (1/16),
 			'YD' => (1/48)
 		);
-		//Convert to units first
+		// Convert to units first
 		if ($fromunits != 'U') {
 			$dist = round($dist/$conv[$fromunits]);
 		}
