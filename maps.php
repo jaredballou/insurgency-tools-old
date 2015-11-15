@@ -6,19 +6,15 @@ JSON files of the data from the decompiled map, overview data files, and other
 sources pulled from game. It needs a LOT of work and is not very well built at
 this point.
 */
-//Maps array holds all map data
+// Maps array holds all map data
 $maps = array();
 $controlpoints = array();
 $map_objects = array();
-//Include key-value reader
-//require_once "include/kvreader2.php";
-//require_once "include/functions.php";
-//$reader = new KVReader();
 
 
-//Get all map text files. This could probably be safer.
+// Get all map text files. This could probably be safer.
 $files = glob("data/maps/parsed/*.json");
-//Open all files and add gametypes and other map info to array
+// Open all files and add gametypes and other map info to array
 foreach ($files as $file) {
 	$mapname = basename($file,".json");
 	if (in_array($mapname,$excludemaps)) {
@@ -27,7 +23,6 @@ foreach ($files as $file) {
 	$maps[$mapname] = json_decode(file_get_contents($file),true);
 }
 
-//var_dump($maps);
 if ($_REQUEST['command'] == 'hlstats') {
 	echo "<pre>\n";
 	$dbprefix = $_REQUEST['dbprefix'] ? $_REQUEST['dbprefix'] : 'hlstats';
@@ -57,12 +52,10 @@ if ($_REQUEST['command'] == 'hlstats') {
 	exit;
 }
 if ($_REQUEST['command'] == 'symlinks') {
-//var_dump($maps);
 	echo "<pre>\n";
 	echo "#!/bin/bash\n";
 	foreach ($maps as $mapname => $mapdata) {
 		echo "if [ -e {$mapname}.bsp ]; then\n";
-//var_dump($mapdata);
 		foreach ($mapdata['gametypes'] as $gametype => $gtdata) {
 			echo "\tln -s {$mapname}.bsp \"{$mapname} {$gametype}.bsp\"\n";
 		}
@@ -73,10 +66,9 @@ if ($_REQUEST['command'] == 'symlinks') {
 if ($_REQUEST['command'] == 'mapcycle') {
 	include "include/header.php";
 	$maps = array();
-	$mldata = json_decode(file_get_contents("data/maps/maplist.json"),true);
+	$mldata = json_decode(file_get_contents("data/thirdparty/maplist.json"),true);
 
-//var_dump($mldata);
-	$gtlist = json_decode(file_get_contents("data/maps/gamemodes.json"),true);
+	$gtlist = json_decode(file_get_contents("data/thirdparty/gamemodes.json"),true);
 	$maplist = array();
 	$files = glob("data/maps/*.txt");
 	foreach ($files as $file) {
@@ -84,16 +76,14 @@ if ($_REQUEST['command'] == 'mapcycle') {
 		if (in_array($mapname,$excludemaps)) {
 			continue;
 		}
-//		$mapdata = $reader->read(strtolower(file_get_contents($file)));
 		$mapdata = parseKeyValues(strtolower(file_get_contents($file)));
 		$maplist[$mapname] = 1;
 		$maps[$mapname]['gametypes'] = array_shift(array_values($mapdata));
 	}
 	$gametypes = (isset($_REQUEST["gametypes"])) ? $_REQUEST["gametypes"] : array('checkpoint','hunt');
-	$mc.="";//Mapcycle generated for gametypes ".implode(',',$gametypes)."\n\n";
+	$mc.="";
 	foreach ($maps as $mapname => $mapdata) {
 		if (in_array($mapname,$excludemaps)) {
-			//echo "//Skipping {$mapname}\n";
 			unset($maplist[$mapname]);
 			continue;
 		}
@@ -179,7 +169,7 @@ if ($_REQUEST['command'] == 'mapcycle') {
 	echo "<br><input type='submit' value='Generate'>\n</form>\n</div>\n<textarea style='width: 100%; height: 80%; min-height: 80%;resize:vertical;'>\n{$mc}</textarea>\n";
 	exit;
 }
-//Only set variables if a valid map was selected. This should do better input validation.
+// Only set variables if a valid map was selected. This should do better input validation.
 if (isset($_REQUEST['map'])) {
 	if (is_array($maps[$_REQUEST['map']])) {
 		$map = $_REQUEST['map'];
@@ -187,7 +177,7 @@ if (isset($_REQUEST['map'])) {
 		$overlays = $_REQUEST['overlays'];
 	}
 }
-//Function to display SVG object
+// Function to display SVG object
 function svg($svg,$layer='common') {
 	if ($svg) {
 		echo "							<svg id='svg-{$layer}' xmlns='http://www.w3.org/2000/svg' height='1024' width='1024' style='position: absolute; left: 0px; top: 0px; z-index: 1;' class='map-overlay-svg'>\n";
@@ -199,7 +189,7 @@ function svg($svg,$layer='common') {
 	}
 }
 
-//Start output
+// Start output
 $title = "Map Viewer";
 require "include/header.php";
 ?>
@@ -241,7 +231,6 @@ require "include/header.php";
 		left: 0;
 	}
 	.map, .key{
-//		float: left;
 		white-space: normal;
 		vertical-align: top;
 		display: inline-block;
@@ -277,7 +266,6 @@ foreach ($colors as $color => $rgb) {
 	}
 	.obj_{$color}_bg {
 		background-color: rgba({$rgb},0.5);
-//		-webkit-mask-image: url('images/c_obj_cache_{$color}.png');
 		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
 	}
 	.obj_{$color}_fg {
@@ -285,7 +273,6 @@ foreach ($colors as $color => $rgb) {
 	}
 	.obj_cache_{$color}_bg {
 		background-color: rgba({$rgb},0.5);
-//		-webkit-mask-image: url('images/c_obj_cache_{$color}.png');
 		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
 	}
 	.obj_cache_{$color}_fg {
@@ -311,7 +298,6 @@ foreach ($colors as $color => $rgb) {
 	box-sizing: border-box;
 	pointer-events: none;
 	border:3px solid #000;
-//	margin: -6px;
 	z-index: 20;
 }
 .maplabel,.friend-label,.enemy-label,.neutral-label,.noteam-label,.area-label,.area{
@@ -383,12 +369,6 @@ function getlookat()
 	document.getElementById("mouse_y").innerHTML = mouse_at_y + "px";
 }
 var lookat_interval = setInterval('getlookat()', 66);
-// disable text selection to avoid cursor flickering
-//window.onload = function() 
-//{
-//	document.onselectstart = function() {return false;} // ie
-//	document.onmousedown = function() {return false;} // mozilla
-//}
 
 //-->
 </script>
@@ -441,19 +421,17 @@ function GetCoordinates(e)
 <div class="minwidth">
 <div id="map" class="map">
 <?php
-//Display map if selected
+// Display map if selected
 if ($map) {
-	//Load gametype data
+	// Load gametype data
 	unset($maps[$map]['gametypes']['theater_conditions']);
 	$gametypes = array_keys($maps[$map]['gametypes']);
-	//Display map overview
+	// Display map overview
 	echo "						<img src='data/materials/{$maps[$map]['overview']['material']}.png' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
-	//Try to open decompiled map file to get entity data
+	// Try to open decompiled map file to get entity data
 
 	if (file_exists("data/maps/overlays/{$map}.txt")) {
-//		$data = $reader->read(strtolower(file_get_contents("data/maps/overlays/{$map}.txt")));
 		$data = parseKeyValues(strtolower(file_get_contents("data/maps/overlays/{$map}.txt")));
-//var_dump($data);
 		foreach ($data as $layername => $layerdata) {
 			foreach ($layerdata as $pname => $pdata) {
 				if ($pdata['pos_name'] == '') {
@@ -471,14 +449,14 @@ if ($map) {
 		if (isset($gtdata['navfile'])) {
 			$navmesh = $gtdata['navfile'];
 		}
-		//Loop over each point in this gametype
+		// Loop over each point in this gametype
 		foreach ($gtdata['controlpoint'] as $cp => $cpdata) {
 			$map_objects[$gtname][] = $cpdata;
 		}
 		foreach ($gtdata['spawnzones'] as $szid => $szdata) {
 			if (is_array($gtdata['spawnzones'][$szid])) {
 				foreach ($gtdata['spawnzones'][$szid] as $szname => $szdata) {
-					$idx = (($gtname == 'checkpoint') || ($gtname == 'outpost') || ($gtname == 'hunt') || ($gtname == 'survival')) ? "{$gtname}_spawns" : $gtname;//"spawns";
+					$idx = (($gtname == 'checkpoint') || ($gtname == 'outpost') || ($gtname == 'hunt') || ($gtname == 'survival')) ? "{$gtname}_spawns" : $gtname;
 					$map_objects[$idx][] = $szdata;
 				}
 			}
@@ -492,21 +470,20 @@ if ($map) {
 	}
 	$map_objects['grid'] = array();
 
-//var_dump($map_objects);
 	$teams = array_keys($colors);
 	$svg = "";
 	foreach ($map_objects as $layername => $layerdata) {
-		//Add this layer to the array
+		// Add this layer to the array
 		$layers[] = $layername;
-		//Display 'common' and first gametype in the list for this map.
+		// Display 'common' and first gametype in the list for this map.
 		// TODO: Allow URL 'gametype' setting to be set here
 		if (($layername == 'common') || ($layername == $gametypes[0])) {
 			$display = 'block';
 		} else {
-			//Hide all other layers
+			// Hide all other layers
 			$display = 'none';
 		}
-		//Create the layer div
+		// Create the layer div
 		echo "						<div id='layer-{$layername}' class='overlay' style='display: {$display}'>\n";
 		if ($layername == 'navmesh') {
 			echo "<img height='1024' width='1024' id='navmesh-overlay' src='data/maps/navmesh/{$navmesh}.png'>\n";
@@ -560,14 +537,13 @@ if ($map) {
 		}
 		foreach ($layerdata as $row) {
 			$tclass = $teams[$row['pos_team']];
-			//Collect points. This is primarily used for areas and arrows
-			//Process based on type of entity
+			// Collect points. This is primarily used for areas and arrows
+			// Process based on type of entity
 			$mclass = '';
 			$eclass = '';
-			//Just a hack. Pray for a fix soon....
-//var_dump($row);
+			// Just a hack. Pray for a fix soon....
 			switch($row['pos_type']) {
-				//Area is a shape with a callout to the legend
+				// Area is a shape with a callout to the legend
 				case 'area':
 					if (!$row['pos_team'])
 						$tclass = 'maparea';
@@ -585,9 +561,8 @@ if ($map) {
 							if ($max[0] < $coords[0]) $max[0] = $coords[0];
 							if ($max[1] < $coords[1]) $max[1] = $coords[1];
 						}
-//						var_dump('points',$points,'min',$min,'max',$max,'mid',$mid);
 						if ((!isset($row['pos_x'])) || (!isset($row['pos_y']))) {
-							$start = explode(',',array_shift($points)); //current(explode(" ",($row['pos_points']))));
+							$start = explode(',',array_shift($points));
 							$row['pos_x'] = $start[0];
 							$row['pos_y'] = $start[1];
 						}
@@ -606,30 +581,14 @@ if ($map) {
 					}
 					$mid = array(round(($max[0]+$min[0])/2),round(($max[1]+$min[1])/2));
 					$printname = str_replace('_',' ',$row['pos_name']);
-//var_dump($row);
 					if ($row['pos_shape'] == 'poly') {
 						$svg.="								 <g><polygon id='layer-{$layername}-{$row['pos_name']}-{$tclass}' points='{$row['pos_points']}' style='fill: rgba({$colors[$tclass]},0.5); stroke: black; stroke-width: 2px;'>\n";
 						$svg.="									 <title>{$row['pos_name']}</title>\n";
-//						$svg.="									 <text x='50%' y='50%' style='font-weight: bold; font-size: 1.5em; text-anchor: middle;'>{$row['pos_name']}</text>\n";
 						$svg.="								 </polygon>\n";
-//						$svg.="								 <text id='layer-{$layername}-{$row['pos_name']}-callout-text' x='{$mid[0]}' y='{$mid[1]}' style='text-color: #fff; text-anchor: middle;'>{$printname}</text></g>\n";
 					} else {
 						$svg.="								 <g><rect id='layer-{$layername}-{$row['pos_name']}-{$tclass}' x='{$row['pos_x']}' y='{$row['pos_y']}' height='{$row['pos_height']}' width='{$row['pos_width']}' style='fill: rgba({$colors[$tclass]},0.5); stroke: black; stroke-width: 2px;'>\n";
 						$svg.="									 <title>{$row['pos_name']}</title>\n";
-//						$svg.="									 <text x='50%' y='50%' style='font-weight: bold; font-size: 1.5em; text-anchor: middle;'>{$row['pos_name']}</text>\n";
 						$svg.="								 </rect></g>\n";
-
-/*
-						$points = ($row['pos_points']) ? ' L'.implode(' ',explode(',',implode(' L',explode(' ',$row['pos_points'])))) : " L{$row['pos_x']} {$row['pos_y']}";
-
-						echo "								<div id='{$layername}-{$row['pos_type']}-{$row['pos_name']}-{$tclass}' class='area {$tclass}' style='position: absolute; left: {$row['pos_x']}px; top: {$row['pos_y']}px; width: {$row['pos_width']}px; line-height: {$row['pos_height']}px; height: {$row['pos_height']}px;'>";
-						if (strlen($row['pos_name']) == 1)
-							echo "{$row['pos_name']}";
-						echo "</div>\n";
-//							echo "									<div id='{$layername}-{$row['pos_type']}-{$row['pos_name']}-{$tclass}-label' class='maplabel {$tclass}' style='width: 100%; height: 100%;'>{$printname}</div>\n";
-*/
-
-
 					}
 					$margin = 0;
 					if ($row['pos_height'] > 50) {
@@ -647,40 +606,24 @@ if ($map) {
 						$svg.="									 <text x='50%' y='50%' style='font-weight: bold; font-size: 1.5em; text-anchor: middle;'>{$row['pos_name']}</text>\n";
 						$svg.="								 </circle></g>\n";
 					}
-
-
-
-					if (strlen($row['pos_name']) > 1) {
-/*
-						$svg.="								 <path id='layer-{$layername}-{$row['pos_name']}-callout-line' d='M {$row['pos_x']} {$row['pos_y']} L 1024 {$row['pos_y']}' style='fill: black; stroke: black; stroke-width: 2;' />\n";
-						$svg.="								 <path id='layer-{$layername}-{$row['pos_name']}-callout-line-dots' d='M {$row['pos_x']} {$row['pos_y']} L 1024 {$row['pos_y']}' stroke-dasharray='5,5' style='fill: black; stroke: white; stroke-width: 2;' />\n";
-						$svg.="								 <rect id='layer-{$layername}-{$row['pos_name']}-callout-box' x='1024' y='{$row['pos_y']}' height='40' width='150' style='fill: white; stroke: black; stroke-width: 2;' />\n";
-						$svg.="								 <text id='layer-{$layername}-{$row['pos_name']}-callout-text' x='1112' y='".($row['pos_y'] + 30)."' style='font-weight: bold; font-size: 1.5em; text-anchor: middle;'>{$row['pos_name']}</text>\n";
-//						$svg.="								 <path id='layer-{$layername}-{$row['pos_name']}' d='M {$row['pos_x']} {$row['pos_y']}{$points}' style='fill: rgba(0,255,0,0.5); stroke: black; stroke-width: 2px;' />\n";
-*/
-					}
-
-
-
-
 					break;
-					//Arrow is a group of lines that can have multiple waypoints in between
+					// Arrow is a group of lines that can have multiple waypoints in between
 				case 'arrow':
 					$svg.="								 <path id='layer-{$layername}-{$row['pos_name']}' d='M {$row['pos_points']}' style='fill:none; stroke:blue; stroke-width:10; marker-start: url(#arrowhead); marker-mid: url(#arrowhead); marker-end: url(#arrowhead);'>\n";
 					$svg.="									 <title>{$row['pos_name']}</title>\n";
 					$svg.="								 </path>\n";
 					break;
-					//Spawn zone
+					// Spawn zone
 				case 'ins_blockzone':
 				case 'ins_spawnzone':
 					echo "								<div id='{$layername}-{$row['pos_type']}-{$row['pos_name']}-{$tclass}' class='{$tclass} area' style='position: absolute; left: {$row['pos_x']}px; top: {$row['pos_y']}px; height: {$row['pos_height']}; width: {$row['pos_width']};'></div>\n";
 					echo "								<div id='{$layername}-{$row['pos_type']}-{$row['pos_name']}-{$tclass}-label' class='area-label' style='position: absolute; left: {$row['pos_x']}px; top: {$row['pos_y']}px; height: {$row['pos_height']}; width: {$row['pos_width']};'>{$row['pos_name']}</div>\n";
 					break;
-					//Caches get the hashed icon
+					// Caches get the hashed icon
 				case 'obj_weapon_cache':
 				case 'cache':
-					$mclass = "obj_cache_{$tclass}";// hatched-{$tclass}";
-					//Default is the diamond icon on the map
+					$mclass = "obj_cache_{$tclass}";
+					// Default is the diamond icon on the map
 				case 'controlpoint':
 				case 'point_controlpoint':
 				default:
@@ -704,7 +647,7 @@ if ($map) {
 	echo "					</div>\n";
 }
 
-	//Right column
+	// Right column
 	echo "					<div id='key' class='key'>
 								<form>Map: <select name='map'>";
 	foreach ($maps as $mapname => $mapdata) {
@@ -722,7 +665,7 @@ if ($map) {
 		echo "							<option value='{$gt}'>{$gt}</option>\n";
 	}
 	echo "						</select><br />\n";
-	//Display any other layers as a name and a toggle button
+	// Display any other layers as a name and a toggle button
 	$ngt = array_diff($layers,$gametypes);
 	foreach ($ngt as $ngl) {
 		if ($ngl == 'common') { $state = 'ON'; } else { $state = 'OFF'; }
@@ -743,7 +686,7 @@ echo "		</form>\n";
 */
 var elmids = ['map-image','grid-overlay','navmesh-overlay','heatmap-overlay'<?php if (count($layers)) { echo ",'svg-".implode("','svg-",$layers)."'"; } ?>];
 
-var x, y = 0;				// variables that will contain the coordinates
+var x, y = 0; // variables that will contain the coordinates
 
 // Get X and Y position of the elm (from: vishalsays.wordpress.com)
 function getXYpos(elm) {
@@ -752,9 +695,9 @@ function getXYpos(elm) {
 
 	elm = elm.offsetParent;		 // set elm to its offsetParent
 
-	//use while loop to check if elm is null
+	// use while loop to check if elm is null
 	// if not then add current elmoffsetLeft to x
-	//offsetTop to y and set elm to its offsetParent
+	// offsetTop to y and set elm to its offsetParent
 	while(elm != null) {
 		x = parseInt(x) + parseInt(elm.offsetLeft);
 		y = parseInt(y) + parseInt(elm.offsetTop);
@@ -767,7 +710,6 @@ function getXYpos(elm) {
 
 // Get X, Y coords, and displays Mouse coordinates
 function getCoords(e) {
- // coursesweb.net/
 	var xy_pos = getXYpos(this);
 
 	// if IE
@@ -807,8 +749,5 @@ for(var i=0; i<elmids.length; i++) {
 
 <?php
 require "include/footer.php";
-//echo "<pre>\n";
-//var_dump($maps);
-//var_dump($map_objects);
 
 ?>
