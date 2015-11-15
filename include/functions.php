@@ -131,6 +131,19 @@ if (isset($_REQUEST['theater'])) {
 		$theaterfile = $_REQUEST['theater'];
 	}
 }
+$theaterfile_compare = $theaterfile;
+$theaterpath_compare = $theaterpath;
+if (isset($_REQUEST['theater_compare'])) {
+	if (strpos($_REQUEST['theater_compare']," ")) {
+		$bits = explode(" ",$_REQUEST['theater_compare'],2);
+		if (in_array($bits[0],array_keys($custom_theater_paths))) {
+			$theaterpath_compare = $custom_theater_paths[$bits[0]];
+			$theaterfile_compare = $bits[1];
+		}
+	} elseif (in_array($_REQUEST['theater_compare'],$theaters)) {
+		$theaterfile_compare = $_REQUEST['theater_compare'];
+	}
+}
 
 //Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
