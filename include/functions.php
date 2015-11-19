@@ -149,7 +149,9 @@ if (isset($_REQUEST['theater_compare'])) {
 
 //Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
-
+//echo "<pre>\n";
+//var_dump($theater);
+//exit;
 // Load maplist and gametypes
 $mldata = json_decode(file_get_contents("{$rootpath}/data/thirdparty/maplist.json"),true);
 $gtlist = json_decode(file_get_contents("{$rootpath}/data/thirdparty/gamemodes.json"),true);
@@ -287,7 +289,9 @@ function parseKeyValues($KVString,$debug=false)
 			case "\"":
 				if ($isInQuote) // so we are CLOSING key or value
 				{
-					if (strlen($quoteKey) && strlen($quoteValue))
+					// EDIT: Use quoteWhat as a qualifier rather than quoteValue in case we have a "" value
+					if (strlen($quoteKey) && ($quoteWhat == "value"))
+					//strlen($quoteValue))
 					{
 						if (isset($ptr[$quoteKey])) {
 							if (!is_array($ptr[$quoteKey])) {

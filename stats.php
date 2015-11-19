@@ -112,9 +112,12 @@ if ($_REQUEST['weapon_upgrade']) {
 // Begin main program
 // Process weapon upgrades first so we can connect them to the weapons
 foreach ($theater["weapon_upgrades"] as $upname => $data) {
-	if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+	if (isset($data["IsBase"])) {
 		continue;
 	}
+//	if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+//		continue;
+//	}
 	$item = getobject("weapon_upgrades", $upname,1);
 	if (isset($item["allowed_weapons"])) {
 		$arr = (is_array(current($item["allowed_weapons"]))) ? current($item["allowed_weapons"]) : $item["allowed_weapons"];
@@ -335,9 +338,13 @@ function GenerateStatTable() {
 		$stats_tables['Weapons']['items'][$wpnname] = $thisitem;
 	}
 	foreach ($theater["weapon_upgrades"] as $upname => $data) {
-		if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+		if (isset($data["IsBase"])) {
 			continue;
 		}
+
+//		if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+//			continue;
+//		}
 		$upgrade = getobject("weapon_upgrades", $upname,1);
 		$img = getvgui($upname,'css');
 		$thisitem = array();
@@ -839,19 +846,12 @@ function getobject($type, $key, $recurse=0) {
 	global $theater;
 	// Get object from theater
 	$object = $theater[$type][$key];
-	if (isset($object['IsBase'])) {
-		if ($object['IsBase'] > 0) {
-			$isbase = 1;
-		}
-	}
 	// Merge in imports
 	if (isset($object["import"])) {
 		// Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
-		$object = theater_array_replace(getobject($type, $object["import"], $recurse), $object);
-		// If the main object was not IsBase, then remove the entry if it is in the output. Isbase must be set explicitly per-item in theater.
-		if ((!isset($isbase)) && (isset($object['IsBase']))) {
-			unset($object['IsBase']);
-		}
+		$import = getobject($type, $object["import"], $recurse);
+		unset($import['IsBase']);
+		$object = theater_array_replace($import, $object);
 	}
 	return $object;
 }
