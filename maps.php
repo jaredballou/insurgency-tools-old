@@ -14,6 +14,7 @@ $map_objects = array();
 
 // Get all map text files. This could probably be safer.
 $files = glob("data/maps/parsed/*.json");
+
 // Open all files and add gametypes and other map info to array
 foreach ($files as $file) {
 	$mapname = basename($file,".json");
@@ -66,9 +67,6 @@ if ($_REQUEST['command'] == 'symlinks') {
 if ($_REQUEST['command'] == 'mapcycle') {
 	include "include/header.php";
 	$maps = array();
-	$mldata = json_decode(file_get_contents("data/thirdparty/maplist.json"),true);
-
-	$gtlist = json_decode(file_get_contents("data/thirdparty/gamemodes.json"),true);
 	$maplist = array();
 	$files = glob("data/maps/*.txt");
 	foreach ($files as $file) {
@@ -661,8 +659,22 @@ if ($map) {
 						<form><input id='gametypes' type='button' value='ON' onclick="toggleButton(this)" />
 						<select id='gametype' onchange='changeGTLayer()'>
 <?php
+function GetGametypeLabel($gt) {
+	global $gtlist;
+	foreach ($gtlist as $type=>$modes) {
+		foreach ($modes as $mode) {
+			if ($mode == $gt) {
+				return "{$type}: {$mode}";
+			}
+		}
+	}
+	return '';
+}
 	foreach ($gametypes as $gt) {
-		echo "							<option value='{$gt}'>{$gt}</option>\n";
+		$label = GetGametypeLabel($gt);
+		if ($label) {
+			echo "							<option value='{$gt}'>{$label}</option>\n";
+		}
 	}
 	echo "						</select><br />\n";
 	// Display any other layers as a name and a toggle button

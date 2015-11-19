@@ -24,7 +24,7 @@ foreach ($files as $file) {
 // Parse the map into JSON
 function ParseMap($map,$force)
 {
-	global $rootpath,$linebreak;
+	global $rootpath,$linebreak,$gametypelist;
 	echo "Checking {$map}...{$linebreak}";
 	$maps = array();
 	$controlpoints = array();
@@ -32,6 +32,7 @@ function ParseMap($map,$force)
 	$reader = new KVReader();
 	//Load cpsetup.txt for map
 	if (!file_exists("{$rootpath}/data/maps/{$map}.txt")) {
+		echo "No map data file!{$linebreak}";
 		return;
 	}
 	//Check if we need to run the parser. Unless forced, this will not run if the JSON output is newer than the cpsetup.txt file
@@ -47,11 +48,17 @@ function ParseMap($map,$force)
 	}
 
 	//Load cpsetup.txt
-	$data = $reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$map}.txt")));
+	$data = current($reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$map}.txt"))));
 
 	//Pull first element from KeyValues (since custom mappers don't reliably use "cpsetup.txt" we don't get it by name)
-	$maps[$map]['gametypes'] = current($data);
-
+	foreach ($data as $key=>$val) {
+		if (in_array($key,array_keys($gametypelist))) {
+			$maps[$map]['gametypes'][$key] = $val;
+		} else {
+			$maps[$map][$key] = $val;
+		}
+	}
+/*
 	//Parse other sections that are not game modes. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
 	foreach (array('theater_conditions','navfile','nightlighting') as $section) {
 		if (isset($maps[$map]['gametypes'][$section])) {
@@ -61,7 +68,7 @@ function ParseMap($map,$force)
 			}
 		}
 	}
-
+*/
 	//Get overview information (file, position, scale)
 	$lines = file("{$rootpath}/data/resource/overviews/{$map}.txt", FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
@@ -146,7 +153,7 @@ function ParseMap($map,$force)
 				}
 				//Hackly logic to allow merging of cache/control point data gracefully no matter what order the entities come in
 				foreach ($point as $key => $val) {
-					if (!($maps[$map]['points'][$entname][$key])) {
+					if (!isset($maps[$map]['points'][$entname][$key])) {
 						$maps[$map]['points'][$entname][$key] = $val;
 					}
 				}

@@ -1,21 +1,23 @@
 <?php
-include "config.php";
+$scriptpath = realpath(dirname(__FILE__));
+$rootpath=dirname($scriptpath);
+include "{$scriptpath}/config.php";
 /*
 	BEGIN COMMON EXECUTION CODE
 	This section is run by every script, so it shouldn't do too much.
 */
-//Load custom library paths for include
+// Load custom library paths for include
 parseLibPath();
 
-$langfiles = glob("data/resource/insurgency_*.txt");
-$langfiles = glob("data/resource/insurgency_english.txt");
+$langfiles = glob("{$rootpath}/data/resource/insurgency_*.txt");
+$langfiles = glob("{$rootpath}/data/resource/insurgency_english.txt");
 $lang = array();
-$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents('data/sourcemod/configs/languages.cfg')));
+$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents("{$rootpath}/data/sourcemod/configs/languages.cfg")));
 $data = parseKeyValues($data);//$reader->read($data);
 $langcode = array();
 $ordered_fields = array();//'squads','buy_order','allowed_weapons','allowed_items');
 
-//Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
+// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 foreach ($data['Languages'] as $code => $name) {
 	$names = (is_array($name)) ? $name : array($name);
 	foreach ($names as $name) {
@@ -25,7 +27,7 @@ foreach ($data['Languages'] as $code => $name) {
 }
 
 $command = @$_REQUEST['command'];
-//Load all language files
+// Load all language files
 foreach ($langfiles as $langfile) {
 	$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents($langfile)));
 	$data = parseKeyValues($data);//$reader->read($data);
@@ -52,7 +54,7 @@ if (isset($_REQUEST['language'])) {
 
 //Load versions
 $versions = array();
-$dirs = glob("data/theaters/*");
+$dirs = glob("{$rootpath}/data/theaters/*");
 foreach ($dirs as $dir) {
 	if (is_dir($dir)) {
 		$versions[] = basename($dir);
@@ -98,7 +100,7 @@ if (isset($_REQUEST['range'])) {
 	}
 }
 //Populate $theaters array with all the theater files in the selected version
-$files = glob("data/theaters/{$version}/*.theater");
+$files = glob("{$rootpath}/data/theaters/{$version}/*.theater");
 foreach ($files as $file) {
 	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
 		continue;
@@ -148,6 +150,16 @@ if (isset($_REQUEST['theater_compare'])) {
 //Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 
+// Load maplist and gametypes
+$mldata = json_decode(file_get_contents("{$rootpath}/data/thirdparty/maplist.json"),true);
+$gtlist = json_decode(file_get_contents("{$rootpath}/data/thirdparty/gamemodes.json"),true);
+$gametypelist = array();
+foreach ($gtlist as $type=>$modes) {
+	foreach ($modes as $mode) {
+		$gametypelist[$mode] = "{$type}: {$mode}";
+	}
+}
+//explode(":",implode(array_values($gtlist['pvp'] + $gtlist['coop']),":"));
 /*
 	BEGIN FUNCTIONS
 */
@@ -631,10 +643,10 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
 function getfile($filename,$version='',$path='') {
-	global $custom_theater_paths,$newest_version,$theaterpath;
+	global $custom_theater_paths,$newest_version,$theaterpath,$rootpath;
 	if ($version == '')
 		$version = $newest_version;
-	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "data/theaters/{$version}");
+	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "{$rootpath}/data/theaters/{$version}");
 	$filepath.="/".basename($filename);
 	$data = file_get_contents($filepath);
 	$thisfile = parseKeyValues($data);
@@ -670,14 +682,15 @@ function getfile($filename,$version='',$path='') {
 Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
-	$rp = "data/materials/{$path}/{$name}";
+	global $rootpath;
+	$rp = "{$rootpath}/data/materials/{$path}/{$name}";
 	if (file_exists("{$rp}.vmt")) {
 //echo "found file<br>";
 		$vmf = file_get_contents("{$rp}.vmt");
 //var_dump($vmf);
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
 //var_dump($matches);
-		$rp = "data/materials/".$matches[1][0];
+		$rp = "{$rootpath}/data/materials/".$matches[1][0];
 	}
 
 //var_dump($rp);
