@@ -18,7 +18,7 @@ MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/"
 
 TD=$DATADIR/theaters/$VERSION
 PD=$DATADIR/playlists/$VERSION
-BLACKLIST=$DATADIR/maps/maps-blacklist.txt
+BLACKLIST=$DATADIR/thirdparty/maps-blacklist.txt
 
 if [ ! -d $TD ]; then
 	EXTRACTFILES=1
