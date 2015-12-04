@@ -20,12 +20,19 @@ $pages = array(
 	'stats.php' => 'Stats (Theater Parser)',
 	'maps.php' => 'Maps (Overlay Viewer)',
 	'cvarlist.php' => 'CVAR List',
-	"https://github.com/jaredballou' target='_blank" => 'My Github'
+	"https://github.com/jaredballou' target='_blank" => 'My Github',
+	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate for Game Servers'
 );
 
-// Steam API Settings
+// GitHub secret for post-commit hooks
+$github_secret='';
+
+// Insurgency App ID
 $appid = 222880;
+
+// Steam API Key (PUT IN config.private.php !!!!)
 $apikey = '';
+
 $servers = array(
 	'your.server.com:27015' => array(
 		'rcon_password' => 'yourpassword',
@@ -56,26 +63,20 @@ $mysql_password = 'password';
 $mysql_database = 'database';
 
 // HLStatsX Variables
+// Database prefix
 $dbprefix = isset($_REQUEST['dbprefix']) ? $_REQUEST['dbprefix'] : 'hlstats';
+// Game code (name of game in database tables)
 $gamecode = isset($_REQUEST['gamecode']) ? $_REQUEST['gamecode'] : 'insurgency';
+// Root of HLStatsX installation
 $hlstatsx_root='/opt/hlstatsx-community-edition';
+// Location of heat map images (need to be manually generated)
 $hlstatsx_heatmaps="{$hlstatsx_root}/web/hlstatsimg/games/{$gamecode}/heatmaps";
-
-// Connect to HLStatsX database if requested
-if (isset($use_hlstatsx_db)) {
-	require "{$hlstatsx_root}/heatmaps/config.inc.php";
-	mysql_connect(DB_HOST,DB_USER,DB_PASS);
-	mysql_select_db(DB_NAME);
-}
-
+// Location of HLStatsX Config file (includes MySQL settings for HLStatsX if different)
+$hlstatsx_config = "{$hlstatsx_root}/heatmaps/config.inc.php";
 
 // Cache directory to stash temporary files. This should be inaccessible via your Web server!
 $cache_dir = 'cache';
 
-// Create cache dir if needed
-if (!file_exists($cache_dir)) {
-        mkdir($cache_dir);
-}
 
 // Old versions and maps that I just don't want in the list
 $excludemaps = array(

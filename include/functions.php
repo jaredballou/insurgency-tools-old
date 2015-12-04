@@ -9,48 +9,39 @@ include "{$scriptpath}/config.php";
 // Load custom library paths for include
 parseLibPath();
 
-$langfiles = glob("{$rootpath}/data/resource/insurgency_*.txt");
-$langfiles = glob("{$rootpath}/data/resource/insurgency_english.txt");
-$lang = array();
-$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents("{$rootpath}/data/sourcemod/configs/languages.cfg")));
-$data = parseKeyValues($data);//$reader->read($data);
-$langcode = array();
+// Connect to HLStatsX database if requested
+if (isset($use_hlstatsx_db)) {
+	// If HLStatsX config exists, try that first
+	if (file_exists($hlstatsx_config)) {
+		require $hlstatsx_config;
+		mysql_connect(DB_HOST,DB_USER,DB_PASS);
+		$mysql_connection = mysql_select_db(DB_NAME);
+	}
+	//If no database connected (either config missing or failed to connect) use fallback
+	if (@!$mysql_connection) {
+		mysql_connect($mysql_server,$mysql_username,$mysql_password);
+		$mysql_connection = mysql_select_db($mysql_database);
+	}
+}
+
+// Create cache dir if needed
+if (!file_exists($cache_dir)) {
+        mkdir($cache_dir);
+}
+
 $ordered_fields = array();//'squads','buy_order','allowed_weapons','allowed_items');
 
-// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
-foreach ($data['Languages'] as $code => $name) {
-	$names = (is_array($name)) ? $name : array($name);
-	foreach ($names as $name) {
-		$name = strtolower($name);
-		$langcode[$name] = $code;
-	}
-}
-
-$command = @$_REQUEST['command'];
-// Load all language files
-foreach ($langfiles as $langfile) {
-	$data = trim(preg_replace('/[\x00-\x08\x0E-\x1F\x80-\xFF]/s', '', file_get_contents($langfile)));
-	$data = parseKeyValues($data);//$reader->read($data);
-	foreach ($data["lang"]["Tokens"] as $key => $val) {
-		if ($command != 'smtrans') {
-			$key = "#".strtolower($key);
-		}
-		$key = trim($key);
-		if ($key) {
-			//Sometimes NWI declares a strint twice!
-			if (is_array($val))
-				$val = $val[0];
-			$lang[$data["lang"]["Language"]][$key] = $val;
-		}
-	}
-}
 //Set language
 $language = "English";
+//Loading languages here because we are only loading the core language at this time
+LoadLanguages($language);
+
 if (isset($_REQUEST['language'])) {
 	if (in_array($_REQUEST['language'],$lang)) {
 		$language = $_REQUEST['language'];
 	}
 }
+$command = @$_REQUEST['command'];
 
 //Load versions
 $versions = array();
@@ -162,9 +153,58 @@ foreach ($gtlist as $type=>$modes) {
 	}
 }
 //explode(":",implode(array_values($gtlist['pvp'] + $gtlist['coop']),":"));
+
+
+
 /*
-	BEGIN FUNCTIONS
+================================================================================
+===                                                                          ===
+===                                                                          ===
+===                             BEGIN FUNCTIONS                              ===
+===                                                                          ===
+===                                                                          ===
+================================================================================
 */
+
+// LoadLanguages - Load all the language files from the data directory
+// Also loads the language codes from SourceMod (also in data directory)
+function LoadLanguages($pattern='English') {
+	global $langcode, $lang;
+	if (!isset($langcode))
+		$langcode = array();
+	if (!isset($lang))
+		$lang = array();
+	$langfile_regex = '/[\x00-\x08\x0E-\x1F\x80-\xFF]/s';
+	$langfiles = glob("{$rootpath}/data/resource/insurgency_".strtolower($pattern).".txt");
+	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$rootpath}/data/sourcemod/configs/languages.cfg")));
+	$data = parseKeyValues($data);
+	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
+	foreach ($data['Languages'] as $code => $name) {
+		$names = (is_array($name)) ? $name : array($name);
+		foreach ($names as $name) {
+			$name = strtolower($name);
+			$langcode[$name] = $code;
+		}
+	}
+	// Load all language files
+	foreach ($langfiles as $langfile) {
+		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
+		$data = parseKeyValues($data);
+		foreach ($data["lang"]["Tokens"] as $key => $val) {
+			if ($command != 'smtrans') {
+				$key = "#".strtolower($key);
+			}
+			$key = trim($key);
+			if ($key) {
+				//Sometimes NWI declares a string twice!
+				if (is_array($val))
+					$val = $val[0];
+				$lang[$data["lang"]["Language"]][$key] = $val;
+			}
+		}
+	}
+}
+
 //rglob - recursively locate all files in a directory according to a pattern
 function rglob($pattern, $files=1,$dirs=0,$flags=0) {
 	$dirname = dirname($pattern);
