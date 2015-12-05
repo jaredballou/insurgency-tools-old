@@ -10,13 +10,13 @@ $githubuser = 'jaredballou';
 $cache_file = $cache_dir.'/content.html';
 $payload_file = $cache_dir.'/payload.json';
 
-if ($_REQUEST['payload']) {
-	file_put_contents($payload_file,$_REQUEST['payload']);
+if ($_POST['payload']) {
+	file_put_contents($payload_file,$_POST['payload']);
 //	$payload = json_decode($_POST['payload']);
 //	$branch = substr($payload->ref, strrpos($payload->ref, '/') + 1);
 //	$repository = $payload->repository->name;
 }
-var_dump($_REQUEST);
+//var_dump($_POST);
 function GetGithibReadmes($githubuser) {
 	$data = GetGithubURL("users/{$githubuser}/repos");
 	$list = json_decode($data,true);

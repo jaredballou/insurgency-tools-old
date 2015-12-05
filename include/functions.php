@@ -169,7 +169,7 @@ foreach ($gtlist as $type=>$modes) {
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
 function LoadLanguages($pattern='English') {
-	global $langcode, $lang;
+	global $langcode, $lang,$rootpath;
 	if (!isset($langcode))
 		$langcode = array();
 	if (!isset($lang))

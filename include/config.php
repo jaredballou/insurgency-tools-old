@@ -7,9 +7,6 @@
 	like passwords or anything private will be overwritten. Use config.private.php
 	to set your own variables.
 */
-// Get the path of the includes (this file) and the web root
-$includepath=dirname(__FILE__);
-$rootpath=dirname($includepath);
 
 // Servers, in the format 'server.domain.com:27015' - even if it's on the standard port
 $servers = array();
@@ -75,7 +72,7 @@ $hlstatsx_heatmaps="{$hlstatsx_root}/web/hlstatsimg/games/{$gamecode}/heatmaps";
 $hlstatsx_config = "{$hlstatsx_root}/heatmaps/config.inc.php";
 
 // Cache directory to stash temporary files. This should be inaccessible via your Web server!
-$cache_dir = 'cache';
+$cache_dir = "{$rootpath}/cache";
 
 
 // Old versions and maps that I just don't want in the list
