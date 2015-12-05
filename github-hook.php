@@ -10,7 +10,7 @@ $githubuser = 'jaredballou';
 $cache_file = $cache_dir.'/content.html';
 $payload_file = $cache_dir.'/payload.json';
 
-if ($_POST['payload']) {
+if (isset($_POST['payload'])) {
 	file_put_contents($payload_file,$_POST['payload']);
 //	$payload = json_decode($_POST['payload']);
 //	$branch = substr($payload->ref, strrpos($payload->ref, '/') + 1);
