@@ -199,8 +199,9 @@ closePage();
 function closePage($bare=0) {
 	require "include/footer.php";
 	if (isset($_REQUEST['dump'])) {
-		global $theater;
+		global $theater,$stats_tables;
 		var_dump($theater);
+		var_dump($stats_tables);
 	}
 	exit;
 }
@@ -317,7 +318,6 @@ function GenerateStatTable() {
 			$thisitem['Damage'] = $dmg;
 			if ($ammo['bulletcount'] > 1) {
 				$thisitem['Damage']=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
-
 			}
 			$thisitem['DamageChart'] = printval($ammo,"Damage");
 			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread'])."<br>{$item["ballistics"]['spread']}";
@@ -462,7 +462,13 @@ function GenerateStatTable() {
 		}
 		foreach ($classdata["allowed_items"] as $order => $aitem) {
 			foreach ($aitem as $type => $item) {
-				$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
+				if (is_array($item)) {
+					foreach ($item as $it => $in) {
+						$thisitem['Allowed Items'].= "<a href='#{$in}'>[{$type}] {$in}</a><br>";
+					}
+				} else {
+					$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
+				}
 			}
 		}
 		$stats_tables['Classes']['items'][$classname] = $thisitem;
@@ -479,9 +485,9 @@ function GenerateStatTable() {
 			$sn = getlookup($squad);
 			$thisitem.="<tr><td><h3>{$sn}</h3></td></tr><tr><td>\n";
 			foreach ($squaddata as $order => $slot) {
-				foreach ($slot as $position => $class) {
-					$classname = getlookup($position);
-					$thisitem.="<a href='#{$cn}'>{$classname}<br>\n";
+				foreach ($slot as $title => $role) {
+					$label = getlookup($title);
+					$thisitem.="<a href='#{$role}'>{$label}<br>\n";
 				}
 			}
 			$thisitem.="</td></tr>\n";
@@ -494,6 +500,29 @@ function GenerateStatTable() {
 		ksort($stats_tables[$sectionname]['items']);
 	}
 }
+/*
+function ProcessListLinks($list) {
+	$keys = implode('',array_keys($list));
+	$items = array();
+	if (is_numeric($keys)) {
+		foreach ($list as $order => $aitem) {
+			if (is_array($aitem)) {
+				$items[$order] = ProcessListLinks($aitem);
+			} else {
+				$items[$order] = $aitem;
+			}
+		foreach ($aitem as $type => $item) {
+			if (is_array($item)) {
+				foreach ($item as $it => $in) {
+					$thisitem['Allowed Items'].= "<a href='#{$in}'>[{$type}] {$in}</a><br>";
+				}
+			} else {
+				$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
+			}
+		}
+	}
+}
+*/
 // FUNCTIONS
 function DisplayLoggerConfig() {
 	echo "<pre>";

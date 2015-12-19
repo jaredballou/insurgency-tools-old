@@ -301,9 +301,12 @@ function CreatePoint($entity,$map) {
 	if (!isset($point['pos_team'])) {
 		$point['pos_team'] = 0;
 	}
-	$point['pos_team'] = (int)$point['pos_team'];
-	$point['pos_x'] = (int)$point['pos_x'];
-	$point['pos_y'] = (int)$point['pos_y'];
+	if (isset($point['pos_team']))
+		$point['pos_team'] = (int)$point['pos_team'];
+	if (isset($point['pos_x']))
+		$point['pos_x'] = (int)$point['pos_x'];
+	if (isset($point['pos_y']))
+		$point['pos_y'] = (int)$point['pos_y'];
 	
 	return $point;
 }
