@@ -154,7 +154,7 @@ function convert_vtf()
 			then
 				rm -v $PNG
 			fi
-			vtfcmd -file "$WINFILE" -output "$WINPATH" -exportformat "png"
+			./VTFCmd.exe -file "$WINFILE" -output "$WINPATH" -exportformat "png"
 		fi
 	done
 }
