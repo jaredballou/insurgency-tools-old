@@ -346,10 +346,12 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 					if (strlen($quoteKey) && ($quoteWhat == "value"))
 					{
 						if ($sequential) {
-							foreach ($ptr as $item) {
-								if (isset($item[$quoteKey])) {
-									if ($item[$quoteKey] == $quoteValue) {
-										$quoteValue = '';
+							if (is_array($ptr)) {
+								foreach ($ptr as $item) {
+									if (isset($item[$quoteKey])) {
+										if ($item[$quoteKey] == $quoteValue) {
+											$quoteValue = '';
+										}
 									}
 								}
 							}
@@ -624,6 +626,8 @@ function theater_array_replace()
 		}
 		else
 		{
+			var_dump($args[0]);
+			var_dump($args[$i]);
 			trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
 			return NULL;
 		}

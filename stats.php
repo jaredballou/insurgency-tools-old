@@ -367,9 +367,11 @@ function GenerateStatTable() {
 			
 		}
 		$aw = array();
-		foreach ($upgrade['allowed_weapons'] as $order => $witem) {
-			$aw[] = "<a href='#{$witem}'>{$stats_tables['Weapons']['items'][$witem]['Name']}</a>";
-			$stats_tables['Weapons']['items'][$witem][$fn].=$link;
+		if (isset($upgrade['allowed_weapons'])) {
+			foreach ($upgrade['allowed_weapons'] as $order => $witem) {
+				$aw[] = "<a href='#{$witem}'>{$stats_tables['Weapons']['items'][$witem]['Name']}</a>";
+				$stats_tables['Weapons']['items'][$witem][$fn].=$link;
+			}
 		}
 		
 		$thisitem['Img'] = $img;
@@ -455,19 +457,23 @@ function GenerateStatTable() {
 		$thisitem['Name'] = getlookup($classdata['print_name']);
 		$thisitem['Team'] = printval($classdata,"team");
 		$thisitem['Models'] = printval($classdata,"models");
-		foreach ($classdata["buy_order"] as $order => $buyitem) {
-			foreach ($buyitem as $type => $item) {
-				$thisitem['Buy order'].= "<a href='#{$item}'>{$item}</a><br>";
+		if (isset($classdata["buy_order"])) {
+			foreach ($classdata["buy_order"] as $order => $buyitem) {
+				foreach ($buyitem as $type => $item) {
+					$thisitem['Buy order'].= "<a href='#{$item}'>{$item}</a><br>";
+				}
 			}
 		}
-		foreach ($classdata["allowed_items"] as $order => $aitem) {
-			foreach ($aitem as $type => $item) {
-				if (is_array($item)) {
-					foreach ($item as $it => $in) {
-						$thisitem['Allowed Items'].= "<a href='#{$in}'>[{$type}] {$in}</a><br>";
+		if (isset($classdata["allowed_items"])) {
+			foreach ($classdata["allowed_items"] as $order => $aitem) {
+				foreach ($aitem as $type => $item) {
+					if (is_array($item)) {
+						foreach ($item as $it => $in) {
+							$thisitem['Allowed Items'].= "<a href='#{$in}'>[{$type}] {$in}</a><br>";
+						}
+					} else {
+						$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
 					}
-				} else {
-					$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
 				}
 			}
 		}
@@ -481,16 +487,18 @@ function GenerateStatTable() {
 		if (isset($teamdata['logo'])) {
 			$thisitem.="<div style='text-align: center;'><img src='data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
 		}
-		foreach ($teamdata['squads'] as $squad => $squaddata) {
-			$sn = getlookup($squad);
-			$thisitem.="<tr><td><h3>{$sn}</h3></td></tr><tr><td>\n";
-			foreach ($squaddata as $order => $slot) {
-				foreach ($slot as $title => $role) {
-					$label = getlookup($title);
-					$thisitem.="<a href='#{$role}'>{$label}<br>\n";
+		if (isset($teamdata['squads'])) {
+			foreach ($teamdata['squads'] as $squad => $squaddata) {
+				$sn = getlookup($squad);
+				$thisitem.="<tr><td><h3>{$sn}</h3></td></tr><tr><td>\n";
+				foreach ($squaddata as $order => $slot) {
+					foreach ($slot as $title => $role) {
+						$label = getlookup($title);
+						$thisitem.="<a href='#{$role}'>{$label}<br>\n";
+					}
 				}
+				$thisitem.="</td></tr>\n";
 			}
-			$thisitem.="</td></tr>\n";
 		}
 		$thisitem.="</table>\n";
 		$stats_tables['Teams']['items'][0][$tn] = $thisitem;
@@ -636,6 +644,8 @@ function DisplayCompare($changes, $sections, $index, $index_compare) {
 	}
 }
 function damageatrange($dmg, $range, $dec=2) {
+	if (!is_array($dmg))
+		return;
 	ksort($dmg);
 	foreach ($dmg as $dist => $dmg) {
 		if ($dist >= $range) {
@@ -737,6 +747,8 @@ function getcirclegraph($object, $size=100, $maxdamage=1200, $margin = 0) {
 	$half = $margin / 2;
 	$dm = ($maxdamage / $size);
 	$c = ($size+$margin)/2;
+	if ((!isset($object["DetonateDamage"])) || (!isset($object["DetonateDamageRadius"])))
+		return;
 	$step = ($object["DetonateDamage"] / $object["DetonateDamageRadius"]);
 	$dmgradr = (($object["DetonateDamageRadius"] / $maxdamage) * $size)/2;
 	$penradr = (($object["DetonatePenetrationRadius"] / $maxdamage) * $size)/2;
@@ -873,13 +885,23 @@ Take a type (weapon, ammo, explosive, etc), key (name of item), and boolean for 
 */
 function getobject($type, $key, $recurse=0) {
 	global $theater;
-	// Get object from theater
-	$object = $theater[$type][$key];
+	// Get object from theater. This has a case insensitive failsafe, since theater keys sometimes aren't the same case.
+	if (isset($theater[$type][$key])) {
+		$object = $theater[$type][$key];
+	} else {
+		foreach ($theater[$type] as $ikey=>$item) {
+			if (strtolower($key) == strtolower($ikey)) {
+				$object = $item;
+				break;
+			}
+		}
+	}
 	// Merge in imports
 	if (isset($object["import"])) {
 		// Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
 		$import = getobject($type, $object["import"], $recurse);
 		unset($import['IsBase']);
+//		var_dump($type,$key);//$import);
 		$object = theater_array_replace($import, $object);
 	}
 	return $object;

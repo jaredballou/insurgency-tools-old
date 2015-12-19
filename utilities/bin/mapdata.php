@@ -1,3 +1,4 @@
+#!/usr/bin/env php
 <?php
 // Set paths
 $scriptpath = realpath(dirname(__FILE__));

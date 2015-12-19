@@ -10,3 +10,12 @@
 [submodule "utilities/thirdparty/php-vpk-reader"]
 	path = utilities/thirdparty/php-vpk-reader
 	url = https://github.com/Aphexx/php-vpk-reader.git
+[submodule "utilities/thirdparty/vtf2tga"]
+	path = utilities/thirdparty/vtf2tga
+	url = git@github.com:tranek/vtf2tga.git
+[submodule "utilities/thirdparty/VTFLib"]
+	path = utilities/thirdparty/VTFLib
+	url = git@github.com:panzi/VTFLib.git
+[submodule "utilities/thirdparty/libtxc_dxtn"]
+	path = utilities/thirdparty/libtxc_dxtn
+	url = git://people.freedesktop.org/~mareko/libtxc_dxtn
