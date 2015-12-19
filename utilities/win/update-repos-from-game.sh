@@ -1,31 +1,33 @@
-#!/bin/sh
+#!/bin/bash
 ################################################################################
 # Insurgency Data Extractor
 # (C) 2014, Jared Ballou <instools@jballou.com>
 # Extracts all game file information to the data repo
 ################################################################################
-REPODIR=../..
-GAMEDIR=${REPODIR}/..
-DATADIR=${REPODIR}/data
-MAPSDIR=${GAMEDIR}/maps
+REPODIR="../.."
+GAMEDIR="${REPODIR}/.."
+DATADIR="${REPODIR}/data"
+MAPSDIR="${GAMEDIR}/maps"
 
-MAPSRCURL=rsync://ins.jballou.com/fastdl/maps/
-VERSION=$(grep -i '^patchversion=' $GAMEDIR/steam.inf | cut -d'=' -f2)
-RSYNC="/c/cygwin64/bin/rsync.exe -av"
+MAPSRCURL="rsync://ins.jballou.com/fastdl/maps/"
+VERSION="$(grep -i '^patchversion=' $GAMEDIR/steam.inf | cut -d'=' -f2)"
+RSYNC="rsync -av"
 BSPSRC="java -cp ../thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.BspSourceCli -no_areaportals -no_cubemaps -no_details -no_occluders -no_overlays -no_rotfix -no_sprp -no_brushes -no_cams -no_lumpfiles -no_prot -no_visgroups"
 PAKRAT="java -jar ../thirdparty/pakrat/pakrat.jar"
 MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/"
 
-TD=$DATADIR/theaters/$VERSION
-PD=$DATADIR/playlists/$VERSION
-BLACKLIST=$DATADIR/thirdparty/maps-blacklist.txt
+TD="${DATADIR}/theaters/${VERSION}"
+PD="${DATADIR}/playlists/${VERSION}"
+BLACKLIST="${DATADIR}/thirdparty/maps-blacklist.txt"
 
-if [ ! -d $TD ]; then
+if [ ! -d "${TD}" ]
+then
 	EXTRACTFILES=1
 else
 	EXTRACTFILES=0
 fi
-GETMAPS=0
+SYNCFILES=1
+GETMAPS=1
 REMOVEBLACKLISTMAPS=0
 DECOMPILEMAPS=1
 SYNC_MAPS_TO_DATA=1
@@ -38,11 +40,15 @@ GITUPDATE=1
 function extractfiles()
 {
 	echo Extracting VPK files
-	$GAMEDIR/../bin/vpk "$GAMEDIR/insurgency_misc_dir.vpk"
-	$GAMEDIR/../bin/vpk "$GAMEDIR/insurgency_materials_dir.vpk"
-	echo Creating $TD
-	mkdir $TD
-	mkdir $PD
+	$GAMEDIR/../bin/vpk "${GAMEDIR}/insurgency_misc_dir.vpk"
+	$GAMEDIR/../bin/vpk "${GAMEDIR}/insurgency_materials_dir.vpk"
+	echo Creating "${TD}"
+	mkdir -p "${TD}"
+	mkdir -p "${PD}"
+}
+
+function syncfiles()
+{
 	$RSYNC $GAMEDIR/insurgency_misc_dir/scripts/theaters/ $TD/
 	$RSYNC $GAMEDIR/insurgency_misc_dir/scripts/playlists/ $PD/
 	$RSYNC $GAMEDIR/insurgency_misc_dir/resource/ $DATADIR/resource/
@@ -50,6 +56,7 @@ function extractfiles()
 	$RSYNC $GAMEDIR/insurgency_materials_dir/materials/vgui/ $DATADIR/materials/vgui/
 	$RSYNC $GAMEDIR/insurgency_materials_dir/materials/overviews/ $DATADIR/materials/overviews/
 }
+
 function getmaps()
 {
 	#Copy map source files
@@ -59,6 +66,7 @@ function getmaps()
 		$RSYNC -z --progress --ignore-existing --exclude='archive/' --exclude-from $BLACKLIST ${MAPSRCURL}/*.${EXT} $GAMEDIR/maps/
 	done
 }
+
 function removeblacklistmaps()
 {
 	echo "Removing blacklisted map assets from data directory"
@@ -69,6 +77,7 @@ function removeblacklistmaps()
 		rm $GAMEDIR/maps/${MAP}.bsp.zip -vf
 	done
 }
+
 function decompilemaps()
 {
 	echo Updating decompiled maps as needed
@@ -101,6 +110,7 @@ function decompilemaps()
 		fi
 	done
 }
+
 function sync_maps_to_data()
 {
 	echo "Synchronizing extracted map files with data tree"
@@ -112,6 +122,7 @@ function sync_maps_to_data()
 		fi
 	done
 }
+
 function copy_map_files_to_data()
 {
 	echo Copying map text files
@@ -124,6 +135,7 @@ function copy_map_files_to_data()
 		fi
 	done
 }
+
 function convert_vtf()
 {
 	echo Create PNG files for VTF files
@@ -146,6 +158,7 @@ function convert_vtf()
 		fi
 	done
 }
+
 function gitupdate()
 {
 	echo "Adding everything to Git and committing"
@@ -159,30 +172,42 @@ if [ $EXTRACTFILES == 1 ]
 then
 	extractfiles
 fi
+
+if [ $SYNCFILES == 1 ]
+then
+	syncfiles
+fi
+
 if [ $GETMAPS == 1 ]
 then
 	getmaps
 fi
+
 if [ $REMOVEBLACKLISTMAPS == 1 ]
 then
 	removeblacklistmaps
 fi
+
 if [ $DECOMPILEMAPS == 1 ]
 then
 	decompilemaps
 fi
+
 if [ $SYNC_MAPS_TO_DATA == 1 ]
 then
 	sync_maps_to_data
 fi
+
 if [ $COPY_MAP_FILES_TO_DATA == 1 ]
 then
 	copy_map_files_to_data
 fi
+
 if [ $CONVERT_VTF == 1 ]
 then
 	convert_vtf
 fi
+
 if [ $GITUPDATE == 1 ]
 then
 	gitupdate
