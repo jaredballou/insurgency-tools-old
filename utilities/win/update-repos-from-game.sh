@@ -11,7 +11,7 @@ MAPSDIR="${GAMEDIR}/maps"
 
 MAPSRCURL="rsync://ins.jballou.com/fastdl/maps/"
 VERSION="$(grep -i '^patchversion=' $GAMEDIR/steam.inf | cut -d'=' -f2)"
-RSYNC="rsync -av"
+RSYNC="echo rsync -av"
 BSPSRC="java -cp ../thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.BspSourceCli -no_areaportals -no_cubemaps -no_details -no_occluders -no_overlays -no_rotfix -no_sprp -no_brushes -no_cams -no_lumpfiles -no_prot -no_visgroups"
 PAKRAT="java -jar ../thirdparty/pakrat/pakrat.jar"
 MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/"
@@ -81,7 +81,7 @@ function removeblacklistmaps()
 function decompilemaps()
 {
 	echo Updating decompiled maps as needed
-	for MAP in $MAPSDIR/*.bsp
+	for MAP in ${MAPSDIR}/*.bsp
 	do
 		if [ "$(echo $MAP | sed -e 's/ //g')" != "${MAP}" ]
 		then
@@ -89,23 +89,24 @@ function decompilemaps()
 			continue
 		fi
 		#echo "Updating $MAP"
-		BASENAME=$(basename "$MAP" .bsp)
+		BASENAME=$(basename "${MAP}" .bsp)
 		#echo "BASENAME is $BASENAME"
-		if [ $(grep -c "^${BASENAME}.*\$" $BLACKLIST) -eq 0 ]
+		if [ $(grep -c "^${BASENAME}\.\*\$" $BLACKLIST) -eq 0 ]
 		then
-			SRCFILE=$DATADIR/maps/src/$BASENAME_d.vmf
-			ZIPFILE=$MAP.zip
-			if [ ! -e $SRCFILE ] || [ $MAP -nt $SRCFILE ]
+			#echo "Checking $BASENAME"
+			SRCFILE="${DATADIR}/maps/src/${BASENAME}_d.vmf"
+			ZIPFILE="${MAP}.zip"
+			if [ ! -e "${SRCFILE}" ] || [ "${MAP}" -nt "${SRCFILE}" ]
 			then
 				echo "Decompile $MAP to $SRCFILE"
-				$BSPSRC $MAP -o $SRCFILE
+				$BSPSRC "${MAP}" -o "${SRCFILE}"
 			fi
 			if [ ! -e "$ZIPFILE" ] || [ "${MAP}" -nt "${ZIPFILE}" ]
 			then
 				echo "Extract files from $MAP to $ZIPFILE"
 				$PAKRAT -dump $MAP
 				echo Extracting map files from ZIP
-				unzip -o "$ZIPFILE" -x '*.vhv' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "$GAMEDIR/maps/out"
+				unzip -o "${ZIPFILE}" -x '*.vhv' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "${GAMEDIR}/maps/out"
 			fi
 		fi
 	done
@@ -116,9 +117,9 @@ function sync_maps_to_data()
 	echo "Synchronizing extracted map files with data tree"
 	for SRCDIR in $MAPSRCDIRS
 	do
-		if [ -e $GAMEDIR/maps/out/$SRCDIR ]
+		if [ -e "${GAMEDIR}/maps/out/${SRCDIR}" ]
 		then
-			$RSYNC -c $GAMEDIR/maps/out/$SRCDIR $DATADIR/$SRCDIR
+			$RSYNC -c "${GAMEDIR}/maps/out/${SRCDIR}" "${DATADIR}/${SRCDIR}"
 		fi
 	done
 }
@@ -131,7 +132,7 @@ function copy_map_files_to_data()
 		BASENAME=$(basename $TXT .txt)
 		if [ $(grep -c "^${BASENAME}.*\$" $BLACKLIST) -eq 0 ]
 		then
-			cp $TXT $DATADIR/maps/
+			cp "${TXT}" "${DATADIR}/maps/"
 		fi
 	done
 }
@@ -162,10 +163,10 @@ function convert_vtf()
 function gitupdate()
 {
 	echo "Adding everything to Git and committing"
-	git -C "$DATADIR" pull origin master
-	git -C "$DATADIR" add "*"
-	git -C "$DATADIR" commit -m "Updated game data files from script"
-	git -C "$DATADIR" push origin master
+	git -C "${DATADIR}" pull origin master
+	git -C "${DATADIR}" add "*"
+	git -C "${DATADIR}" commit -m "Updated game data files from script"
+	git -C "${DATADIR}" push origin master
 }
 
 if [ $EXTRACTFILES == 1 ]
