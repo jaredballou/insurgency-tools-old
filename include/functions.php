@@ -29,7 +29,7 @@ if (!file_exists($cache_dir)) {
         mkdir($cache_dir);
 }
 
-$ordered_fields = array();//'squads','buy_order','allowed_weapons','allowed_items');
+$ordered_fields = array('squads','buy_order');//,'allowed_weapons','allowed_items');
 
 //Set language
 $language = "English";
@@ -189,7 +189,8 @@ function LoadLanguages($pattern='English') {
 	// Load all language files
 	foreach ($langfiles as $langfile) {
 		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
-		$data = parseKeyValues($data);
+//var_dump($data);
+		$data = parseKeyValues($data,false);
 		foreach ($data["lang"]["Tokens"] as $key => $val) {
 			if ($command != 'smtrans') {
 				$key = "#".strtolower($key);
@@ -203,6 +204,7 @@ function LoadLanguages($pattern='English') {
 			}
 		}
 	}
+//var_dump($lang);
 }
 
 //rglob - recursively locate all files in a directory according to a pattern
@@ -295,160 +297,81 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	return $str;
 }
 //parseKeyValues - 
-function parseKeyValues($KVString,$debug=false)
+function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 {
+	global $ordered_fields;
+	// Escape all non-quoted values
+	if ($fixquotes)
+		$KVString = preg_replace('/^(\s*)([a-zA-Z]+)/m','${1}"${2}"',$KVString);
+	$KVString = preg_replace('/^(\s+)/m','',$KVString);
+	$KVLines = preg_split('/\n|\r\n?/', $KVString);
 	$len = strlen($KVString);
-	if ($debug) $len = 2098;
+	//if ($debug) $len = 2098;
 
 	$stack = array();
 
 	$isInQuote = false;
-	$key = "";
-	$value = "";
 	$quoteKey = "";
 	$quoteValue = "";
 	$quoteWhat = "key";
+
+	$lastKey = "";
+	$lastPath = "";
+	$lastValue = "";
+	$lastLine = "";
+
+	$keys = array();
+	$comments = array();
+	$commentLines=1;
+
 	$ptr = &$stack;
 	$c="";
+	$line = 1;
+
 	$parents = array(&$ptr);
 	$tree = array();
+	$path="";
+	$sequential = 0;
 	for ($i=0; $i<$len; $i++)
 	{
 		$l = $c;
 		$c = $KVString[$i]; // current char
 		switch ($c)
 		{
-			case "\r":
-				break;
-			case "\n":
-				if (strlen(trim($key))) {
-					$ptr[$key] = $value;
-					$key = "";
-				}
-				break;
 			case "\"":
+				$commentLines=1;
 				if ($isInQuote) // so we are CLOSING key or value
 				{
 					// EDIT: Use quoteWhat as a qualifier rather than quoteValue in case we have a "" value
 					if (strlen($quoteKey) && ($quoteWhat == "value"))
-					//strlen($quoteValue))
 					{
-						if (isset($ptr[$quoteKey])) {
-							if (!is_array($ptr[$quoteKey])) {
-								$ptr[$quoteKey] = array($ptr[$quoteKey]);
+						if ($sequential) {
+							foreach ($ptr as $item) {
+								if (isset($item[$quoteKey])) {
+									if ($item[$quoteKey] == $quoteValue) {
+										$quoteValue = '';
+									}
+								}
 							}
-							$ptr[$quoteKey][] = $quoteValue;
+							if ($quoteValue)
+								$ptr[] = array($quoteKey => $quoteValue);
 						} else {
-							$ptr[$quoteKey] = $quoteValue;
-						}
-						$quoteKey = "";
-						$quoteValue = "";
-					}
-					
-					if ($quoteWhat == "key")
-						$quoteWhat = "value";
-					else if ($quoteWhat == "value")
-						$quoteWhat = "key";
-				}
-				$isInQuote = !$isInQuote;
-				break;
-			case "{":
-				if (strlen($quoteKey)) {
-					$tree[] = $quoteKey;
-					$path = implode("/",$tree);
-					$parents[$path] = &$ptr;
-					$ptr = &$ptr[$quoteKey];
-					$quoteKey = "";
-					$quoteWhat = "key";
-				}
-				break;
-			case "}":
-				$ptr = &$parents[$path];
-				$lastkey = array_pop($tree);
-				$path = implode("/",$tree);
-				break;
-				
-			case "\t":
-				break;
-			case "/":
-				if ($KVString[$i+1] == "/") // Comment "//"
-				{
-					while($i < $len && $KVString[$i] != "\n")
-						$i++;
-					continue;
-				}
-			default:
-				if (!$isInQuote && strlen(trim($c)))
-				{
-					$key .= $c;
-				}
-				
-				if ($isInQuote)
-					if ($quoteWhat == "key")
-						$quoteKey .= $c;
-					else
-						$quoteValue .= $c;
-		}
-	}
-	
-	if ($debug) {
-		echo "<hr><pre>";
-		var_dump("stack: ",$stack);
-//		var_dump("ptr: ",$ptr);
-	}
-	return $stack;
-}
-
-function Old_parseKeyValues($KVString,$debug=false)
-{
-	global $ordered_fields;
-	$len = strlen($KVString);
-	if ($debug) $len = 2098;
-
-	$stack = array();
-
-	$isInQuote = false;
-	$key = "";
-	$value = "";
-	$quoteKey = "";
-	$quoteValue = "";
-	$quoteWhat = "key";
-	$ptr = &$stack;
-	$c="";
-	$parents = array(&$ptr);
-	$tree = array();
-	for ($i=0; $i<$len; $i++)
-	{
-		$l = $c;
-		$c = $KVString[$i]; // current char
-		switch ($c)
-		{
-			case "\r":
-				break;
-			case "\n":
-				if (strlen(trim($key))) {
-					$ptr[$key] = $value;
-					$key = "";
-				}
-				break;
-			case "\"":
-				if ($isInQuote) // so we are CLOSING key or value
-				{
-					if (strlen($quoteKey) && strlen($quoteValue))
-					{
-						//Make ordered array for these items
-//						if ((count($tree) > 3) && (in_array($tree[3],$ordered_fields))) {
-//							$ptr[] = array($quoteKey => $quoteValue);
-//						} else {
+							// If this value is already set, make it an array
 							if (isset($ptr[$quoteKey])) {
+								// If the item is not already an array, make it one
 								if (!is_array($ptr[$quoteKey])) {
 									$ptr[$quoteKey] = array($ptr[$quoteKey]);
 								}
+								// Add this value to the end of the array
 								$ptr[$quoteKey][] = $quoteValue;
 							} else {
+								// Set the value otherwise
 								$ptr[$quoteKey] = $quoteValue;
 							}
-//						}
+						}
+						$lastLine = $line;
+						$lastPath = "{$path}/${quoteKey}";
+						$lastKey = $quoteKey;
 						$quoteKey = "";
 						$quoteValue = "";
 					}
@@ -460,42 +383,115 @@ function Old_parseKeyValues($KVString,$debug=false)
 				}
 				$isInQuote = !$isInQuote;
 				break;
+			// Start new section
 			case "{":
+				$commentLines=1;
 				if (strlen($quoteKey)) {
+//					if ($sequential) {
+//						$sequential++;
+//					} elseif ($quoteKey[0] != '?') {
+//						$sequential = (in_array($quoteKey,$ordered_fields) === true);
+//					}
+					// Add key to tree
 					$tree[] = $quoteKey;
+					$sequential = (array_intersect($tree,$ordered_fields));
+					// Update path in tree
 					$path = implode("/",$tree);
+					// Update parents array with current pointer in the new path location
 					$parents[$path] = &$ptr;
-					$ptr = &$ptr[$quoteKey];
+					// If the object already exists, create an array of objects
+					if ($quoteKey[0] == '?') {
+						$ptr = &$ptr[][$quoteKey];
+					} elseif (isset($ptr[$quoteKey])) {
+						// Get all the keys, this assumes that the data will have non-numeric keys.
+						$keys = implode('',array_keys($ptr[$quoteKey]));
+						// So when we see non-numeric keys, we push the existing data into an array of itself before appending the next object.
+						if (!is_numeric($keys)) {
+							$ptr[$quoteKey] = array($ptr[$quoteKey]);
+						}
+						// Move the pointer to a new array under the key
+						$ptr = &$ptr[$quoteKey][];
+					} else {
+						// Just put the object here if there is no existing object
+						$ptr = &$ptr[$quoteKey];
+					}
+					$lastPath = "{$path}/${quoteKey}";
+					$lastKey = $quoteKey;
 					$quoteKey = "";
 					$quoteWhat = "key";
 				}
+				$lastLine = $line;
 				break;
+			// End of section
 			case "}":
+//				if ($sequential > 1)
+//					$sequential--;
+//				else
+//					$sequential=0;
+				$commentLines=1;
+				// Move pointer back to the parent
 				$ptr = &$parents[$path];
-				$lastkey = array_pop($tree);
+				// Take last element off tree as we back out
+				array_pop($tree);
+				// Update path now that we have backed out
 				$path = implode("/",$tree);
+				$lastLine = $line;
 				break;
 				
 			case "\t":
 				break;
 			case "/":
-				if ($KVString[$i+1] == "/") // Comment "//"
+				// Comment "//" or "/*"
+				if (($KVString[$i+1] == "/") || ($KVString[$i+1] == "*"))
 				{
-					while($i < $len && $KVString[$i] != "\n")
+					$comment = "";
+					// Get comment type
+					$ctype = $KVString[$i+1];
+					while($i < $len) {
+						// If type is "//" stop processing at newline
+						if (($ctype == '/') && ($KVString[$i+1] == "\n")) {
+//							$i+=2;
+							break;
+						}
+						// If type is "/*" stop processing at "*/"
+						if (($ctype == '*') && ($KVString[$i+1] == "*") && ($KVString[$i+2] == "/")) {
+							$i+=2;
+							$comment.="*/";
+							break;
+						}
+						$comment.=$KVString[$i];
 						$i++;
+					}
+					$comment = trim($comment);
+					// Was this comment inline, or after the last item we processed?
+					$where = ($lastLine == $line) ? 'inline' : 'newline';
+					// If last line was also a comment, see if we can merge into a multi-line comment
+					// Use the commentLines to see how far back this started
+					$lcl = ($line-$commentLines);
+					if (isset($comments[$lcl])) {
+						$lc = $comments[$lcl];
+						if ($lc['path'] == $lastPath) {
+							$comments[$lcl]['line_text'].="\n{$KVLines[$line-1]}";
+							$comments[$lcl]['comment'].="\n{$comment}";
+							$comment='';
+							$commentLines++;
+						}
+					}
+					// If we have a comment, add it to the list
+					if ($comment) {
+						$comments[$line] = array('path' => $lastPath, 'where' => $where, 'line' => $line, 'line_text' => $KVLines[$line-1], 'comment' => $comment);
+					}
 					continue;
 				}
 			default:
-				if (!$isInQuote && strlen(trim($c)))
-				{
-					$key .= $c;
-				}
-				
-				if ($isInQuote)
+				if ($isInQuote) {
 					if ($quoteWhat == "key")
 						$quoteKey .= $c;
 					else
 						$quoteValue .= $c;
+				}
+				if ($c == "\n")
+					$line++;
 		}
 	}
 	
@@ -504,8 +500,10 @@ function Old_parseKeyValues($KVString,$debug=false)
 		var_dump("stack: ",$stack);
 //		var_dump("ptr: ",$ptr);
 	}
+//	var_dump($comments);
 	return $stack;
 }
+
 //prettyPrint - 
 function prettyPrint( $json )
 {
@@ -566,23 +564,26 @@ function prettyPrint( $json )
 	}
 	return $result;
 }
+
 //theater_recurse - 
 function theater_recurse($array, $array1)
 {
 	foreach ($array1 as $key => $value)
 	{
 		// create new key in $array, if it is empty or not an array
-		if (!isset($array[$key]) || (isset($array[$key]) && !is_array($array[$key])))
-		{
-			$array[$key] = array();
-		}
+//		if (!isset($array[$key])) {
+// || (isset($array[$key]) && !is_array($array[$key])))
+//			$array[$key] = array();
+//		}
 
 		// overwrite the value in the base array
 		if (is_array($value))
 		{
 			$value = theater_recurse($array[$key], $value);
 		}
-		$array[$key] = $value;
+		if ($value !== NULL) {
+			$array[$key] = $value;
+		}
 	}
 	return $array;
 }
@@ -605,6 +606,7 @@ function theater_array_replace_recursive($array, $array1)
 	}
 	return $array;
 }
+
 //theater_array_replace - 
 function theater_array_replace()
 {
@@ -706,9 +708,11 @@ function getfile($filename,$version='',$path='') {
 			$bases = array($thisfile["#base"]);
 		}
 		foreach ($bases as $base) {
+			$theater['#base'][] = $base;
 			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
 		}
 		$theater = theater_array_replace_recursive($basedata,$theater);
+//array_merge_recursive($basedata,$theater);
 	}
 	//Include parts that might be conditional in their parents, basically put everything in flat arrays
 	//This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
@@ -716,7 +720,7 @@ function getfile($filename,$version='',$path='') {
 		foreach ($data as $key => $val) {
 			if (($key[0] == '?') && (is_array($val))) {
 				unset($theater[$sec][$key]);
-				$theater[$sec] = theater_array_replace_recursive($theater[$sec],$val);
+				$theater[$sec] = $val;//theater_array_replace_recursive($theater[$sec],$val);
 			}
 		}
 	}
@@ -727,18 +731,18 @@ Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
 	global $rootpath;
-	$rp = "{$rootpath}/data/materials/{$path}/{$name}";
-	if (file_exists("{$rp}.vmt")) {
+	$rp = "data/materials/{$path}/{$name}";
+	if (file_exists("{$rootpath}/{$rp}.vmt")) {
 //echo "found file<br>";
-		$vmf = file_get_contents("{$rp}.vmt");
+		$vmf = file_get_contents("{$rootpath}/{$rp}.vmt");
 //var_dump($vmf);
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
 //var_dump($matches);
-		$rp = "{$rootpath}/data/materials/".$matches[1][0];
+		$rp = "data/materials/".$matches[1][0];
 	}
 
 //var_dump($rp);
-	if (file_exists("{$rp}.png")) {
+	if (file_exists("{$rootpath}/{$rp}.png")) {
 		if ($type == 'img')
 			return "<img src='{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
 		if ($type == 'bare')
