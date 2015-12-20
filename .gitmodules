@@ -3,13 +3,13 @@
 	url = git@github.com:jaredballou/insurgency-data.git
 [submodule "utilities/thirdparty/steam-condenser-php"]
 	path = utilities/thirdparty/steam-condenser-php
-	url = https://github.com/koraktor/steam-condenser-php.git
+	url = git@github.com:jaredballou/steam-condenser-php.git
 [submodule "theaters"]
 	path = theaters
 	url = git@github.com:jaredballou/insurgency-theaters.git
 [submodule "utilities/thirdparty/php-vpk-reader"]
 	path = utilities/thirdparty/php-vpk-reader
-	url = https://github.com/Aphexx/php-vpk-reader.git
+	url = git@github.com:jaredballou/php-vpk-reader.git
 [submodule "utilities/thirdparty/vtf2tga"]
 	path = utilities/thirdparty/vtf2tga
 	url = git@github.com:tranek/vtf2tga.git
