@@ -581,7 +581,8 @@ function theater_recurse($array, $array1)
 		// overwrite the value in the base array
 		if (is_array($value))
 		{
-			$value = theater_recurse($array[$key], $value);
+			if (isset($array[$key]))
+				$value = theater_recurse($array[$key], $value);
 		}
 		if ($value !== NULL) {
 			$array[$key] = $value;

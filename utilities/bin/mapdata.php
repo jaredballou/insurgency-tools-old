@@ -19,70 +19,81 @@ if (php_sapi_name() == "cli") {
 }
 // Open all files and add gamemodes and other map info to array
 foreach ($files as $file) {
-	$map = basename($file,".txt");
-	ParseMap($map,isset($_REQUEST['force']));
+	$mapname = basename($file,".txt");
+	ParseMap($mapname,isset($_REQUEST['force']));
 }
 // Parse the map into JSON
-function ParseMap($map,$force)
+function ParseMap($mapname,$force)
 {
 	global $rootpath,$linebreak,$gametypelist;
-	echo "Checking {$map}...{$linebreak}";
-	$maps = array();
+	echo "Checking {$mapname}... ";
 	$controlpoints = array();
 	$map_objects = array();
+	$map = array();
 	$reader = new KVReader();
-	//Load cpsetup.txt for map
-	if (!file_exists("{$rootpath}/data/maps/{$map}.txt")) {
-		echo "No map data file!{$linebreak}";
-		return;
-	}
 	//Check if we need to run the parser. Unless forced, this will not run if the JSON output is newer than the cpsetup.txt file
-	if (file_exists("{$rootpath}/data/maps/parsed/{$map}.json") && (!$force)) {
-		if (
-			((filemtime("{$rootpath}/data/maps/{$map}.txt")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
-			&& ((filemtime("{$rootpath}/data/resource/overviews/{$map}.txt")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
-			&& ((filemtime("{$rootpath}/data/maps/src/{$map}_d.vmf")) < (filemtime("{$rootpath}/data/maps/parsed/{$map}.json")))
-		) {
-			echo "Not processing {$map}, no new data{$linebreak}";
+	$dstfile = "{$rootpath}/data/maps/parsed/{$mapname}.json";
+	if (file_exists($dstfile)) {
+		$dstdata = json_decode(file_get_contents($dstfile),true);
+	}
+	$srcfiles = array(
+		"CPSetup"    => "{$rootpath}/data/maps/{$mapname}.txt",
+		"Overview"   => "{$rootpath}/data/resource/overviews/{$mapname}.txt",
+		"VMF Source" => "{$rootpath}/data/maps/src/{$mapname}_d.vmf",
+	);
+	// Check source files
+	foreach ($srcfiles as $name => $file) {
+		if (!file_exists($file)) {
+			echo "FAIL: Missing {$name} \"{$file}\"!{$linebreak}";
 			return;
 		}
+		// Get MD5 of source file
+		$map['source_files'][$name] = md5_file($file);
+		// If the MD5 sums don't match up, force it
+		if (file_exists($dstfile)) {
+			if ($dstdata['source_files'][$name] != $map['source_files'][$name])
+				$force=1;
+		}
 	}
-
+	if (file_exists($dstfile) && (!$force)) {
+		echo "OK: no new data.{$linebreak}";
+		return;
+	}
 	//Load cpsetup.txt
-	$data = current($reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$map}.txt"))));
+	$data = current($reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$mapname}.txt"))));
 
 	//Pull first element from KeyValues (since custom mappers don't reliably use "cpsetup.txt" we don't get it by name)
 	foreach ($data as $key=>$val) {
 		if (in_array($key,array_keys($gametypelist))) {
-			$maps[$map]['gametypes'][$key] = $val;
+			$map['gametypes'][$key] = $val;
 		} else {
-			$maps[$map][$key] = $val;
+			$map[$key] = $val;
 		}
 	}
 /*
 	//Parse other sections that are not game modes. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
 	foreach (array('theater_conditions','navfile','nightlighting') as $section) {
-		if (isset($maps[$map]['gametypes'][$section])) {
-			$maps[$map][$section] = $maps[$map]['gametypes'][$section];
-			if (is_array($maps[$map]['gametypes'][$section])) {
-				unset($maps[$map]['gametypes'][$section]);
+		if (isset($map['gametypes'][$section])) {
+			$map[$section] = $map['gametypes'][$section];
+			if (is_array($map['gametypes'][$section])) {
+				unset($map['gametypes'][$section]);
 			}
 		}
 	}
 */
 	//Get overview information (file, position, scale)
-	$lines = file("{$rootpath}/data/resource/overviews/{$map}.txt", FILE_IGNORE_NEW_LINES);
+	$lines = file("{$rootpath}/data/resource/overviews/{$mapname}.txt", FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
 		$data = explode("\t",preg_replace('/\s+/', "\t",str_replace('"','',trim($line))));
 		if (isset($data[1])) {
-			$maps[$map]['overview'][$data[0]] = (is_numeric($data[1])) ? (float)$data[1] : $data[1];
+			$map['overview'][$data[0]] = (is_numeric($data[1])) ? (float)$data[1] : $data[1];
 		}
 	}
 
 	//Parse the decompiled VMF file
-	if (file_exists("{$rootpath}/data/maps/src/{$map}_d.vmf")) {
+	if (file_exists("{$rootpath}/data/maps/src/{$mapname}_d.vmf")) {
                 //Change to lowercase to make array indexing simpler
-                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$rootpath}/data/maps/src/{$map}_d.vmf")));
+                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$rootpath}/data/maps/src/{$mapname}_d.vmf")));
                 $data = preg_replace('/(\s)([a-zA-Z0-9]+)(\s+{)/','${1}"${2}"${3}',"\"map\" {\n{$data}}");
 		$test = $reader->read($data);
                 //Get all entity{} objects, including nested objects
@@ -101,7 +112,7 @@ function ParseMap($map,$force)
 					$entity['targetname'] = $entity['controlpoint'];
 					$entity['classname'] = 'point_controlpoint';
 				}
-				$point = CreatePoint($entity,$maps[$map]);
+				$point = CreatePoint($entity,$map);
 				$entname = $point['pos_name'];//(isset($entity['controlpoint'])) ? $entity['controlpoint'] : $entity['targetname'];
 				if (isset($entity['solid'])) {
 					if (isset($entity['solid']['is_multiple_array'])) {
@@ -118,7 +129,7 @@ function ParseMap($map,$force)
 							//Add coordinate to collection
 							foreach ($coord[1] as $xyz) {
 								$xyz = explode(' ',$xyz);
-								$vector = round(abs(($xyz[0] - $maps[$map]['overview']['pos_x']) / $maps[$map]['overview']['scale'])).','.round(abs(($xyz[1] - $maps[$map]['overview']['pos_y']) / $maps[$map]['overview']['scale']));//.','.round($xyz[2]/$maps[$map]['overview']['scale']);
+								$vector = round(abs(($xyz[0] - $map['overview']['pos_x']) / $map['overview']['scale'])).','.round(abs(($xyz[1] - $map['overview']['pos_y']) / $map['overview']['scale']));//.','.round($xyz[2]/$map['overview']['scale']);
 								$path[$vector] = $vector;
 							}
 						}
@@ -154,22 +165,22 @@ function ParseMap($map,$force)
 				}
 				//Hackly logic to allow merging of cache/control point data gracefully no matter what order the entities come in
 				foreach ($point as $key => $val) {
-					if (!isset($maps[$map]['points'][$entname][$key])) {
-						$maps[$map]['points'][$entname][$key] = $val;
+					if (!isset($map['points'][$entname][$key])) {
+						$map['points'][$entname][$key] = $val;
 					}
 				}
 			}
 		}
 	}
 	//Process game type data for this map
-	foreach ($maps[$map]['gametypes'] as $gtname => $gtdata) {
+	foreach ($map['gametypes'] as $gtname => $gtdata) {
 		//Create an array called cps with the names of all the control points for this mode
 		if (!isset($gtdata['controlpoint'])) {
 			continue;
 		}
 		if (!is_array($gtdata['controlpoint']))
-			$maps[$map]['gametypes'][$gtname]['controlpoint'] = array($gtdata['controlpoint']);
-		$cps = $maps[$map]['gametypes'][$gtname]['controlpoint'];
+			$map['gametypes'][$gtname]['controlpoint'] = array($gtdata['controlpoint']);
+		$cps = $map['gametypes'][$gtname]['controlpoint'];
 		//var_dump($cps);
 		//Process any entities in the gamedata text file.
 		$entlist = array();
@@ -183,13 +194,13 @@ function ParseMap($map,$force)
 				foreach ($entity as $subent) {
 					if (is_array($subent)) {
 						$subent['classname'] = $entname;
-						$entlist[] = CreatePoint($subent,$maps[$map]);
+						$entlist[] = CreatePoint($subent,$map);
 					}
 				}
 			} else {
 				//Otherwise, pack the single item
 				$entity['classname'] = $entname;
-				$entlist[] = CreatePoint($entity,$maps[$map]);
+				$entlist[] = CreatePoint($entity,$map);
 			}
 		}
 //var_dump($entlist);
@@ -198,8 +209,8 @@ var_dump($entlist);
 		foreach ($entlist as $id => $entity) {
 			$cp = $entity['pos_name'];//(isset($entity['controlpoint'])) ? $entity['controlpoint'] : $entity['targetname'];
 			foreach ($entity as $key => $val) {
-				if ((!isset($maps[$map]['gametypes'][$gtname]['points'][$cp][$key])) || ((@$entity['targetname'] == $cp) && ($key != 'classname')) || ((@$entity['targetname'] != $cp) && ($key == 'classname'))) {
-					$maps[$map]['gametypes'][$gtname]['points'][$cp][$key] = $val;
+				if ((!isset($map['gametypes'][$gtname]['points'][$cp][$key])) || ((@$entity['targetname'] == $cp) && ($key != 'classname')) || ((@$entity['targetname'] != $cp) && ($key == 'classname'))) {
+					$map['gametypes'][$gtname]['points'][$cp][$key] = $val;
 				}
 			}
 		}
@@ -207,55 +218,55 @@ var_dump($entlist);
 		$chr = 65;
 		foreach ($cps as $idx => $cp) {
 			$cpname = chr($chr);
-			unset($maps[$map]['gametypes'][$gtname]['controlpoint'][$idx]);
-			$maps[$map]['gametypes'][$gtname]['controlpoint'][$cpname] = (isset($maps[$map]['gametypes'][$gtname]['points'][$cp])) ? $maps[$map]['gametypes'][$gtname]['points'][$cp] : $maps[$map]['points'][$cp];
+			unset($map['gametypes'][$gtname]['controlpoint'][$idx]);
+			$map['gametypes'][$gtname]['controlpoint'][$cpname] = (isset($map['gametypes'][$gtname]['points'][$cp])) ? $map['gametypes'][$gtname]['points'][$cp] : $map['points'][$cp];
 			//Set point name to the letter of the objective
-			//$maps[$map]['gametypes'][$gtname]['points'][$cp]
-			$maps[$map]['gametypes'][$gtname]['controlpoint'][$cpname]['pos_name'] = $cpname;
+			//$map['gametypes'][$gtname]['points'][$cp]
+			$map['gametypes'][$gtname]['controlpoint'][$cpname]['pos_name'] = $cpname;
 			if (isset($gtdata['attackingteam'])) {
-				$maps[$map]['gametypes'][$gtname]['controlpoint'][$cpname]['pos_team'] = ($gtdata['attackingteam'] == 'security') ? 3 : 2;
+				$map['gametypes'][$gtname]['controlpoint'][$cpname]['pos_team'] = ($gtdata['attackingteam'] == 'security') ? 3 : 2;
 			}
 			$chr++;
 		}
 		//Bullshit to add teams to points, Skirmish game logic does it instead of saving it in the maps.
 		if ($gtname == 'skirmish') {
-			$maps[$map]['gametypes'][$gtname]['controlpoint']['B']['pos_team'] = 2;
-			$maps[$map]['gametypes'][$gtname]['controlpoint']['D']['pos_team'] = 3;
+			$map['gametypes'][$gtname]['controlpoint']['B']['pos_team'] = 2;
+			$map['gametypes'][$gtname]['controlpoint']['D']['pos_team'] = 3;
 		}
 		//Same deal for Firefight
 		if ($gtname == 'firefight') {
-			$maps[$map]['gametypes'][$gtname]['controlpoint']['A']['pos_team'] = 2;
-			$maps[$map]['gametypes'][$gtname]['controlpoint']['C']['pos_team'] = 3;
+			$map['gametypes'][$gtname]['controlpoint']['A']['pos_team'] = 2;
+			$map['gametypes'][$gtname]['controlpoint']['C']['pos_team'] = 3;
 		}
 
 		//Parse spawn zones. This is tricky because there will usually be two zones with the same targetname
 		// but different teamnum. This is to allow spawning to move as the game changes I believe.
 		foreach ($gtdata['spawnzones'] as $szid => $szname) {
 			if (is_numeric($szid)) {
-				unset($maps[$map]['gametypes'][$gtname]['spawnzones'][$szid]);
+				unset($map['gametypes'][$gtname]['spawnzones'][$szid]);
 				$sz = array();
 				foreach (array('_team2','_team3') as $suffix) {
-					if (isset($maps[$map]['points']["{$szname}{$suffix}"]))
-						$sz["{$szname}{$suffix}"] = $maps[$map]['points']["{$szname}{$suffix}"];
+					if (isset($map['points']["{$szname}{$suffix}"]))
+						$sz["{$szname}{$suffix}"] = $map['points']["{$szname}{$suffix}"];
 				}
-				$maps[$map]['gametypes'][$gtname]['spawnzones'][$szname] = $sz;
+				$map['gametypes'][$gtname]['spawnzones'][$szname] = $sz;
 			}
 		}
-		if (is_array($maps[$map]['gametypes'][$gtname]['points'])) {
-			unset($maps[$map]['gametypes'][$gtname]['points']);
+		if (is_array($map['gametypes'][$gtname]['points'])) {
+			unset($map['gametypes'][$gtname]['points']);
 		}
-		if (is_array($maps[$map]['gametypes'][$gtname]['entities'])) {
-			unset($maps[$map]['gametypes'][$gtname]['entities']);
+		if (is_array($map['gametypes'][$gtname]['entities'])) {
+			unset($map['gametypes'][$gtname]['entities']);
 		}
 	}
-	$json = prettyPrint(json_encode($maps[$map]));
-	file_put_contents("{$rootpath}/data/maps/parsed/{$map}.json",$json);
-	echo "Parsed {$map}{$linebreak}";
+	$json = prettyPrint(json_encode($map));
+	file_put_contents("{$rootpath}/data/maps/parsed/{$mapname}.json",$json);
+	echo "OK: Parsed {$mapname}{$linebreak}";
 }
 
 exit;
 //Process an entity and prepare it for display on the map
-function CreatePoint($entity,$map) {
+function CreatePoint($entity,$mapname) {
 	$point = array();
 /*
 	$fields = array('classname','targetname','controlpoint','teamnum','origin');
@@ -268,9 +279,9 @@ function CreatePoint($entity,$map) {
 	if (isset($entity['origin'])) {
 		$coords = preg_split('/\s+/',$entity['origin']);
 		if (!isset($point['pos_x']))
-			$point['pos_x'] = round(abs(($coords[0] - $map['overview']['pos_x']) / $map['overview']['scale']));
+			$point['pos_x'] = round(abs(($coords[0] - $mapname['overview']['pos_x']) / $mapname['overview']['scale']));
 		if (!isset($point['pos_y']))
-			$point['pos_y'] = round(abs(($coords[1] - $map['overview']['pos_y']) / $map['overview']['scale']));
+			$point['pos_y'] = round(abs(($coords[1] - $mapname['overview']['pos_y']) / $mapname['overview']['scale']));
 	}
 	if (isset($entity['classname']) && !isset($point['pos_classname'])) {
 		$point['pos_classname'] = $entity['classname'];
