@@ -19,3 +19,6 @@
 [submodule "utilities/thirdparty/libtxc_dxtn"]
 	path = utilities/thirdparty/libtxc_dxtn
 	url = git://people.freedesktop.org/~mareko/libtxc_dxtn
+[submodule "utilities/thirdparty/source-sdk-2013"]
+	path = utilities/thirdparty/source-sdk-2013
+	url = git@github.com:jaredballou/source-sdk-2013.git

@@ -55,21 +55,24 @@ if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 }
 
 
-if ($_REQUEST['command'] == 'weaponlog') {
-	DisplayLoggerConfig();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'wiki') {
-	DisplayWikiView();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'hlstats') {
-	DisplayHLStatsX();
-	closePage(1);
-}
-if ($_REQUEST['command'] == 'smtrans') {
-	DisplaySMTranslation();
-	closePage(1);
+switch ($_REQUEST['command']) {
+	case 'weaponlog':
+		DisplayLoggerConfig();
+		closePage(1);
+		break;
+	case 'wiki':
+		DisplayWikiView();
+		closePage(1);
+		break;
+	case 'hlstats':
+	case 'hlstatsx':
+		DisplayHLStatsX();
+		closePage(1);
+		break;
+	case 'smtrans':
+		DisplaySMTranslation();
+		closePage(1);
+		break;
 }
 
 // Load weapon items
@@ -611,7 +614,7 @@ function DisplayHLStatsX() {
 			continue;
 		}
 		$classname = getlookup($classdata['print_name']);
-		$shortclass = str_replace(array('template_','_insurgent','_security','_training','_elimination'),'', $class);
+		$shortclass = str_replace(array('template_','_insurgent','_security','_training','_elimination','_coop','coop_'),'', $class);
 		$values['Roles'][$shortclass] = "('insurgency','{$shortclass}','{$classname}')";
 	}
 	foreach ($theater['teams'] as $team=>$teamdata) {
