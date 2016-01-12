@@ -22,3 +22,6 @@
 [submodule "utilities/thirdparty/source-sdk-2013"]
 	path = utilities/thirdparty/source-sdk-2013
 	url = git@github.com:jaredballou/source-sdk-2013.git
+[submodule "utilities/thirdparty/pysmx"]
+	path = utilities/thirdparty/pysmx
+	url = git@github.com:jaredballou/pysmx.git
