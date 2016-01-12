@@ -25,3 +25,6 @@
 [submodule "utilities/thirdparty/pysmx"]
 	path = utilities/thirdparty/pysmx
 	url = git@github.com:jaredballou/pysmx.git
+[submodule "utilities/thirdparty/webgl-source"]
+	path = utilities/thirdparty/webgl-source
+	url = git@github.com:toji/webgl-source.git
