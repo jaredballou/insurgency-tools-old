@@ -48,8 +48,12 @@ then
 fi
 
 # Continue with the rest of the variables
-os=$(uname -s | tr '[:upper:]' '[:lower:]')
-
+if [ "uname -s" == "Darwin" ]
+then
+	os=osx
+else
+	os=linux
+fi
 add_var "steamcmd_url" "URL for SteamCMD Installer Package" "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_${os}.tar.gz"
 add_var "steamcmd_file" "SteamCMD Installer Download Target" "${steamcmd_path}/steamcmd.zip"
 add_var "steamcmd_log" "SteamCMD Log File" "${steamcmd_path}/steamcmd.log"
