@@ -1,20 +1,41 @@
 #!/bin/bash
-
 SERVER='localhost'
-PORT='26000'
-PASSWORD='foo'
+PORT='27015'
+PASSWORD='testme'
 SECURE=0
 SECURE_PORT="1234"
-
+PACKET_ID=0
 RCON_HEADER=$(echo -e "\xff\xff\xff\xff")
 ESCAPE_CHAR=$(echo -en "\x1b")
 
+SERVERDATA_EXECCOMMAND=2
+SERVERDATA_AUTH=3
+
+RCON_AUTH=0
+
+function rcon_pack_message()
+{
+	#<size><packet_id><serverdata><command>\0<unused>\0
+	PACKET_ID=$((PACKET_ID+1))
+	SERVERDATA=$1
+	COMMAND=$2
+	UNUSED=$3
+	SIZE=$((${#COMMAND}+9))
+	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00"
+	echo "aaaaaa"
+	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00" | nc -u -w 2 $SERVER $PORT
+}
+SERVER="ins2.jballou.com"
+rcon_pack_message $SERVERDATA_AUTH serenity
+rcon_pack_message $SERVERDATA_EXECCOMMAND "status"
+exit 0
 # Send raw rcon command
 # $1	 nc parameters Server Port
 # $2...	 Raw rcon message
 # stdout Raw reply from the rcon server
 function rcon_send_raw()
 {
+	echo "$RCON_HEADER${@:2}" \| nc -u -w 1 $1
 	echo -n "$RCON_HEADER${@:2}" | nc -u -w 1 $1
 }
 
@@ -33,6 +54,7 @@ function rcon_send()
 	local COMMAND=${@:5}
 	case $4 in
 		0)
+			echo rcon_send_raw "$SERVER $PORT" rcon $PASSWORD $COMMAND
 			rcon_send_raw "$SERVER $PORT" rcon $PASSWORD $COMMAND | rcon_strip_header n | rcon_recolor
 			;;
 		1)
@@ -116,7 +138,6 @@ function show_help()
 	echo
 }
 
-
 cat_command=false
 rcon_command=""
 
@@ -174,4 +195,5 @@ fi
 
 rcon_command=${rcon_command# }
 
+#echo rcon_send $SERVER $PORT $PASSWORD $SECURE "$rcon_command"
 rcon_send $SERVER $PORT $PASSWORD $SECURE "$rcon_command"

@@ -41,6 +41,13 @@ $libpaths = explode(PATH_SEPARATOR,get_include_path());
 
 // Custom libraries to load
 $custom_libpaths = array(
+	"{$rootpath}/utilities/thirdparty/php-binary",
+	"{$rootpath}/utilities/thirdparty/php-binary/src",
+	"{$rootpath}/utilities/thirdparty/php-binary/src/Exception",
+	"{$rootpath}/utilities/thirdparty/php-binary/src/Field",
+	"{$rootpath}/utilities/thirdparty/php-binary/src/Stream",
+	"{$rootpath}/utilities/thirdparty/php-binary/src/Validator",
+	"{$rootpath}/utilities/thirdparty/php-binary",
 	"{$rootpath}/utilities/thirdparty/steam-condenser-php",
 	"{$rootpath}/utilities/thirdparty/steam-condenser-php/vendor",
 	"{$rootpath}/utilities/thirdparty/steam-condenser-php/lib",
