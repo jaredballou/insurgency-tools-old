@@ -28,3 +28,6 @@
 [submodule "utilities/thirdparty/webgl-source"]
 	path = utilities/thirdparty/webgl-source
 	url = git@github.com:toji/webgl-source.git
+[submodule "utilities/thirdparty/php-binary"]
+	path = utilities/thirdparty/php-binary
+	url = git@github.com:jaredballou/php-binary.git
