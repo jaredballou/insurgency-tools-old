@@ -8,26 +8,32 @@
 
 originalpwd=$(pwd)
 
-# Descriptions
-declare -A vars_desc
-# Defaults
-declare -A vars_default
+if [ "$(uname -s)" == "Darwin" ]
+then
+	echo "Mac OS X Detected"
+	os=osx
+else
+	echo "Linux Detected"
+	os=linux
+fi
 
+declare -a varlist
+config=""
 # Function to allow one-line addition of variables
 add_var()
 {
 	varname=$1
 	desc=$2
 	default=$3
-	vars_desc[$varname]=$desc
-	vars_default[$varname]=$default
+	varlist=("${varlist[@]}" $varname)
+	varprompt="${desc} [${default}]"
 	# Set default if var is not yet set
 	if [ -z ${!varname} ]
 	then
 		val=$default
 		if [ "$defaults_loaded" != "1" ]
 		then
-			read -p "${desc} [${default}]: " val
+			read -p "${varprompt}: " val
 			if [ "$val" == "" ]
 			then
 				val=$default
@@ -35,25 +41,19 @@ add_var()
 		fi
 		eval ${varname}=$val
 	fi
+	config="${config}# ${varprompt}\n$varname=\"${!varname}\"\n"
 }
-# Add variables to structure
-add_var "steamcmd_path" "Directory to use for installing SteamCMD" "~/steamcmd"
-
+echo $varlist
 # Load defaults
-defaults_file="${steamcmd_path}/betabranch.conf"
+defaults_file=~/steamcmd/betabranch.conf
 if [ -e $defaults_file ]
 then
 	defaults_loaded=1
 	source $defaults_file
 fi
 
-# Continue with the rest of the variables
-if [ "uname -s" == "Darwin" ]
-then
-	os=osx
-else
-	os=linux
-fi
+# Add variables to structure
+add_var "steamcmd_path" "Directory to use for installing SteamCMD" "~/steamcmd"
 add_var "steamcmd_url" "URL for SteamCMD Installer Package" "https://steamcdn-a.akamaihd.net/client/installer/steamcmd_${os}.tar.gz"
 add_var "steamcmd_file" "SteamCMD Installer Download Target" "${steamcmd_path}/steamcmd.zip"
 add_var "steamcmd_log" "SteamCMD Log File" "${steamcmd_path}/steamcmd.log"
@@ -68,20 +68,14 @@ then
 	mkdir -p $steamcmd_path
 fi
 
-# Save variables to config
-echo -ne > $defaults_file
-for var in "${!vars_desc[@]}"
-do
-	echo "# ${vars_desc[$var]}" >> $defaults_file
-	echo "$var=\"${!var}\"" >> $defaults_file
-done
-
 # Download and Extract SteamCMD
 if [ ! -e ${steamcmd_file} ]
 then
 	curl -s -o ${steamcmd_file} ${steamcmd_url}
 	tar -xzvpf ${steamcmd_file} -C ${steamcmd_path}
 fi
+
+echo -ne $config > $defaults_file
 
 # Create SteamCMD updater script
 echo -n "@ShutdownOnFailedCommand 1
