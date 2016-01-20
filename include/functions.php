@@ -1,11 +1,19 @@
 <?php
-$scriptpath = realpath(dirname(__FILE__));
-$rootpath=dirname($scriptpath);
-include "{$scriptpath}/config.php";
+// These variables must be set before anything else
+
+// includepath is the include directory
+$includepath = realpath(dirname(__FILE__));
+// rootpath is the insurgency-tools root
+$rootpath=dirname($includepath);
+
+// Pull in configuration settings
+include "{$includepath}/config.php";
+
 /*
 	BEGIN COMMON EXECUTION CODE
 	This section is run by every script, so it shouldn't do too much.
 */
+
 // Load custom library paths for include
 parseLibPath();
 
@@ -17,7 +25,7 @@ if (isset($use_hlstatsx_db)) {
 		mysql_connect(DB_HOST,DB_USER,DB_PASS);
 		$mysql_connection = mysql_select_db(DB_NAME);
 	}
-	//If no database connected (either config missing or failed to connect) use fallback
+	// If no database connected (either config missing or failed to connect) use fallback
 	if (@!$mysql_connection) {
 		mysql_connect($mysql_server,$mysql_username,$mysql_password);
 		$mysql_connection = mysql_select_db($mysql_database);
@@ -29,11 +37,7 @@ if (!file_exists($cache_dir)) {
         mkdir($cache_dir);
 }
 
-$ordered_fields = array('squads','buy_order');//,'allowed_weapons','allowed_items');
-
-//Set language
-$language = "English";
-//Loading languages here because we are only loading the core language at this time
+// Loading languages here because we are only loading the core language at this time
 LoadLanguages($language);
 
 if (isset($_REQUEST['language'])) {
@@ -41,25 +45,31 @@ if (isset($_REQUEST['language'])) {
 		$language = $_REQUEST['language'];
 	}
 }
+
+// Get the command passed to the script
 $command = @$_REQUEST['command'];
 
-//Load versions
+// Load versions, we use the directory names of data/theaters to get these values.
 $versions = array();
-$dirs = glob("{$rootpath}/data/theaters/*");
+$dirs = glob("{$datapath}/theaters/*");
 foreach ($dirs as $dir) {
 	if (is_dir($dir)) {
 		$versions[] = basename($dir);
 	}
 }
+// Set version and newest_version to the latest one
 asort($versions);
 $newest_version = $version = end($versions);
 
+// If version sent by request, set it as the version if it's valid.
 if (isset($_REQUEST['version'])) {
 	if (in_array($_REQUEST['version'],$versions)) {
 		$version = $_REQUEST['version'];
 	}
 }
-//Set version_compare to version, these two need to be identical if we're not doing the version compare dump command
+
+// Set version_compare to our version now that we have handled user input.
+// These two need to be identical if we're not doing the version compare dump command
 $version_compare = $version;
 if (isset($_REQUEST['version_compare'])) {
 	if (in_array($_REQUEST['version_compare'],$versions)) {
@@ -67,7 +77,7 @@ if (isset($_REQUEST['version_compare'])) {
 	}
 }
 
-//Units of measurement
+// Units of measurement
 $range_units = array(
 	'U' => 'Game Units',
 	'M' => 'Meters',
@@ -75,30 +85,33 @@ $range_units = array(
 	'YD' => 'Yards',
 	'IN' => 'Inches'
 );
-//Set range unit
+// Set range unit, override if valid unit is requested.
 $range_unit = 'M';
 if (isset($_REQUEST['range_unit'])) {
 	if (array_key_exists($_REQUEST['range_unit'],$range_units)) {
 		$range_unit = $_REQUEST['range_unit'];
 	}
 }
-//Set range
+
+// Set range
 $range = 10;
+
 if (isset($_REQUEST['range'])) {
 	$_REQUEST['range'] = dist($_REQUEST['range'],$range_unit,'IN',0);
 	if (($_REQUEST['range'] >= 0) && ($_REQUEST['range'] <= 20000)) {
 		$range = $_REQUEST['range'];
 	}
 }
-//Populate $theaters array with all the theater files in the selected version
-$files = glob("{$rootpath}/data/theaters/{$version}/*.theater");
+
+// Populate $theaters array with all the theater files in the selected version
+$files = glob("{$datapath}/theaters/{$version}/*.theater");
 foreach ($files as $file) {
 	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
 		continue;
 	}
 	$theaters[] = basename($file,".theater");
 }
-//Add all custom theaters to the list, these do NOT depend on version, they will always be added
+// Add all custom theaters to the list, these do NOT depend on version, they will always be added
 foreach ($custom_theater_paths as $name => $path) {
 	if (file_exists($path)) {
 		$ctfiles = glob("{$path}/*.theater");
@@ -109,10 +122,10 @@ foreach ($custom_theater_paths as $name => $path) {
 	}
 }
 
-//Default theater file to load if nothing is selected
+// Default theater file to load if nothing is selected
 $theaterfile = "default";
 
-//If a theater is specified, find out if it's custom or stock, and set the path accordingly
+// If a theater is specified, find out if it's custom or stock, and set the path accordingly
 if (isset($_REQUEST['theater'])) {
 	if (strpos($_REQUEST['theater']," ")) {
 		$bits = explode(" ",$_REQUEST['theater'],2);
@@ -124,6 +137,7 @@ if (isset($_REQUEST['theater'])) {
 		$theaterfile = $_REQUEST['theater'];
 	}
 }
+// Comparison stuff
 $theaterfile_compare = $theaterfile;
 $theaterpath_compare = $theaterpath;
 if (isset($_REQUEST['theater_compare'])) {
@@ -138,11 +152,12 @@ if (isset($_REQUEST['theater_compare'])) {
 	}
 }
 
-//Load theater now so we can create other arrays and validate
+// Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
-//echo "<pre>\n";
-//var_dump($theater);
-//exit;
+// echo "<pre>\n";
+// var_dump($theater);
+// exit;
+
 // Load maplist and gametypes
 $mldata = json_decode(file_get_contents("{$rootpath}/data/thirdparty/maplist.json"),true);
 $gtlist = json_decode(file_get_contents("{$rootpath}/data/thirdparty/gamemodes.json"),true);
@@ -152,7 +167,7 @@ foreach ($gtlist as $type=>$modes) {
 		$gametypelist[$mode] = "{$type}: {$mode}";
 	}
 }
-//explode(":",implode(array_values($gtlist['pvp'] + $gtlist['coop']),":"));
+// explode(":",implode(array_values($gtlist['pvp'] + $gtlist['coop']),":"));
 
 
 
@@ -165,6 +180,7 @@ foreach ($gtlist as $type=>$modes) {
 ===                                                                          ===
 ================================================================================
 */
+// TODO: Break these out into separate classes and better define them.
 
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
@@ -189,7 +205,7 @@ function LoadLanguages($pattern='English') {
 	// Load all language files
 	foreach ($langfiles as $langfile) {
 		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
-//var_dump($data);
+// var_dump($data);
 		$data = parseKeyValues($data,false);
 		foreach ($data["lang"]["Tokens"] as $key => $val) {
 			if ($command != 'smtrans') {
@@ -197,17 +213,17 @@ function LoadLanguages($pattern='English') {
 			}
 			$key = trim($key);
 			if ($key) {
-				//Sometimes NWI declares a string twice!
+				// Sometimes NWI declares a string twice!
 				if (is_array($val))
 					$val = $val[0];
 				$lang[$data["lang"]["Language"]][$key] = $val;
 			}
 		}
 	}
-//var_dump($lang);
+// var_dump($lang);
 }
 
-//rglob - recursively locate all files in a directory according to a pattern
+// rglob - recursively locate all files in a directory according to a pattern
 function rglob($pattern, $files=1,$dirs=0,$flags=0) {
 	$dirname = dirname($pattern);
 	$basename = basename($pattern);
@@ -232,7 +248,8 @@ function rglob($pattern, $files=1,$dirs=0,$flags=0) {
 	}
 	return $files;
 }
-//delTree - recursively DELETE AN ENTIRE DIRECTORY STRUCTURE!!!!
+
+// delTree - recursively DELETE AN ENTIRE DIRECTORY STRUCTURE!!!!
 function delTree($dir='') {
 	if (strlen($dir) < 2)
 		return false;
@@ -242,61 +259,61 @@ function delTree($dir='') {
 	}
 	return rmdir($dir);
 }
-//is_numeric_array - test if all values in an array are numeric
+// is_numeric_array - test if all values in an array are numeric
 function is_numeric_array($array) {
 	foreach ($array as $key => $value) {
 		if (!is_numeric($value)) return false;
 	}
 	return true;
 }
-//kvwrite - 
+// kvwrite - 
 function kvwrite($arr) {
 	$str = "";
 	kvwriteSegment($str, $arr);
 	return $str;
 }
-//kvwriteFile - 
+// kvwriteFile - 
 function kvwriteFile($file, $arr) {
 	$contents = kvwrite($arr);
 	$fh = fopen($file, 'w');
 	fwrite($fh, $contents);
 	fclose($fh);
 }
-//kvwriteSegment - 
+// kvwriteSegment - 
 function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	global $ordered_fields;
 	$indent = str_repeat(chr(9), $tier);
 	// TODO check for a certain key to keep it in the same tier instead of going into the next?
-//var_dump($str,$arr,$tier,$tree);
+// var_dump($str,$arr,$tier,$tree);
 	foreach ($arr as $key => $value) {
 		if (is_array($value)) {
 			$tree[$tier+1] = $key;
 			$key = '"' . $key . '"';
 			$str .= $indent . $key  . "\n" . $indent. "{\n";
 			if (((in_array($tree[3],$ordered_fields) !== false) || (in_array($tree[4],$ordered_fields) !== false)) && (is_numeric_array(array_keys($value)))) {
-//				echo "Ordered<br>\n";
+// 				echo "Ordered<br>\n";
 				foreach ($value as $idx=>$item) {
 					foreach ($item as $k => $v) {
 						$str .= chr(9) . $indent . '"' . $k . '"' . chr(9) . '"' . $v . "\"\n";
 					}
 				}
-//var_dump($tree,$key,$value);
+// var_dump($tree,$key,$value);
 			} else {
-//				echo "Array<br>\n";
+// 				echo "Array<br>\n";
 				kvwriteSegment($str, $value, $tier+1,$tree);
 			}
 			$str .= $indent . "}\n";
 			unset($tree[$tier+1]);
 		} else {
-//			echo "String<br>\n";
-//var_dump($tree,$key,$value);
+// 			echo "String<br>\n";
+// var_dump($tree,$key,$value);
 			$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
 		}
 	}
-//var_dump($str);
+// var_dump($str);
 	return $str;
 }
-//parseKeyValues - 
+// parseKeyValues - 
 function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 {
 	global $ordered_fields;
@@ -306,7 +323,7 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 	$KVString = preg_replace('/^(\s+)/m','',$KVString);
 	$KVLines = preg_split('/\n|\r\n?/', $KVString);
 	$len = strlen($KVString);
-	//if ($debug) $len = 2098;
+	// if ($debug) $len = 2098;
 
 	$stack = array();
 
@@ -389,11 +406,11 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 			case "{":
 				$commentLines=1;
 				if (strlen($quoteKey)) {
-//					if ($sequential) {
-//						$sequential++;
-//					} elseif ($quoteKey[0] != '?') {
-//						$sequential = (in_array($quoteKey,$ordered_fields) === true);
-//					}
+// 					if ($sequential) {
+// 						$sequential++;
+// 					} elseif ($quoteKey[0] != '?') {
+// 						$sequential = (in_array($quoteKey,$ordered_fields) === true);
+// 					}
 					// Add key to tree
 					$tree[] = $quoteKey;
 					$sequential = (array_intersect($tree,$ordered_fields));
@@ -426,10 +443,10 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 				break;
 			// End of section
 			case "}":
-//				if ($sequential > 1)
-//					$sequential--;
-//				else
-//					$sequential=0;
+// 				if ($sequential > 1)
+// 					$sequential--;
+// 				else
+// 					$sequential=0;
 				$commentLines=1;
 				// Move pointer back to the parent
 				$ptr = &$parents[$path];
@@ -443,16 +460,16 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 			case "\t":
 				break;
 			case "/":
-				// Comment "//" or "/*"
+				// Comment "// " or "/*"
 				if (($KVString[$i+1] == "/") || ($KVString[$i+1] == "*"))
 				{
 					$comment = "";
 					// Get comment type
 					$ctype = $KVString[$i+1];
 					while($i < $len) {
-						// If type is "//" stop processing at newline
+						// If type is "// " stop processing at newline
 						if (($ctype == '/') && ($KVString[$i+1] == "\n")) {
-//							$i+=2;
+// 							$i+=2;
 							break;
 						}
 						// If type is "/*" stop processing at "*/"
@@ -500,13 +517,13 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 	if ($debug) {
 		echo "<hr><pre>";
 		var_dump("stack: ",$stack);
-//		var_dump("ptr: ",$ptr);
+// 		var_dump("ptr: ",$ptr);
 	}
-//	var_dump($comments);
+// 	var_dump($comments);
 	return $stack;
 }
 
-//prettyPrint - 
+// prettyPrint - 
 function prettyPrint( $json )
 {
 	$result = '';
@@ -567,16 +584,16 @@ function prettyPrint( $json )
 	return $result;
 }
 
-//theater_recurse - 
+// theater_recurse - 
 function theater_recurse($array, $array1)
 {
 	foreach ($array1 as $key => $value)
 	{
 		// create new key in $array, if it is empty or not an array
-//		if (!isset($array[$key])) {
+// 		if (!isset($array[$key])) {
 // || (isset($array[$key]) && !is_array($array[$key])))
-//			$array[$key] = array();
-//		}
+// 			$array[$key] = array();
+// 		}
 
 		// overwrite the value in the base array
 		if (is_array($value))
@@ -590,7 +607,7 @@ function theater_recurse($array, $array1)
 	}
 	return $array;
 }
-//theater_array_replace_recursive - 
+// theater_array_replace_recursive - 
 function theater_array_replace_recursive($array, $array1)
 {
 	// handle the arguments, merge one by one
@@ -610,7 +627,7 @@ function theater_array_replace_recursive($array, $array1)
 	return $array;
 }
 
-//theater_array_replace - 
+// theater_array_replace - 
 function theater_array_replace()
 {
 	$args = func_get_args();
@@ -635,7 +652,7 @@ function theater_array_replace()
 	}
 	return $res;
 }
-//formatBytes - 
+// formatBytes - 
 function formatBytes($bytes, $precision = 2) { 
 	$units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
@@ -650,7 +667,7 @@ function formatBytes($bytes, $precision = 2) {
 	return round($bytes, $precision) . ' ' . $units[$pow];
 }
 
-//stats functions
+// stats functions
 /*
 multi_diff
 Compare two arrays recursively, return an array of differences
@@ -671,7 +688,7 @@ array(
 */
 function multi_diff($name1,$arr1,$name2,$arr2) {
 	$result = array();
-	$merged = $arr1+$arr2;//array_merge($arr1,$arr2);
+	$merged = $arr1+$arr2;// array_merge($arr1,$arr2);
 	foreach ($merged as $k=>$v){
 		if(!isset($arr2[$k])) {
 			$result[$k] = array($name1 => $arr1[$k], $name2 => NULL);
@@ -701,10 +718,10 @@ function getfile($filename,$version='',$path='') {
 	$filepath.="/".basename($filename);
 	$data = file_get_contents($filepath);
 	$thisfile = parseKeyValues($data);
-//var_dump($filename,$version,$path,$filepath);//,$data,$thisfile);
+// var_dump($filename,$version,$path,$filepath);// ,$data,$thisfile);
 	$theater = $thisfile["theater"];
-	//If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
-	//This appears to be the way the game processes these files it appears.
+	// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
+	// This appears to be the way the game processes these files it appears.
 	if (isset($thisfile["#base"])) {
 		$basedata = array();
 		if (is_array($thisfile["#base"])) {
@@ -717,15 +734,15 @@ function getfile($filename,$version='',$path='') {
 			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
 		}
 		$theater = theater_array_replace_recursive($basedata,$theater);
-//array_merge_recursive($basedata,$theater);
+// array_merge_recursive($basedata,$theater);
 	}
-	//Include parts that might be conditional in their parents, basically put everything in flat arrays
-	//This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
+	// Include parts that might be conditional in their parents, basically put everything in flat arrays
+	// This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
 	foreach ($theater as $sec => $data) {
 		foreach ($data as $key => $val) {
 			if (($key[0] == '?') && (is_array($val))) {
 				unset($theater[$sec][$key]);
-				$theater[$sec] = $val;//theater_array_replace_recursive($theater[$sec],$val);
+				$theater[$sec] = $val;// theater_array_replace_recursive($theater[$sec],$val);
 			}
 		}
 	}
@@ -738,15 +755,15 @@ function getvgui($name,$type='img',$path='vgui/inventory') {
 	global $rootpath;
 	$rp = "data/materials/{$path}/{$name}";
 	if (file_exists("{$rootpath}/{$rp}.vmt")) {
-//echo "found file<br>";
+// echo "found file<br>";
 		$vmf = file_get_contents("{$rootpath}/{$rp}.vmt");
-//var_dump($vmf);
+// var_dump($vmf);
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
-//var_dump($matches);
+// var_dump($matches);
 		$rp = "data/materials/".$matches[1][0];
 	}
 
-//var_dump($rp);
+// var_dump($rp);
 	if (file_exists("{$rootpath}/{$rp}.png")) {
 		if ($type == 'img')
 			return "<img src='{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
@@ -757,7 +774,7 @@ function getvgui($name,$type='img',$path='vgui/inventory') {
 	}
 }
 
-//parseLibPath - Load custom library paths, this should only get called after config is loaded but before any other includes are called
+// parseLibPath - Load custom library paths, this should only get called after config is loaded but before any other includes are called
 function parseLibPath() {
 	global $custom_libpaths;
 	if (!is_array($custom_libpaths)) {
@@ -767,7 +784,7 @@ function parseLibPath() {
 		addLibPath($path);
 	}
 }
-//addLibPath - Add path to include path, this is how we should add new libraries
+// addLibPath - Add path to include path, this is how we should add new libraries
 function addLibPath($path) {	
 	global $libpaths;
 	if (!in_array($path,$libpaths)) {

@@ -6,6 +6,11 @@ JSON files of the data from the decompiled map, overview data files, and other
 sources pulled from game. It needs a LOT of work and is not very well built at
 this point.
 */
+
+// Start output
+$title = "Map Viewer";
+require "../include/header.php";
+
 // Maps array holds all map data
 $maps = array();
 $controlpoints = array();
@@ -13,7 +18,7 @@ $map_objects = array();
 
 
 // Get all map text files. This could probably be safer.
-$files = glob("data/maps/parsed/*.json");
+$files = glob("${datapath}/maps/parsed/*.json");
 
 // Open all files and add gametypes and other map info to array
 foreach ($files as $file) {
@@ -65,10 +70,9 @@ if ($_REQUEST['command'] == 'symlinks') {
 	exit;
 }
 if ($_REQUEST['command'] == 'mapcycle') {
-	include "include/header.php";
 	$maps = array();
 	$maplist = array();
-	$files = glob("data/maps/*.txt");
+	$files = glob("${datapath}/maps/*.txt");
 	foreach ($files as $file) {
 		$mapname = basename($file,".txt");
 		if (in_array($mapname,$excludemaps)) {
@@ -187,9 +191,6 @@ function svg($svg,$layer='common') {
 	}
 }
 
-// Start output
-$title = "Map Viewer";
-require "include/header.php";
 ?>
 <style type="text/css">
 	.map-image: {
@@ -428,8 +429,8 @@ if ($map) {
 	echo "						<img src='data/materials/{$maps[$map]['overview']['material']}.png' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
 	// Try to open decompiled map file to get entity data
 
-	if (file_exists("data/maps/overlays/{$map}.txt")) {
-		$data = parseKeyValues(strtolower(file_get_contents("data/maps/overlays/{$map}.txt")));
+	if (file_exists("${datapath}/maps/overlays/{$map}.txt")) {
+		$data = parseKeyValues(strtolower(file_get_contents("${datapath}/maps/overlays/{$map}.txt")));
 		foreach ($data as $layername => $layerdata) {
 			foreach ($layerdata as $pname => $pdata) {
 				if ($pdata['pos_name'] == '') {
@@ -463,7 +464,7 @@ if ($map) {
 	if (file_exists("{$hlstatsx_heatmaps}/{$map}-kill.png")) {
 		$map_objects['heatmap'] = array();
 	}
-	if (file_exists("data/maps/navmesh/{$navmesh}.png")) {
+	if (file_exists("${datapath}/maps/navmesh/{$navmesh}.png")) {
 		$map_objects['navmesh'] = array();
 	}
 	$map_objects['grid'] = array();
@@ -760,6 +761,6 @@ for(var i=0; i<elmids.length; i++) {
 --></script>
 
 <?php
-require "include/footer.php";
+require "../include/footer.php";
 
 ?>

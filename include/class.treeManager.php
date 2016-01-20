@@ -1,4 +1,4 @@
-<?
+<?php
 /** 
  * File:        class.treeManager.php
  * Date:        Wed 30 Aug 2009 10:30:38 AM CET

@@ -3,8 +3,8 @@
 This takes the CVAR list CSV files from data and displays them in a simple
 tabular format.
 */
-require "include/header.php";
-$dirs = glob("data/cvarlist/*");
+require "../include/header.php";
+$dirs = glob("${datapath}/cvarlist/*");
 foreach ($dirs as $dir) {
 	if (!is_dir($dir)) {
 		continue;
@@ -32,11 +32,11 @@ if ($_REQUEST['listtype']) {
 //var_dump($lists,$version,$listtype);
 if ((!$version) || (!$listtype)) {
 	echo "Data not found";
-	include "include/footer.php";
+	include "../include/footer.php";
 	exit;
 }
-$listfile = "data/cvarlist/{$version}/{$listtype}.csv";
-$settingfile = "data/cvarlist/{$version}/{$listtype}.txt";
+$listfile = "${datapath}/cvarlist/{$version}/{$listtype}.csv";
+$settingfile = "${datapath}/cvarlist/{$version}/{$listtype}.txt";
 
 $fields = array();
 $data = array();
@@ -144,6 +144,6 @@ $(document).ready(function() {
 <?php
 }
 fclose($f);
-require "include/footer.php";
+require "../include/footer.php";
 exit;
 ?>

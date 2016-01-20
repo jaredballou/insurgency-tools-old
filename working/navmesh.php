@@ -12,8 +12,8 @@ $dbprefix = isset($_REQUEST['dbprefix']) ? $_REQUEST['dbprefix'] : 'hlstats';
 */
 
 
-$files = glob("data/maps/navmesh/*.json");
 require_once "include/functions.php";
+$files = glob("${datapath}/maps/navmesh/*.json");
 //Open all files and add gamemodes and other map info to array
 //var_dump($files);
 foreach ($files as $file) {
@@ -23,13 +23,13 @@ foreach ($files as $file) {
 function ParseMap($map)
 {
 	echo "Starting {$map}... ";
-	if (file_exists("data/maps/navmesh/{$map}.png")) {
-		if ((filemtime("data/maps/navmesh/{$map}.json")) < (filemtime("data/maps/navmesh/{$map}.png"))) {
+	if (file_exists("${datapath}maps/navmesh/{$map}.png")) {
+		if ((filemtime("${datapath}maps/navmesh/{$map}.json")) < (filemtime("${datapath}maps/navmesh/{$map}.png"))) {
 			echo "<i>Not processing {$map}, no new data</i><br>\n";
 			return;
 		}
 	}
-	$data = json_decode(file_get_contents("data/maps/navmesh/{$map}.json"),true);
+	$data = json_decode(file_get_contents("${datapath}maps/navmesh/{$map}.json"),true);
 /*
 	$tile = imagecreatetruecolor(32,16);
 	$black = imagecolorallocatealpha($tile, 0, 0, 0, 64);
@@ -63,7 +63,7 @@ function ParseMap($map)
 		//$rects[$obj['pos_name']] = $obj;
 	}
 	imagesavealpha($overlay, true);
-	imagepng($overlay,"data/maps/navmesh/{$map}.png");
+	imagepng($overlay,"${datapath}maps/navmesh/{$map}.png");
 	imagedestroy($overlay);
 	echo "<b>Parsed {$map}</b><br>\n";
 	//exit;

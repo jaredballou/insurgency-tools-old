@@ -2,7 +2,7 @@
 if (isset($use_ob)) {
 	ob_start();
 }
-include "functions.php";
+require_once "functions.php";
 if (!$title) {
 	$title = 'Insurgency Tools';
 }
@@ -55,6 +55,6 @@ body, html, .container {
 function startbody() {
 	global $curpage,$pages;
 	echo "  </head>\n  <body>\n";
-	include "menu.php";
+	include "{$includepath}/menu.php";
 }
 ?>

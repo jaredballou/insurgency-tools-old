@@ -39,7 +39,7 @@ $css_content = '
 		background-color: #FFFFFF;
 	}
 ';
-require_once "include/header.php";
+require_once "../include/header.php";
 
 if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
@@ -200,7 +200,7 @@ echo "		</form>";
 closePage();
 
 function closePage($bare=0) {
-	require "include/footer.php";
+	require "../include/footer.php";
 	if (isset($_REQUEST['dump'])) {
 		global $theater,$stats_tables;
 		var_dump($theater);

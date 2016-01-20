@@ -1,5 +1,5 @@
 <?php
-
+// This creates the grid overlay images for the maps
 require "/opt/hlstatsx-community-edition/heatmaps/config.inc.php";
 
 mysql_connect(DB_HOST,DB_USER,DB_PASS);
@@ -12,7 +12,7 @@ $ovcolor = 'auto';
 $grid_divisions = 8;
 $alphas = array(0 => '100% Opaque', 32 => '75% Opaque', 48 => '62% Opaque', 64 => '50% Opaque', 96 => '24% Opaque');
 $colors = array('auto' => 'Automatic', 'white' => 'White', 'black' => 'Black');
-$files = glob("data/materials/overviews/*.png");
+$files = glob("${datapath}/materials/overviews/*.png");
 
 foreach ($files as $file) {
 	$mapname = basename($file,".png");

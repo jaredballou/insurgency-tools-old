@@ -5,7 +5,7 @@ in data to get the information and then dumps it in an idempotent query to
 create or update the items in HLStatsX.
 */
 $use_hlstatsx_db = 1;
-include "include/header.php";
+include "../include/header.php";
 $values = array();
 echo "<form>DB Prefix:<input type='text' name='dbprefix' value='{$dbprefix}'> Game code:<input type='text' name='gamecode' value='{$gamecode}'><input type='submit'></form>\n";
 echo "<textarea style='width: 100%; height: calc(100% - 50px); box-sizing: border-box;'>";

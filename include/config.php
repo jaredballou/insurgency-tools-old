@@ -24,6 +24,9 @@ $pages = array(
 // GitHub secret for post-commit hooks
 $github_secret='';
 
+//User to pull the GitHub readme files
+$githubuser = 'jaredballou';
+
 // Insurgency App ID
 $appid = 222880;
 
@@ -36,29 +39,39 @@ $servers = array(
 	)
 );
 
+// publicpath is the publicly viewable path
+$publicpath="${rootpath}/public";
+// theaterpath is where the insurgency-theaters repo is checked out
+$theaterpath="${rootpath}/theaters";
+// datapath is where the insurgency-data repo is checked out
+$datapath="${publicpath}/data";
+
+// These fields will be processed in the theater as a numerically indexed array, rather than key/values.
+$ordered_fields = array('squads','buy_order');//,'allowed_weapons','allowed_items');
+
+// Set language
+$language = "English";
+
 // Library include paths
 $libpaths = explode(PATH_SEPARATOR,get_include_path());
 
 // Custom libraries to load
 $custom_libpaths = array(
-	"{$rootpath}/utilities/thirdparty/php-binary",
-	"{$rootpath}/utilities/thirdparty/php-binary/src",
-	"{$rootpath}/utilities/thirdparty/php-binary/src/Exception",
-	"{$rootpath}/utilities/thirdparty/php-binary/src/Field",
-	"{$rootpath}/utilities/thirdparty/php-binary/src/Stream",
-	"{$rootpath}/utilities/thirdparty/php-binary/src/Validator",
-	"{$rootpath}/utilities/thirdparty/php-binary",
-	"{$rootpath}/utilities/thirdparty/steam-condenser-php",
-	"{$rootpath}/utilities/thirdparty/steam-condenser-php/vendor",
-	"{$rootpath}/utilities/thirdparty/steam-condenser-php/lib",
-	"{$rootpath}/utilities/thirdparty/steam-condenser-php/lib/SteamCondenser"
+	"{$rootpath}/thirdparty/php-binary",
+	"{$rootpath}/thirdparty/php-binary/src",
+	"{$rootpath}/thirdparty/php-binary/src/Exception",
+	"{$rootpath}/thirdparty/php-binary/src/Field",
+	"{$rootpath}/thirdparty/php-binary/src/Stream",
+	"{$rootpath}/thirdparty/php-binary/src/Validator",
+	"{$rootpath}/thirdparty/php-binary",
+	"{$rootpath}/thirdparty/steam-condenser-php",
+	"{$rootpath}/thirdparty/steam-condenser-php/vendor",
+	"{$rootpath}/thirdparty/steam-condenser-php/lib",
+	"{$rootpath}/thirdparty/steam-condenser-php/lib/SteamCondenser"
 );
 
-// Base theater path
-$theaterpath='';
-
 // Custom theater paths
-$custom_theater_paths = array('Custom' => '/opt/fastdl/scripts/theaters');
+$custom_theater_paths = array('Custom' => $theaterpath);
 
 // MySQL Server connection settings
 $mysql_server   = 'localhost';
@@ -252,4 +265,4 @@ $stats_tables = array(
 	)
 );
 // Include the private config (never updated by Git) to override or set other variables
-require_once("config.private.php");
+require_once("{$includepath}/config.private.php");
