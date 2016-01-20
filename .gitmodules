@@ -1,33 +1,33 @@
 [submodule "public/data"]
 	path = public/data
 	url = git@github.com:jaredballou/insurgency-data.git
-[submodule "utilities/thirdparty/steam-condenser-php"]
-	path = utilities/thirdparty/steam-condenser-php
+[submodule "thirdparty/steam-condenser-php"]
+	path = thirdparty/steam-condenser-php
 	url = git@github.com:jaredballou/steam-condenser-php.git
 [submodule "theaters"]
 	path = theaters
 	url = git@github.com:jaredballou/insurgency-theaters.git
-[submodule "utilities/thirdparty/php-vpk-reader"]
-	path = utilities/thirdparty/php-vpk-reader
+[submodule "thirdparty/php-vpk-reader"]
+	path = thirdparty/php-vpk-reader
 	url = git@github.com:jaredballou/php-vpk-reader.git
-[submodule "utilities/thirdparty/vtf2tga"]
-	path = utilities/thirdparty/vtf2tga
+[submodule "thirdparty/vtf2tga"]
+	path = thirdparty/vtf2tga
 	url = git@github.com:tranek/vtf2tga.git
-[submodule "utilities/thirdparty/VTFLib"]
-	path = utilities/thirdparty/VTFLib
+[submodule "thirdparty/VTFLib"]
+	path = thirdparty/VTFLib
 	url = git@github.com:panzi/VTFLib.git
-[submodule "utilities/thirdparty/libtxc_dxtn"]
-	path = utilities/thirdparty/libtxc_dxtn
+[submodule "thirdparty/libtxc_dxtn"]
+	path = thirdparty/libtxc_dxtn
 	url = git://people.freedesktop.org/~mareko/libtxc_dxtn
-[submodule "utilities/thirdparty/source-sdk-2013"]
-	path = utilities/thirdparty/source-sdk-2013
+[submodule "thirdparty/source-sdk-2013"]
+	path = thirdparty/source-sdk-2013
 	url = git@github.com:jaredballou/source-sdk-2013.git
-[submodule "utilities/thirdparty/pysmx"]
-	path = utilities/thirdparty/pysmx
+[submodule "thirdparty/pysmx"]
+	path = thirdparty/pysmx
 	url = git@github.com:jaredballou/pysmx.git
-[submodule "utilities/thirdparty/webgl-source"]
-	path = utilities/thirdparty/webgl-source
-	url = git@github.com:toji/webgl-source.git
-[submodule "utilities/thirdparty/php-binary"]
-	path = utilities/thirdparty/php-binary
+[submodule "thirdparty/webgl-source"]
+	path = thirdparty/webgl-source
+	url = git@github.com:jaredballou/webgl-source.git
+[submodule "thirdparty/php-binary"]
+	path = thirdparty/php-binary
 	url = git@github.com:jaredballou/php-binary.git
