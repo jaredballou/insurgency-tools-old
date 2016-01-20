@@ -68,6 +68,9 @@ $custom_libpaths = array(
 	"{$rootpath}/thirdparty/steam-condenser-php/lib/SteamCondenser"
 );
 
+// Base theater path
+$theaterpath='';
+
 // Custom theater paths - include insurgency-theaters checkout
 $custom_theater_paths = array('Custom' => "${rootpath}/theaters");
 

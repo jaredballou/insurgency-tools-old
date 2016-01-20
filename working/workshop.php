@@ -7,7 +7,7 @@ see with a fair degree of accuracy what needed to be updated in the mods
 to support the new version. It is currently not being worked on and only
 included as a reference or jumping off point for other tools.
 */
-include "include/functions.php";
+include "../include/functions.php";
 //Connect to database
 mysql_connect($mysql_server,$mysql_username,$mysql_password);
 mysql_select_db($mysql_database);
@@ -15,6 +15,7 @@ mysql_select_db($mysql_database);
 //Global variables
 $tb['prefix'] = 'workshop_';
 $tb['pubfiles'] = 'pubfiles';
+
 //Create arrays
 $dbfields = array();
 $pubfiles = array();
@@ -26,7 +27,7 @@ GetWorkshopFiles();
 exit;
 
 function GetWorkshopPages($page=0,$numperpage=100) {
-	global $json_pubfiles,$pubfiles,$apikey;
+	global $json_pubfiles,$pubfiles,$apikey,$cache_dir;
 	echo "Fetching page {$page}\n";
 	$url='https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/';
 	$args = array(
@@ -56,7 +57,7 @@ function GetWorkshopPages($page=0,$numperpage=100) {
 	$data = file_get_contents($url);
 
 	//Store local copy for failback
-	//file_put_contents("out-workshop.json",$data);
+	file_put_contents("${cache_dir}/workshop-${page}.json",$data);
 
 	//Decode JSON to array
 	$json = json_decode($data,true);
@@ -114,7 +115,7 @@ function GetWorkshopFiles() {
 	$result = mysql_query("SELECT publishedfileid,filename,file_size,file_url,time_updated FROM `{$tb['prefix']}{$tb['pubfiles']}`");
 //	foreach ($pubfiles as $publishedfileid => $pubfile) {
 	while ($pubfile = mysql_fetch_array($result)) {
-		$dir = $cache_dir."/workshop/{$pubfile['publishedfileid']}";
+		$dir = "{$cache_dir}/workshop/{$pubfile['publishedfileid']}";
 		$file = $dir."/".basename($pubfile['filename']);
 		$filemtime = file_exists($file) ? @filemtime($file) : 0;
 		$filesize = file_exists($file) ? filesize($file) : 0;
@@ -123,7 +124,7 @@ function GetWorkshopFiles() {
 			if (file_exists($dir)) {
 				delTree($dir);
 			}
-			mkdir($dir);
+			mkdir($dir,0755,true);
 			file_put_contents($file,file_get_contents($pubfile['file_url']));
 			$doextract[$dir] = escapeshellarg("./".basename($pubfile['filename']));
 		}

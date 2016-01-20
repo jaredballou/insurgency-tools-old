@@ -34,7 +34,7 @@ if (isset($use_hlstatsx_db)) {
 
 // Create cache dir if needed
 if (!file_exists($cache_dir)) {
-        mkdir($cache_dir);
+        mkdir($cache_dir,0755,true);
 }
 
 // Loading languages here because we are only loading the core language at this time
