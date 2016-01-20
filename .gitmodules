@@ -1,5 +1,5 @@
-[submodule "data"]
-	path = data
+[submodule "public/data"]
+	path = public/data
 	url = git@github.com:jaredballou/insurgency-data.git
 [submodule "utilities/thirdparty/steam-condenser-php"]
 	path = utilities/thirdparty/steam-condenser-php

@@ -1,31 +1,27 @@
 <?php
-// KeyValues Class
-	// Theater Class
-	
-	// new Theater($file)
-	// Properties
-	// Methods
-	
 	$theaterpath = "../data/theaters/2.1.1.2/";
 	$theaterfile="default_coop_shared.theater";
-	$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
-	$theater = getfile($theaterfile,"2.1.1.2",$theaterpath);
+	$theater = new Theater($theaterfile,"2.1.1.2",$theaterpath);
 	//var_dump(getobject('weapons','weapon_m249'));
 	var_dump($theater);
 	
 	
 	
+class Theater {
+	public $ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
+
+	public function __construct() {
+	}
 	/* getobject
 	Take a type (weapon, ammo, explosive, etc), key (name of item), and boolean for recursing
 	*/
 	
-	function getobject($type, $key, $level=0) {
-		global $theater;
+	public function getobject($type, $key, $level=0) {
 		// Get object from theater. This has a case insensitive failsafe, since theater keys sometimes aren't the same case.
-		if (isset($theater[$type][$key])) {
-			$object = $theater[$type][$key];
+		if (isset($this->theater[$type][$key])) {
+			$object = $this->theater[$type][$key];
 		} else {
-			foreach ($theater[$type] as $ikey=>$item) {
+			foreach ($this->theater[$type] as $ikey=>$item) {
 				if (strtolower($key) == strtolower($ikey)) {
 					$object = $item;
 					break;
@@ -56,7 +52,7 @@
 		If found, set $base[$ptr][$match][$key] = $val
 		Else, $base[$ptr][][$key] = $val
 	*/
-	function merge_theaters($base,$add) {
+	public function merge_theaters($base,$add) {
 		foreach ($add as $key => $val) {
 			// If val is an array, which it practically always should be
 			if (is_array($val)) {
@@ -77,7 +73,7 @@
 	/* getfile
 	Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 	*/
-	function getfile($filename,$version='',$path='',$collapse_conditionals=true) {
+	public function getfile($filename,$version='',$path='',$collapse_conditionals=true) {
 		global $custom_theater_paths,$newest_version,$theaterpath,$rootpath;
 		if ($version == '')
 			$version = $newest_version;
@@ -86,8 +82,8 @@
 		// Finally, try the stock theaters for the current version
 		$filepath = file_exists("{$path}/".basename($filename)) ?
 			$path :
-			(file_exists("{$theaterpath}/".basename($filename)) ?
-				$theaterpath :
+			(file_exists("{$this->theaterpath}/".basename($filename)) ?
+				$this->theaterpath :
 				"{$rootpath}/data/theaters/{$version}");
 		$filepath.="/".basename($filename);
 		$data = file_get_contents($filepath);
@@ -101,26 +97,29 @@
 			foreach ($bases as $base) {
 				$basedata = merge_theaters($basedata,getfile($base,$version,$path,$collapse_conditionals));
 			}
-			$theater = merge_theaters($basedata,$thisfile["theater"]);
+			$this->theater = merge_theaters($basedata,$thisfile["theater"]);
 		}
 		//Include parts that might be conditional in their parents, basically put everything in flat arrays
 		//This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
 		if ($collapse_conditionals) {
-			foreach ($theater as $sec => $data) {
+			foreach ($this->theater as $sec => $data) {
 				foreach ($data as $key => $val) {
 					if (($key[0] == '?') && (is_array($val))) {
-						unset($theater[$sec][$key]);
-						$theater[$sec] = $val;//theater_array_replace_recursive($theater[$sec],$val);
+						unset($this->theater[$sec][$key]);
+						$this->theater[$sec] = $val;//theater_array_replace_recursive($this->theater[$sec],$val);
 					}
 				}
 			}
 		}
-		return $theater;
+		return $this->theater;
 	}
 	
 	
+}
 	
-	function parseKeyValues($KVString,$fixquotes=true,$debug=false)
+class KeyValues
+{
+	public function __construct($KVString,$fixquotes=true,$debug=false)
 	{
 		global $ordered_fields;
 		// Escape all non-quoted values
@@ -319,3 +318,4 @@
 	//	var_dump($comments);
 		return $stack;
 	}
+}

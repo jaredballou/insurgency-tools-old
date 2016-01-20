@@ -1,4 +1,7 @@
 <?php
+// This is an old script that needs some TLC. It basically takes a properly
+// parsed navmesh JSON file, and creates an image with walkable areas transparent
+// To be used overlaying maps in the web viewer
 /*
 require "/opt/hlstatsx-community-edition/heatmaps/config.inc.php";
 
