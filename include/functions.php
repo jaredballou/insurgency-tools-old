@@ -57,9 +57,10 @@ foreach ($dirs as $dir) {
 		$versions[] = basename($dir);
 	}
 }
-// Set version and newest_version to the latest one
+// Set version and newest_version to the latest one. Try to get the version from Steam, otherwise just choose the newest available.
 asort($versions);
-$newest_version = $version = end($versions);
+$steam_ver=getSteamVersion();
+$newest_version = $version = in_array($steam_ver,$versions) ? $steam_ver : end($versions);
 
 // If version sent by request, set it as the version if it's valid.
 if (isset($_REQUEST['version'])) {
@@ -205,7 +206,6 @@ function LoadLanguages($pattern='English') {
 	// Load all language files
 	foreach ($langfiles as $langfile) {
 		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
-// var_dump($data);
 		$data = parseKeyValues($data,false);
 		foreach ($data["lang"]["Tokens"] as $key => $val) {
 			if ($command != 'smtrans') {
@@ -220,7 +220,6 @@ function LoadLanguages($pattern='English') {
 			}
 		}
 	}
-// var_dump($lang);
 }
 
 // rglob - recursively locate all files in a directory according to a pattern
@@ -284,7 +283,6 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	global $ordered_fields;
 	$indent = str_repeat(chr(9), $tier);
 	// TODO check for a certain key to keep it in the same tier instead of going into the next?
-// var_dump($str,$arr,$tier,$tree);
 	foreach ($arr as $key => $value) {
 		if (is_array($value)) {
 			$tree[$tier+1] = $key;
@@ -297,7 +295,6 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 						$str .= chr(9) . $indent . '"' . $k . '"' . chr(9) . '"' . $v . "\"\n";
 					}
 				}
-// var_dump($tree,$key,$value);
 			} else {
 // 				echo "Array<br>\n";
 				kvwriteSegment($str, $value, $tier+1,$tree);
@@ -306,11 +303,9 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 			unset($tree[$tier+1]);
 		} else {
 // 			echo "String<br>\n";
-// var_dump($tree,$key,$value);
 			$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
 		}
 	}
-// var_dump($str);
 	return $str;
 }
 // parseKeyValues - 
@@ -644,6 +639,7 @@ function theater_array_replace()
 		}
 		else
 		{
+			echo "ERROR: Not arrays!\n";
 			var_dump($args[0]);
 			var_dump($args[$i]);
 			trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
@@ -710,15 +706,15 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 /* getfile
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
+$base_theaters = array();
 function getfile($filename,$version='',$path='') {
-	global $custom_theater_paths,$newest_version,$theaterpath,$datapath;
+	global $custom_theater_paths,$newest_version,$theaterpath,$datapath,$base_theaters;
 	if ($version == '')
 		$version = $newest_version;
 	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "{$datapath}/theaters/{$version}");
 	$filepath.="/".basename($filename);
 	$data = file_get_contents($filepath);
 	$thisfile = parseKeyValues($data);
-// var_dump($filename,$version,$path,$filepath);// ,$data,$thisfile);
 	$theater = $thisfile["theater"];
 	// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
 	// This appears to be the way the game processes these files it appears.
@@ -730,7 +726,9 @@ function getfile($filename,$version='',$path='') {
 			$bases = array($thisfile["#base"]);
 		}
 		foreach ($bases as $base) {
-			$theater['#base'][] = $base;
+			if (in_array($base,$base_theaters) === true)
+				continue;
+			$base_theaters[] = $base;
 			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
 		}
 		$theater = theater_array_replace_recursive($basedata,$theater);
@@ -755,15 +753,10 @@ function getvgui($name,$type='img',$path='vgui/inventory') {
 	global $datapath;
 	$rp = "materials/{$path}/{$name}";
 	if (file_exists("{$datapath}/{$rp}.vmt")) {
-// echo "found file<br>";
 		$vmf = file_get_contents("{$datapath}/{$rp}.vmt");
-// var_dump($vmf);
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
-// var_dump($matches);
 		$rp = "materials/".$matches[1][0];
 	}
-
-// var_dump($rp);
 	if (file_exists("{$datapath}/{$rp}.png")) {
 		if ($type == 'img')
 			return "<img src='data/{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
@@ -791,4 +784,11 @@ function addLibPath($path) {
 		$libpaths[] = $path;
 		set_include_path(implode(PATH_SEPARATOR,$libpaths));
 	}
+}
+
+function getSteamVersion($appid=0) {
+	if (!$appid) $appid = $GLOBALS['appid'];
+	$url = "http://api.steampowered.com/ISteamApps/UpToDateCheck/v0001?appid={$appid}&version=0";
+	$raw = json_decode(file_get_contents($url),true);
+	return implode('.',str_split($raw['response']['required_version']));
 }

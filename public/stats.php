@@ -40,7 +40,6 @@ $css_content = '
 	}
 ';
 require_once "../include/header.php";
-
 if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
 	$index = "{$version}/{$theaterfile}";
@@ -904,7 +903,6 @@ function getobject($type, $key, $recurse=0) {
 		// Merge using replacement of like items, which will not merge sub-array values like damagehitgroups or ammo_clip if the object also defines the section. This appears to be the way the game processes these sections.
 		$import = getobject($type, $object["import"], $recurse);
 		unset($import['IsBase']);
-//		var_dump($type,$key);//$import);
 		$object = theater_array_replace($import, $object);
 	}
 	return $object;
