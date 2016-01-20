@@ -53,7 +53,7 @@ body, html, .container {
 
 <?php
 function startbody() {
-	global $curpage,$pages;
+	global $curpage,$pages,$includepath;
 	echo "  </head>\n  <body>\n";
 	include "{$includepath}/menu.php";
 }

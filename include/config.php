@@ -41,8 +41,6 @@ $servers = array(
 
 // publicpath is the publicly viewable path
 $publicpath="${rootpath}/public";
-// theaterpath is where the insurgency-theaters repo is checked out
-$theaterpath="${rootpath}/theaters";
 // datapath is where the insurgency-data repo is checked out
 $datapath="${publicpath}/data";
 
@@ -70,8 +68,8 @@ $custom_libpaths = array(
 	"{$rootpath}/thirdparty/steam-condenser-php/lib/SteamCondenser"
 );
 
-// Custom theater paths
-$custom_theater_paths = array('Custom' => $theaterpath);
+// Custom theater paths - include insurgency-theaters checkout
+$custom_theater_paths = array('Custom' => "${rootpath}/theaters");
 
 // MySQL Server connection settings
 $mysql_server   = 'localhost';

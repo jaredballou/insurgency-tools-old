@@ -159,8 +159,8 @@ $theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 // exit;
 
 // Load maplist and gametypes
-$mldata = json_decode(file_get_contents("{$rootpath}/data/thirdparty/maplist.json"),true);
-$gtlist = json_decode(file_get_contents("{$rootpath}/data/thirdparty/gamemodes.json"),true);
+$mldata = json_decode(file_get_contents("{$datapath}/thirdparty/maplist.json"),true);
+$gtlist = json_decode(file_get_contents("{$datapath}/thirdparty/gamemodes.json"),true);
 $gametypelist = array();
 foreach ($gtlist as $type=>$modes) {
 	foreach ($modes as $mode) {
@@ -185,14 +185,14 @@ foreach ($gtlist as $type=>$modes) {
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
 function LoadLanguages($pattern='English') {
-	global $langcode, $lang,$rootpath,$command;
+	global $langcode, $lang,$rootpath,$command,$datapath;
 	if (!isset($langcode))
 		$langcode = array();
 	if (!isset($lang))
 		$lang = array();
 	$langfile_regex = '/[\x00-\x08\x0E-\x1F\x80-\xFF]/s';
-	$langfiles = glob("{$rootpath}/data/resource/insurgency_".strtolower($pattern).".txt");
-	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$rootpath}/data/sourcemod/configs/languages.cfg")));
+	$langfiles = glob("{$datapath}/resource/insurgency_".strtolower($pattern).".txt");
+	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$datapath}/sourcemod/configs/languages.cfg")));
 	$data = parseKeyValues($data);
 	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 	foreach ($data['Languages'] as $code => $name) {
@@ -711,10 +711,10 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
 function getfile($filename,$version='',$path='') {
-	global $custom_theater_paths,$newest_version,$theaterpath,$rootpath;
+	global $custom_theater_paths,$newest_version,$theaterpath,$datapath;
 	if ($version == '')
 		$version = $newest_version;
-	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "{$rootpath}/data/theaters/{$version}");
+	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "{$datapath}/theaters/{$version}");
 	$filepath.="/".basename($filename);
 	$data = file_get_contents($filepath);
 	$thisfile = parseKeyValues($data);
@@ -752,25 +752,25 @@ function getfile($filename,$version='',$path='') {
 Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
-	global $rootpath;
-	$rp = "data/materials/{$path}/{$name}";
-	if (file_exists("{$rootpath}/{$rp}.vmt")) {
+	global $datapath;
+	$rp = "materials/{$path}/{$name}";
+	if (file_exists("{$datapath}/{$rp}.vmt")) {
 // echo "found file<br>";
-		$vmf = file_get_contents("{$rootpath}/{$rp}.vmt");
+		$vmf = file_get_contents("{$datapath}/{$rp}.vmt");
 // var_dump($vmf);
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
 // var_dump($matches);
-		$rp = "data/materials/".$matches[1][0];
+		$rp = "materials/".$matches[1][0];
 	}
 
 // var_dump($rp);
-	if (file_exists("{$rootpath}/{$rp}.png")) {
+	if (file_exists("{$datapath}/{$rp}.png")) {
 		if ($type == 'img')
-			return "<img src='{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
+			return "<img src='data/{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
 		if ($type == 'bare')
-			return "{$rp}.png";
+			return "data/{$rp}.png";
 		if ($type == 'css')
-			return " style=\"background-image: url('{$rp}.png');\" class='vgui'";
+			return " style=\"background-image: url('data/{$rp}.png');\" class='vgui'";
 	}
 }
 
