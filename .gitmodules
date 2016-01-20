@@ -25,9 +25,6 @@
 [submodule "thirdparty/pysmx"]
 	path = thirdparty/pysmx
 	url = git@github.com:jaredballou/pysmx.git
-[submodule "thirdparty/webgl-source"]
-	path = thirdparty/webgl-source
-	url = git@github.com:jaredballou/webgl-source.git
 [submodule "thirdparty/php-binary"]
 	path = thirdparty/php-binary
 	url = git@github.com:jaredballou/php-binary.git
