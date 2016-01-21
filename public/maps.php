@@ -9,7 +9,7 @@ this point.
 
 // Start output
 $title = "Map Viewer";
-require "../include/header.php";
+require realpath('./..')."/include/header.php";
 
 // Maps array holds all map data
 $maps = array();

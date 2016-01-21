@@ -5,7 +5,7 @@ and then displays the content in a single page. It uses caching to keep the
 request count low and not spam GitHub.
 */
 $title = "Jared Ballou's Insurgency Tools";
-require_once "../include/header.php";
+require_once realpath('./..')."/include/header.php";
 //User to pull the data for
 $githubuser = 'jaredballou';
 /*

@@ -39,7 +39,7 @@ $css_content = '
 		background-color: #FFFFFF;
 	}
 ';
-require_once "../include/header.php";
+require_once realpath('./..')."/include/header.php";
 if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
 	$index = "{$version}/{$theaterfile}";

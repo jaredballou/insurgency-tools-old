@@ -3,7 +3,7 @@
 This takes the CVAR list CSV files from data and displays them in a simple
 tabular format.
 */
-require "../include/header.php";
+require realpath('./..')."/include/header.php";
 $dirs = glob("${datapath}/cvarlist/*");
 foreach ($dirs as $dir) {
 	if (!is_dir($dir)) {
