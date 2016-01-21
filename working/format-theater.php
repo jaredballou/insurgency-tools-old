@@ -1,4 +1,8 @@
 <?php
+/*
+This tool is in-flight, the original idea was to have it neaten up theaters.
+New thinking is I merge it into the classes and have the writing done there.
+*/
 if (count($argv) > 1) {
 	for($i=1;$i<count($argv);$i++) {
 		if (file_exists($argv[$i])) {

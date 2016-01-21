@@ -6,6 +6,8 @@ $includepath = realpath(dirname(__FILE__));
 // rootpath is the insurgency-tools root
 $rootpath=dirname($includepath);
 
+$base_theaters = array();
+
 // Pull in configuration settings
 include "{$includepath}/config.php";
 
@@ -50,9 +52,9 @@ $raw = preg_grep('/^[\#]*game_gm_(.*)$/', array_keys($lang[$language]));
 foreach ($raw as $key) {
 	$bits = explode("_",$key,3);
 	$gm = $bits[2];
-	$gamemodes[$gm]['name'] = $lang[$language][$key];
-	$gamemodes[$gm]['desc'] = $lang[$language]["#game_description_{$gm}"];
-	$gamemodes[$gm]['desc_short'] = $lang[$language]["#game_description_short_{$gm}"];
+	$gamemodes[$gm]['name'] = @$lang[$language][$key];
+	$gamemodes[$gm]['desc'] = @$lang[$language]["#game_description_{$gm}"];
+	$gamemodes[$gm]['desc_short'] = @$lang[$language]["#game_description_short_{$gm}"];
 }
 // Get the command passed to the script
 $command = @$_REQUEST['command'];
@@ -215,6 +217,7 @@ function LoadLanguages($pattern='English') {
 	foreach ($langfiles as $langfile) {
 		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
 		$data = parseKeyValues($data,false);
+		if (!isset($data["lang"]["Tokens"])) continue;
 		foreach ($data["lang"]["Tokens"] as $key => $val) {
 			if ($command != 'smtrans') {
 				$key = "#".strtolower($key);
@@ -714,7 +717,6 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 /* getfile
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
-$base_theaters = array();
 function getfile($filename,$version='',$path='') {
 	global $custom_theater_paths,$newest_version,$theaterpath,$datapath,$base_theaters;
 	if ($version == '')

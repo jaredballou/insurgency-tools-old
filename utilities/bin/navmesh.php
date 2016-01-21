@@ -1,4 +1,11 @@
 <?php
+/*
+navmesh.php
+This script parses the binary navmesh file and dumps a JSON of all the information it contains.
+It is the first step of processing, but I think I will keep the "raw" navmesh data in the
+insurgency-data repo for other people to use, and then refine and process it for the web
+tools separately.
+*/
 namespace NAVReader;
 function GetBinary($fd,$type='L',$len=0) {
 	if ($len == 0) {
@@ -35,6 +42,7 @@ function GetBinary($fd,$type='L',$len=0) {
 		return $data[1];
 	}
 }
+
 class NAVHeader{
 	public 
 		$magicNumber,
@@ -228,6 +236,3 @@ class NAV{
 //Do areas
 	}
 }
-$navfile="/home/insserver/serverfiles/insurgency/maps/market.nav";
-$nav = new \NAVReader\NAV($navfile);
-var_dump($nav);

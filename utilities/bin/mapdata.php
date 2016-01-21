@@ -1,17 +1,30 @@
 #!/usr/bin/env php
 <?php
+/*
+================================================================================
+mapdata.php
+(c) 2015,2016 Jared Ballou <insurgency@jballou.com>
+
+This is a tool to parse the map data files (Decompiled source, Overview, and
+CPSetup text file) into the JSON format for the web viewer. It does a lot of
+modification to the data, converts all coordinates to map to the 1024x1024
+overview image, and adds in some information about the entities and points.
+================================================================================
+*/
+
 // Set paths
 $scriptpath = realpath(dirname(__FILE__));
 $rootpath=dirname(dirname($scriptpath));
 
 // Include key-value reader
-require_once "{$rootpath}/include/kvreader2.php";
 require_once "{$rootpath}/include/functions.php";
+require_once "{$rootpath}/include/kvreader2.php";
 
 // Get all map text files. This could probably be safer.
 $mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
-$files = glob("{$rootpath}/data/resource/overviews/{$mapfilter}.txt");
+$files = glob("{$datapath}/resource/overviews/{$mapfilter}.txt");
 
+// Set linebreak character
 if (php_sapi_name() == "cli") {
 	$linebreak="\n";
 } else {
@@ -22,24 +35,26 @@ foreach ($files as $file) {
 	$mapname = basename($file,".txt");
 	ParseMap($mapname,isset($_REQUEST['force']));
 }
+
+exit;
 // Parse the map into JSON
 function ParseMap($mapname,$force)
 {
-	global $rootpath,$linebreak,$gametypelist;
+	global $datapath,$linebreak,$gametypelist;
 	echo "Checking {$mapname}... ";
 	$controlpoints = array();
 	$map_objects = array();
 	$map = array();
 	$reader = new KVReader();
 	//Check if we need to run the parser. Unless forced, this will not run if the JSON output is newer than the cpsetup.txt file
-	$dstfile = "{$rootpath}/data/maps/parsed/{$mapname}.json";
+	$dstfile = "{$datapath}/maps/parsed/{$mapname}.json";
 	if (file_exists($dstfile)) {
 		$dstdata = json_decode(file_get_contents($dstfile),true);
 	}
 	$srcfiles = array(
-		"CPSetup"    => "{$rootpath}/data/maps/{$mapname}.txt",
-		"Overview"   => "{$rootpath}/data/resource/overviews/{$mapname}.txt",
-		"VMF Source" => "{$rootpath}/data/maps/src/{$mapname}_d.vmf",
+		"CPSetup"    => "{$datapath}/maps/{$mapname}.txt",
+		"Overview"   => "{$datapath}/resource/overviews/{$mapname}.txt",
+		"VMF Source" => "{$datapath}/maps/src/{$mapname}_d.vmf",
 	);
 	// Check source files
 	foreach ($srcfiles as $name => $file) {
@@ -60,7 +75,7 @@ function ParseMap($mapname,$force)
 		return;
 	}
 	//Load cpsetup.txt
-	$data = current($reader->read(strtolower(file_get_contents("{$rootpath}/data/maps/{$mapname}.txt"))));
+	$data = current($reader->read(strtolower(file_get_contents("{$datapath}/maps/{$mapname}.txt"))));
 
 	//Pull first element from KeyValues (since custom mappers don't reliably use "cpsetup.txt" we don't get it by name)
 	foreach ($data as $key=>$val) {
@@ -70,19 +85,8 @@ function ParseMap($mapname,$force)
 			$map[$key] = $val;
 		}
 	}
-/*
-	//Parse other sections that are not game modes. TODO: Use game modes selector to handle this, so rather than specifying non-gamemode sections, we parse anything
-	foreach (array('theater_conditions','navfile','nightlighting') as $section) {
-		if (isset($map['gametypes'][$section])) {
-			$map[$section] = $map['gametypes'][$section];
-			if (is_array($map['gametypes'][$section])) {
-				unset($map['gametypes'][$section]);
-			}
-		}
-	}
-*/
 	//Get overview information (file, position, scale)
-	$lines = file("{$rootpath}/data/resource/overviews/{$mapname}.txt", FILE_IGNORE_NEW_LINES);
+	$lines = file("{$datapath}/resource/overviews/{$mapname}.txt", FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
 		$data = explode("\t",preg_replace('/\s+/', "\t",str_replace('"','',trim($line))));
 		if (isset($data[1])) {
@@ -91,11 +95,11 @@ function ParseMap($mapname,$force)
 	}
 
 	//Parse the decompiled VMF file
-	if (file_exists("{$rootpath}/data/maps/src/{$mapname}_d.vmf")) {
+	if (file_exists("{$datapath}/maps/src/{$mapname}_d.vmf")) {
+		// Remove non-printable characters to make processing easier
+                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$datapath}/maps/src/{$mapname}_d.vmf")));
                 //Change to lowercase to make array indexing simpler
-                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$rootpath}/data/maps/src/{$mapname}_d.vmf")));
                 $data = preg_replace('/(\s)([a-zA-Z0-9]+)(\s+{)/','${1}"${2}"${3}',"\"map\" {\n{$data}}");
-		$test = $reader->read($data);
                 //Get all entity{} objects, including nested objects
                 preg_match_all('/entity[^{]+(\{(?:[^}]++|(?R))*+)\}/',$data,$matches);
                 //Process entities
@@ -106,12 +110,13 @@ function ParseMap($mapname,$force)
                         $entity = $reader->read($rawent);
 			//Only interested in certain entities
 			if (in_array($entity['classname'],array("trigger_capture_zone","point_controlpoint","obj_weapon_cache","ins_spawnzone","ins_blockzone")) !== false) {
-				//Special processing for spawnzone
+				//Special processing for capture zone
 				if ($entity['classname'] == "trigger_capture_zone") {
-					continue;
+//					continue;
 					$entity['targetname'] = $entity['controlpoint'];
 					$entity['classname'] = 'point_controlpoint';
 				}
+				// Create data structure for point
 				$point = CreatePoint($entity,$map);
 				$entname = $point['pos_name'];//(isset($entity['controlpoint'])) ? $entity['controlpoint'] : $entity['targetname'];
 				if (isset($entity['solid'])) {
@@ -146,6 +151,7 @@ function ParseMap($mapname,$force)
 							$max[0] = (($vector[0] > $max[0]) || !isset($max[0])) ? $vector[0] : $max[0];
 							$max[1] = (($vector[1] > $max[1]) || !isset($max[1])) ? $vector[1] : $max[1];
 						}
+						// Count the sides to see if this is a square or not.
 						if (count($path) == 4) {
 							$point['pos_x'] = (int)$min[0];
 							$point['pos_y'] = (int)$min[1];
@@ -173,7 +179,7 @@ function ParseMap($mapname,$force)
 		}
 	}
 	//Process game type data for this map
-	foreach ($map['gametypes'] as $gtname => $gtdata) {
+	foreach (@$map['gametypes'] as $gtname => $gtdata) {
 		//Create an array called cps with the names of all the control points for this mode
 		if (!isset($gtdata['controlpoint'])) {
 			continue;
@@ -184,7 +190,7 @@ function ParseMap($mapname,$force)
 		//var_dump($cps);
 		//Process any entities in the gamedata text file.
 		$entlist = array();
-		foreach ($gtdata['entities'] as $entname => $entity) {
+		foreach (@$gtdata['entities'] as $entname => $entity) {
 			//var_dump($entname);
 			//var_dump($entity);
 			//KV reader now handles multiple like-named resources by creating a numerically indexed array
@@ -216,6 +222,7 @@ var_dump($entlist);
 		}
 		//chr 65 is uppercase A. This lets me 'increment' letters
 		$chr = 65;
+		// Loop through control points and name them
 		foreach ($cps as $idx => $cp) {
 			$cpname = chr($chr);
 			unset($map['gametypes'][$gtname]['controlpoint'][$idx]);
@@ -252,30 +259,22 @@ var_dump($entlist);
 				$map['gametypes'][$gtname]['spawnzones'][$szname] = $sz;
 			}
 		}
-		if (is_array($map['gametypes'][$gtname]['points'])) {
+		// Remove the points and entities sections from the finished data structure. We no longer need them.
+		if (@is_array($map['gametypes'][$gtname]['points'])) {
 			unset($map['gametypes'][$gtname]['points']);
 		}
-		if (is_array($map['gametypes'][$gtname]['entities'])) {
+		if (@is_array($map['gametypes'][$gtname]['entities'])) {
 			unset($map['gametypes'][$gtname]['entities']);
 		}
 	}
 	$json = prettyPrint(json_encode($map));
-	file_put_contents("{$rootpath}/data/maps/parsed/{$mapname}.json",$json);
+	file_put_contents("{$datapath}/maps/parsed/{$mapname}.json",$json);
 	echo "OK: Parsed {$mapname}{$linebreak}";
 }
 
-exit;
 //Process an entity and prepare it for display on the map
 function CreatePoint($entity,$mapname) {
 	$point = array();
-/*
-	$fields = array('classname','targetname','controlpoint','teamnum','origin');
-	foreach ($fields as $field)
-	{
-		if (isset($entity[$field]))
-			$point[$field] = $entity[$field];
-	}
-*/
 	if (isset($entity['origin'])) {
 		$coords = preg_split('/\s+/',$entity['origin']);
 		if (!isset($point['pos_x']))
@@ -283,43 +282,44 @@ function CreatePoint($entity,$mapname) {
 		if (!isset($point['pos_y']))
 			$point['pos_y'] = round(abs(($coords[1] - $mapname['overview']['pos_y']) / $mapname['overview']['scale']));
 	}
-	if (isset($entity['classname']) && !isset($point['pos_classname'])) {
-		$point['pos_classname'] = $entity['classname'];
+	// This array maps point fields to the source data fields from the entity.
+	// These get processed in order, so if one is found the processing takes that value and skips the rest.
+	$fields = array(
+		'pos_classname' => 'classname',
+		'pos_blockzone' => 'blockzone',
+		'pos_type' => 'classname',
+		'pos_team' => array(
+			'teamnumber',
+			'teamnum',
+			'TeamNum',
+		),
+		'pos_name' => array(
+			'controlpoint',
+			'targetname'
+		),
+	);
+	foreach ($fields as $pf => $ef) {
+		// If we already have a value, no need to search
+		if (isset($point[$pf])) continue;
+
+		// Set $ef to array to make looping simple
+		if (!is_array($ef)) $ef=array($ef);
+
+		foreach ($ef as $efe) {
+			if (isset($entity[$efe])) {
+				$point[$pf] = $entity[$efe];
+				continue 2;
+			}
+		}
 	}
-	if (isset($entity['blockzone']) && !isset($point['pos_blockzone'])) {
-		$point['pos_blockzone'] = $entity['blockzone'];
-	}
-	if (isset($entity['classname']) && !isset($point['pos_type'])) {
-		$point['pos_type'] = $entity['classname'];
-	}
-	if (isset($entity['teamnumber']) && !isset($point['pos_team'])) {
-		$point['pos_team'] = $entity['teamnumber'];
-	}
-	if (isset($entity['teamnum']) && !isset($point['pos_team'])) {
-		$point['pos_team'] = $entity['teamnum'];
-	}
-	if (isset($entity['TeamNum']) && !isset($point['pos_team'])) {
-		$point['pos_team'] = $entity['TeamNum'];
-	}
+
+	// These fields need to be integers, and set to 0 if missing.
+	foreach (array('pos_team','pos_x','pos_y') as $field) {
+		$point[$field] = (isset($point[$field])) ? (int)$point[$field] : 0;
+	}	
 	if ($entity['classname'] == "ins_spawnzone") {
 		$point['pos_name'] = "{$entity['targetname']}_team{$point['pos_team']}";
 	}
-	if (isset($entity['controlpoint']) && !isset($point['pos_name'])) {
-		$point['pos_name'] = $entity['controlpoint'];
-	}
-	if (isset($entity['targetname']) && !isset($point['pos_name'])) {
-		$point['pos_name'] = $entity['targetname'];
-	}
-	if (!isset($point['pos_team'])) {
-		$point['pos_team'] = 0;
-	}
-	if (isset($point['pos_team']))
-		$point['pos_team'] = (int)$point['pos_team'];
-	if (isset($point['pos_x']))
-		$point['pos_x'] = (int)$point['pos_x'];
-	if (isset($point['pos_y']))
-		$point['pos_y'] = (int)$point['pos_y'];
-	
 	return $point;
 }
 

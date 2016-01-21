@@ -26,7 +26,7 @@ function rcon_pack_message()
 	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00" | nc -u -w 2 $SERVER $PORT
 }
 SERVER="ins2.jballou.com"
-rcon_pack_message $SERVERDATA_AUTH serenity
+rcon_pack_message $SERVERDATA_AUTH $2
 rcon_pack_message $SERVERDATA_EXECCOMMAND "status"
 exit 0
 # Send raw rcon command

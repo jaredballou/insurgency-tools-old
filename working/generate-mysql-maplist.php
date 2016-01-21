@@ -1,4 +1,8 @@
 <?php
+/*
+This tool was to parse maps into a hierarchial database where I would track versions and other metadata.
+It is now abandoned.
+*/
 $mappath = '/home/insserver/serverfiles/insurgency/maps';
 // List of matching fields, and values that would be accepted for this field.
 $matches = array(
@@ -83,11 +87,11 @@ foreach ($maps as $map=>$data) {
 	$update = array();
 	foreach ($data as $key=>$val) {
 	}
-//	echo "INSERT INTO maps ({$keys}) VALUES ('{$values}') ON DUPLICATE KEY UPDATE ".implode(',',$update).";\n";
+	echo "INSERT INTO maps ({$keys}) VALUES ('{$values}') ON DUPLICATE KEY UPDATE ".implode(',',$update).";\n";
 	if (isset($data['files'])) {
 		$files = explode(',',$data['files']);
 		foreach ($files as $file) {
-//			echo "UPDATE files SET map=(SELECT id FROM maps WHERE ".implode(' AND ',$update).") WHERE filename='{$file}';\n";
+			echo "UPDATE files SET map=(SELECT id FROM maps WHERE ".implode(' AND ',$update).") WHERE filename='{$file}';\n";
 		}
 	}
 }
