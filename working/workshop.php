@@ -51,7 +51,7 @@ function GetWorkshopPages($page=0,$numperpage=100) {
 	);
 	//Build URL
 	$url = "{$url}?".http_build_query($args);
-
+	echo $url."\n";
 	//Get data
 	//$data = file_get_contents("out-workshop.json");
 	$data = file_get_contents($url);

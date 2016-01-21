@@ -31,3 +31,9 @@
 [submodule "thirdparty/webgl-source"]
 	path = thirdparty/webgl-source
 	url = git@github.com:jaredballou/webgl-source.git
+[submodule "thirdparty/SteamWorks"]
+	path = thirdparty/SteamWorks
+	url = git@github.com:jaredballou/SteamWorks.git
+[submodule "thirdparty/open-steamworks"]
+	path = thirdparty/open-steamworks
+	url = git@github.com:jaredballou/open-steamworks.git

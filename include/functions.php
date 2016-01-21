@@ -37,15 +37,23 @@ if (!file_exists($cache_dir)) {
         mkdir($cache_dir,0755,true);
 }
 
-// Loading languages here because we are only loading the core language at this time
-LoadLanguages($language);
-
 if (isset($_REQUEST['language'])) {
 	if (in_array($_REQUEST['language'],$lang)) {
 		$language = $_REQUEST['language'];
 	}
 }
 
+// Loading languages here because we are only loading the core language at this time
+LoadLanguages($language);
+$gamemodes = array();
+$raw = preg_grep('/^[\#]*game_gm_(.*)$/', array_keys($lang[$language]));
+foreach ($raw as $key) {
+	$bits = explode("_",$key,3);
+	$gm = $bits[2];
+	$gamemodes[$gm]['name'] = $lang[$language][$key];
+	$gamemodes[$gm]['desc'] = $lang[$language]["#game_description_{$gm}"];
+	$gamemodes[$gm]['desc_short'] = $lang[$language]["#game_description_short_{$gm}"];
+}
 // Get the command passed to the script
 $command = @$_REQUEST['command'];
 
@@ -192,7 +200,7 @@ function LoadLanguages($pattern='English') {
 	if (!isset($lang))
 		$lang = array();
 	$langfile_regex = '/[\x00-\x08\x0E-\x1F\x80-\xFF]/s';
-	$langfiles = glob("{$datapath}/resource/insurgency_".strtolower($pattern).".txt");
+	$langfiles = glob("{$datapath}/resource/*_".strtolower($pattern).".txt");
 	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$datapath}/sourcemod/configs/languages.cfg")));
 	$data = parseKeyValues($data);
 	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
