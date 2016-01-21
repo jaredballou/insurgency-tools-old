@@ -6,7 +6,7 @@ It is the first step of processing, but I think I will keep the "raw" navmesh da
 insurgency-data repo for other people to use, and then refine and process it for the web
 tools separately.
 */
-namespace NAVReader;
+namespace NavMesh;
 function GetBinary($fd,$type='L',$len=0) {
 	if ($len == 0) {
 		switch($type) {
@@ -31,6 +31,7 @@ function GetBinary($fd,$type='L',$len=0) {
 				break;
 		}
 	}
+	// VEC is just three floats in a row
 	if ($type == 'VEC') {
 		$data = array(GetBinary($fd,'f'),GetBinary($fd,'f'),GetBinary($fd,'f'));
 		return $data;
@@ -43,7 +44,7 @@ function GetBinary($fd,$type='L',$len=0) {
 	}
 }
 
-class NAVHeader{
+class Header{
 	public 
 		$magicNumber,
 		$version,
@@ -65,7 +66,7 @@ class NAVHeader{
 		}
 	}
 }
-class NAVLadder{
+class Ladder{
 	public
 		$iLadderID,
 		$flLadderWidth,
@@ -92,7 +93,7 @@ class NAVLadder{
 		$this->iLadderBottomAreaID	= GetBinary($fd);
 	}
 }
-class NAVArea{
+class Area{
 	public 
 		$iAreaID,
 		$iAreaFlags,
@@ -193,7 +194,7 @@ class NAVArea{
 	}
 }
 
-class NAV{
+class File{
 	public 
 	$nav_path,
 	$nav_fd,
@@ -213,7 +214,7 @@ class NAV{
 	function __construct($nav_path){
 		$this->nav_path = $nav_path;
 		$this->nav_fd = fopen($nav_path, 'rb');
-		$this->nav_header = new NAVHeader($this->nav_fd);
+		$this->nav_header = new Header($this->nav_fd);
 		$this->iPlaceCount = GetBinary($this->nav_fd,'S');
 		for($p=0;$p<$this->iPlaceCount;$p++) {
 			echo "Place {$p}\n";
@@ -225,14 +226,13 @@ class NAV{
 		$this->iAreaCount = GetBinary($this->nav_fd);
 		for($a=0;$a<$this->iAreaCount;$a++) {
 			echo "Area {$a}\n";
-			$this->areas[$a] = new NAVArea($this->nav_header,$this->nav_fd);
-			var_dump($this->areas[$a]);
+			$this->areas[$a] = new Area($this->nav_header,$this->nav_fd);
+			//var_dump($this->areas[$a]);
 		}
 		$this->iLadderCount			= GetBinary($fd);
 		for ($l=0;$l<$this->iLadderCount;$l++) {
 			echo "Ladder {$l}\n";
-			$this->ladders[$l] = new NAVLadder($this->nav_fd);
+			$this->ladders[$l] = new Ladder($this->nav_fd);
 		}
-//Do areas
 	}
 }

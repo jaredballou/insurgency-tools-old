@@ -9,13 +9,13 @@
 EXTRACTFILES=0
 GETMAPS=0
 REMOVEBLACKLISTMAPS=0
-DECOMPILEMAPS=1
-SYNC_MAPS_TO_DATA=1
-COPY_MAP_FILES_TO_DATA=1
-CONVERT_VTF=0
-MAPDATA=1
+DECOMPILEMAPS=0
+SYNC_MAPS_TO_DATA=0
+COPY_MAP_FILES_TO_DATA=0
+CONVERT_VTF=1
+MAPDATA=0
 FULL_MD5_MANIFEST=0
-CLEAN_MANIFEST=1
+CLEAN_MANIFEST=0
 SORT_MANIFEST=0
 GITUPDATE=0
 
@@ -23,14 +23,31 @@ GITUPDATE=0
 # Get OS
 SYSTEM=$(uname -s)
 
-# Script name and directory
-SCRIPTNAME=$(basename $(readlink -f "${BASH_SOURCE[0]}"))
-SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# insurgency-tools dir
-REPODIR="$(cd "${SCRIPTDIR}/../.." && pwd)"
-# Game dir
-GAMEDIR="$(cd "${REPODIR}/../serverfiles/insurgency" && pwd)"
+if [ "${SYSTEM}" == "Linux" ]; then
+	# Script name and directory
+	SCRIPTNAME=$(basename $(readlink -f "${BASH_SOURCE[0]}"))
+	SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	# insurgency-tools dir
+	REPODIR="$(cd "${SCRIPTDIR}/../.." && pwd)"
+	# Game dir
+	GAMEDIR="$(cd "${REPODIR}/../serverfiles/insurgency" && pwd)"
+	# VPK Converter
+	VPK="${SCRIPTDIR}/vpk.php"
+	# VTF2TGA Converter
+	VTF2TGA="${SCRIPTDIR}/vtf2tga"
+else
+	# Script name and directory
+	SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
+	SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	# insurgency-tools dir
+	REPODIR="../.."
+	# Game dir
+	GAMEDIR="${REPODIR}/.."
+	# VPK Converter
+	VPK="${GAMEDIR}/../bin/vpk"
+	# VTF2TGA Converter
+	VTF2TGA="${SCRIPTDIR}/win/VTFCmd.exe"
+fi
 # Data dir
 DATADIR="${REPODIR}/public/data"
 # Maps source dir
@@ -48,21 +65,9 @@ VERSION="$(grep -oP -i 'PatchVersion=([0-9\.]+)' "${GAMEDIR}/steam.inf" | cut -d
 # RSYNC command
 RSYNC="rsync -av"
 # BSPSRC command
-BSPSRC="java -cp ../../thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.BspSourceCli -no_areaportals -no_cubemaps -no_details -no_occluders -no_overlays -no_rotfix -no_sprp -no_brushes -no_cams -no_lumpfiles -no_prot -no_visgroups"
+BSPSRC="java -cp ${REPODIR}/thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.BspSourceCli -no_areaportals -no_cubemaps -no_details -no_occluders -no_overlays -no_rotfix -no_sprp -no_brushes -no_cams -no_lumpfiles -no_prot -no_visgroups"
 # Pakrat command
-PAKRAT="java -jar ../../thirdparty/pakrat/pakrat.jar"
-# VPK Converter
-if [ "${SYSTEM}" == "Linux" ]; then
-	VPK="${SCRIPTDIR}/vpk.php"
-else
-	VPK="${GAMEDIR}/../bin/vpk"
-fi
-# VTF2TGA Converter
-if [ "${SYSTEM}" == "Linux" ]; then
-	VTF2TGA="${SCRIPTDIR}/vtf2tga"
-else
-	VTF2TGA="${SCRIPTDIR}/VTFCmd.exe"
-fi
+PAKRAT="java -jar ${REPODIR}/thirdparty/pakrat/pakrat.jar"
 # This version theater dir
 TD="${DATADIR}/theaters/${VERSION}"
 # This version playlists dir
@@ -227,7 +232,11 @@ function get_datadir_path()
 			return
 		fi
 	fi
-	echo $(readlink -f "${FILE}") | sed -e "s|^${DATADIR}/||"
+	if [ "${SYSTEM}" == "Linux" ]; then
+		echo $(readlink -f "${FILE}") | sed -e "s|^${DATADIR}/||"
+	else
+		echo "${FILE}" | sed -e "s|^${DATADIR}/||"
+	fi
 }
 # Display MD5sum of a file
 function get_file_md5()

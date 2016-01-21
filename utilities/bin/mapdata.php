@@ -18,7 +18,7 @@ $rootpath=dirname(dirname($scriptpath));
 
 // Include key-value reader
 require_once "{$rootpath}/include/functions.php";
-require_once "{$rootpath}/include/kvreader2.php";
+require_once "{$rootpath}/working/kvreader2.php";
 
 // Get all map text files. This could probably be safer.
 $mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
