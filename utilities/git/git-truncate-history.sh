@@ -1,4 +1,5 @@
 #!/bin/bash -e
+# Truncate Git history
 # Lifted from: https://github.com/adrienthebo/git-tools/blob/master/git-truncate
 # Note: seem to be finding the need to run this twice over to commit the truncate
 

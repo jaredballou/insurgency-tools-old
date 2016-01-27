@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# rcon.sh
+# This script attempts to send a command via rcon. It is not currently working.
+
+# Variables to use for default
 SERVER='localhost'
 PORT='27015'
 PASSWORD='testme'
@@ -25,10 +30,10 @@ function rcon_pack_message()
 	echo "aaaaaa"
 	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00" | nc -u -w 2 $SERVER $PORT
 }
-SERVER="ins2.jballou.com"
-rcon_pack_message $SERVERDATA_AUTH $2
-rcon_pack_message $SERVERDATA_EXECCOMMAND "status"
-exit 0
+#SERVER="ins2.jballou.com"
+#rcon_pack_message $SERVERDATA_AUTH $2
+#rcon_pack_message $SERVERDATA_EXECCOMMAND "status"
+#exit 0
 # Send raw rcon command
 # $1	 nc parameters Server Port
 # $2...	 Raw rcon message
@@ -141,6 +146,7 @@ function show_help()
 cat_command=false
 rcon_command=""
 
+# Parse command line arguments
 for arg in $@
 do
 	if $cat_command

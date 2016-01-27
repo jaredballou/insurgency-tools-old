@@ -1,5 +1,7 @@
 #!/bin/bash
 # This tool generates bzip and md5 files for all maps
+# It will also create symlinks named "$map $mode.bsp" for all maps based upon
+# game modes to help with servers finding maps and modes in menus.
 
 MAPSDIR=/opt/fastdl/maps
 STARTDIR=$(pwd)

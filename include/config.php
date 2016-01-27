@@ -266,4 +266,9 @@ $stats_tables = array(
 	)
 );
 // Include the private config (never updated by Git) to override or set other variables
-require_once("{$includepath}/config.private.php");
+$cfg_private="{$includepath}/config.private.php";
+if (file_exists($cfg_private)) {
+	require_once($cfg_private);
+} else {
+	file_put_contents($cfg_private,"<?php\n//Custom Config for your site - this will not be modified by the tools!\n\n");
+}

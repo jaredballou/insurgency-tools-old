@@ -12,10 +12,10 @@
 	url = git@github.com:jaredballou/php-vpk-reader.git
 [submodule "thirdparty/vtf2tga"]
 	path = thirdparty/vtf2tga
-	url = git@github.com:tranek/vtf2tga.git
+	url = git@github.com:jaredballou/vtf2tga.git
 [submodule "thirdparty/VTFLib"]
 	path = thirdparty/VTFLib
-	url = git@github.com:panzi/VTFLib.git
+	url = git@github.com:jaredballou/VTFLib.git
 [submodule "thirdparty/libtxc_dxtn"]
 	path = thirdparty/libtxc_dxtn
 	url = git@github.com:jaredballou/libtxc_dxtn.git
@@ -37,3 +37,9 @@
 [submodule "thirdparty/open-steamworks"]
 	path = thirdparty/open-steamworks
 	url = git@github.com:jaredballou/open-steamworks.git
+[submodule "thirdparty/sourcepawn-inc-parser"]
+	path = thirdparty/sourcepawn-inc-parser
+	url = git@github.com:jaredballou/sourcepawn-inc-parser.git
+[submodule "thirdparty/sourcemod"]
+	path = thirdparty/sourcemod
+	url = git@github.com:jaredballou/sourcemod.git

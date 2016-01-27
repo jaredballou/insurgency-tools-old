@@ -3,7 +3,7 @@ if (isset($use_ob)) {
 	ob_start();
 }
 require_once "functions.php";
-if (!$title) {
+if (!isset($title)) {
 	$title = 'Insurgency Tools';
 }
 ?><!DOCTYPE html>
