@@ -18,7 +18,7 @@
 	url = git@github.com:panzi/VTFLib.git
 [submodule "thirdparty/libtxc_dxtn"]
 	path = thirdparty/libtxc_dxtn
-	url = git://people.freedesktop.org/~mareko/libtxc_dxtn
+	url = git@github.com:jaredballou/libtxc_dxtn.git
 [submodule "thirdparty/source-sdk-2013"]
 	path = thirdparty/source-sdk-2013
 	url = git@github.com:jaredballou/source-sdk-2013.git
