@@ -9,11 +9,11 @@
 EXTRACTFILES=0
 GETMAPS=0
 REMOVEBLACKLISTMAPS=0
-DECOMPILEMAPS=0
-SYNC_MAPS_TO_DATA=0
-COPY_MAP_FILES_TO_DATA=0
-CONVERT_VTF=1
-MAPDATA=0
+DECOMPILEMAPS=1
+SYNC_MAPS_TO_DATA=1
+COPY_MAP_FILES_TO_DATA=1
+CONVERT_VTF=0
+MAPDATA=1
 FULL_MD5_MANIFEST=0
 CLEAN_MANIFEST=0
 SORT_MANIFEST=0
@@ -32,9 +32,9 @@ if [ "${SYSTEM}" == "Linux" ]; then
 	# Game dir
 	GAMEDIR="$(cd "${REPODIR}/../serverfiles/insurgency" && pwd)"
 	# VPK Converter
-	VPK="${SCRIPTDIR}/vpk.php"
+	VPK="$(readlink -f "${SCRIPTDIR}/../vpk/vpk.php")"
 	# VTF2TGA Converter
-	VTF2TGA="${SCRIPTDIR}/vtf2tga"
+	VTF2TGA="$(readlink -f "${SCRIPTDIR}/../vtf2tga/vtf2tga")"
 else
 	# Script name and directory
 	SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
@@ -69,19 +69,21 @@ BSPSRC="java -cp ${REPODIR}/thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.Bs
 # Pakrat command
 PAKRAT="java -jar ${REPODIR}/thirdparty/pakrat/pakrat.jar"
 # This version theater dir
-TD="${DATADIR}/theaters/${VERSION}"
+VERDIR="${DATADIR}/mods/insurgency/${VERSION}"
+TD="${VERDIR}/scripts/theaters"
 # This version playlists dir
-PD="${DATADIR}/playlists/${VERSION}"
+PD="${VERDIR}/scripts/playlists"
 # Maps blacklist (will skip downloads and clean up date based upon these items)
 BLACKLIST="${DATADIR}/thirdparty/maps-blacklist.txt"
 
 # Directories to extract from bsp files using Pakrat
-MAPSRCDIRS="materials/vgui/* materials/overviews/* resource/* maps/*.txt"
+MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/ maps/*.txt"
 
 # List the paths to extract from the VPK files
-declare -A VPKPATHS
-VPKPATHS["insurgency_misc_dir"]="scripts/theaters:${TD} scripts/playlists:${PD} resource:${DATADIR}/resource maps:${DATADIR}/maps"
-VPKPATHS["insurgency_materials_dir"]="materials/vgui:${DATADIR}/materials/vgui materials/overviews:${DATADIR}/materials/overviews"
+VPKPATHS=(
+	"insurgency_misc_dir scripts/theaters:${TD} scripts/playlists:${PD} resource:${DATADIR}/resource maps:${DATADIR}/maps"
+	"insurgency_materials_dir materials/vgui:${DATADIR}/materials/vgui materials/overviews:${DATADIR}/materials/overviews"
+)
 # If the theater directory for this version is missing, extract files
 if [ ! -d "${TD}" ]
 then
@@ -93,14 +95,17 @@ fi
 function extractfiles()
 {
 	echo "> Extracting VPK files"
-	for k in "${!VPKPATHS[@]}"
+	for set in "${VPKPATHS[@]}"
 	do
-		echo ">> Processing ${k}..."
-		for PAIR in ${VPKPATHS[$k]}
-		do
-			IFS=':' read -r -a PATHS <<< "${PAIR}"
+		VPKFILE=""
+		for item in $set; do
+			if [ "${VPKFILE}" == "" ]; then
+				VPKFILE="${item}"
+				continue
+			fi
+			IFS=':' read -r -a PATHS <<< "${item}"
 			echo ">>> Extracting ${PATHS[0]} -> ${PATHS[1]}"
-			$VPK "${GAMEDIR}/${k}.vpk" "${PATHS[0]}" "${PATHS[1]}"
+			$VPK "${GAMEDIR}/${VPKFILE}.vpk" "${PATHS[0]}" "${PATHS[1]}"
 		done
 	done
 }
@@ -130,37 +135,53 @@ function removeblacklistmaps()
 function decompilemaps()
 {
 	echo "> Updating decompiled maps as needed"
-	MAPSRCDIRS_EGREP=$(echo $(for SRCDIR in $(echo $MAPSRCDIRS | sed -e 's/\*[^ ]*//g'); do echo -ne "${SRCDIR} "; done) | sed -e 's/ /\|/g' -e 's/\//\\\//g')
+	MAPSRCDIRS_EGREP="^($(echo $(for SRCDIR in $(echo $MAPSRCDIRS | sed -e 's/\./\\\./g' -e 's/\([^\.]\)\*/\1\.\*/g'); do echo -ne "${SRCDIR} "; done) | sed -e 's/[ \t]\+/\|/g'))"
+	BLACKLIST_EGREP="^($(echo $(cat "${BLACKLIST}" | sed -e 's/\./\\\./g' -e 's/\*/\.\*/') | sed -e 's/[ \t\n\r]\+/\|/g'))"
 	for MAP in ${MAPSDIR}/*.bsp
 	do
-		# Don't do symlinks
-		if [ -L "${MAP}" ]; then continue; fi
+		# Don't do blacklisted maps
+		if [[ "$(basename "${MAP}")" =~ ${BLACKLIST_EGREP} ]]; then
+#			echo ">> Skipping $(basename "${MAP}") for blacklist"
+			continue
+		fi
+
+		# Don't do symlinks if they aren't the same name as the target
+		if [ -L "${MAP}" ]; then
+			if [ "$(basename $(readlink -f "${MAP}"))" != "$(basename "${MAP}")" ]; then
+				continue
+			fi
+		fi
 		if [ "$(echo "${MAP}" | sed -e 's/ //g')" != "${MAP}" ]
 		then
 			#echo "> SPACE"
 			continue
 		fi
 		BASENAME=$(basename "${MAP}" .bsp)
-		if [ $(grep -c "^${BASENAME}\..*\$" "${BLACKLIST}") -eq 0 ]
-		then
-			SRCFILE="${DATADIR}/maps/src/${BASENAME}_d.vmf"
-			ZIPFILE="${MAP}.zip"
-			if [ "${SRCFILE}" -ot "${MAP}" ]; then
-				echo ">> Decompile ${MAP} to ${SRCFILE}"
-				$BSPSRC "${MAP}" -o "${SRCFILE}"
-				add_manifest_md5 "${SRCFILE}"
-			fi
-			MAPSRCLIST=$($PAKRAT -list "${MAP}" | egrep -i "^(${MAPSRCDIRS_EGREP})" | awk '{print $1}')
-			echo $MAPSRCLIST
-			if [ "$ZIPFILE" -ot "${MAP}" ]; then
-				echo ">> Extract files from ${MAP} to ${ZIPFILE}"
-				$PAKRAT -dump "${MAP}"
-				echo ">> Extracting map files from ZIP"
-#				unzip -o "${ZIPFILE}" -x '*.vhv' 'maps/*' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "${GAMEDIR}/maps/out"
-				for SRCDIR in $MAPSRCDIRS; do
-					unzip -o "${ZIPFILE}" "${SRCDIR}" -d "${DATADIR}/" 2>/dev/null
-				done
-			fi
+		SRCFILE="${DATADIR}/maps/src/${BASENAME}_d.vmf"
+		ZIPFILE="${MAP}.zip"
+		if [ "${SRCFILE}" -ot "${MAP}" ]; then
+			echo ">> Decompile ${MAP} to ${SRCFILE}"
+			$BSPSRC "${MAP}" -o "${SRCFILE}"
+			add_manifest_md5 "${SRCFILE}"
+		fi
+		# Check if the map even needs to be unzipped/extracted
+		PAKLIST="${DATADIR}/maps/paklist/${BASENAME}.txt"
+		if [ "${PAKLIST}" -ot "${MAP}" ]; then
+			$PAKRAT -list "${MAP}" > "${PAKLIST}"
+		fi
+		MAPSRCLIST=$(egrep -i "${MAPSRCDIRS_EGREP}" "${PAKLIST}" | awk '{print $1}')
+		if [ "${MAPSRCLIST}" == "" ]; then continue; fi
+		DOUNZIP=0
+		if [ "${ZIPFILE}" -ot "${MAP}" ]; then DOUNZIP=1; fi
+		# If we are missing resources, unzip
+		for SRCTEST in $MAPSRCLIST; do
+			if [ ! -e "${DATADIR}/${SRCTEST}" ]; then DOUNZIP=1; fi
+		done
+		if [ "${DOUNZIP}" == "1" ]; then
+			echo ">> Extract files from ${MAP} to ${ZIPFILE}"
+			$PAKRAT -dump "${MAP}"
+			echo ">> Extracting map files from ZIP"
+			unzip -o "${ZIPFILE}" -d "${DATADIR}/" $MAPSRCLIST 2>/dev/null
 		fi
 	done
 }
@@ -365,7 +386,7 @@ fi
 
 if [ $MAPDATA == 1 ]
 then
-	"${SCRIPTDIR}/mapdata.php"
+	"${SCRIPTDIR}/../maps/mapdata.php"
 fi
 
 if [ $FULL_MD5_MANIFEST == 1 ]; then

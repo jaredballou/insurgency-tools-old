@@ -1,11 +1,12 @@
-#!/usr/bin/env php
+#!/opt/rh/php55/root/usr/bin/php
 <?php
 /*
+#/usr/bin/env php
 VPK reader
 */
 $scriptpath = realpath(dirname(__FILE__));
 $rootpath=dirname(dirname($scriptpath));
-include "${rootpath}/utilities/thirdparty/php-vpk-reader/VPKReader.php";
+include "${rootpath}/thirdparty/php-vpk-reader/VPKReader.php";
 $vpk_file = isset($argv[1]) ? $argv[1] : '';
 $src_path = isset($argv[2]) ? $argv[2] : '';
 $dst_path = isset($argv[3]) ? $argv[3] : dirname($vpk_file)."/".basename($vpk_file,'.vpk');

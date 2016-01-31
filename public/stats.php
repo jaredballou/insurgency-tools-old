@@ -40,11 +40,12 @@ $css_content = '
 	}
 ';
 require_once realpath('./..')."/include/header.php";
+// Load theater now so we can create other arrays and validate
+$theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
-	$theater_compare = getfile("{$theaterfile_compare}.theater", $version_compare, $theaterpath_compare);
+	$theater_compare = getfile("{$theaterfile_compare}.theater", $mod_compare, $version_compare, $theaterpath_compare);
 	$index = "{$version}/{$theaterfile}";
 	$index_compare = "{$version_compare}/{$theaterfile_compare}";
-
 	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
 	DisplayStatsHeader();
 	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Setting</th><th>{$index}</th><th>{$index_compare}</th></tr>\n";
@@ -140,6 +141,7 @@ $(document).ready(function() {
 // DisplayStatsHeader - Show the page header with all the form fields to control theater display
 function DisplayStatsHeader($startbody=1) {
 	global 
+		$mods, $mod,
 		$theaterfile, $theaterfile_compare,
 		$version, $version_compare,
 		$theaterpath, $theaterpath_compare,
@@ -151,38 +153,57 @@ function DisplayStatsHeader($startbody=1) {
 			<h1>Insurgency Theater Parser</h1>
 			<h2>Parsing {$theaterfile} from Version {$version}</h2>\n";
 
+	echo "Mod: <select name='mod'>\n";
+	foreach ($mods as $key => $val) {
+		$sel = ($key == $mod) ? ' SELECTED' : '';
+		echo "					<option{$sel}>{$key}</option>\n";
+	}
+	echo "</select> ";
+	echo "Version: <select name='version'>\n";
+	foreach ($mods[$mod] as $key => $val) {
+		$sel = ($key == $version) ? ' SELECTED' : '';
+		echo "					<option{$sel}>{$key}</option>\n";
+	}
+	echo "</select> ";
 	echo "Theater: <select name='theater'>\n";
 	foreach ($theaters as $theatername) {
 		$sel = (($theatername == $theaterfile) || ($theatername == $_REQUEST['theater'])) ? ' SELECTED' : '';
 		echo "					<option{$sel}>{$theatername}</option>\n";
 	}
 	echo "</select> ";
-	echo "Version: <select name='version'>\n";
-	foreach ($versions as $vid) {
-		$sel = ($vid == $version) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$vid}</option>\n";
-	}
-	echo "</select> ";
+
 	$curname = '-Current-';
+	$curarr = array($curname => $curname);
 	echo "<span class='beta'>Compare [BETA] ";
+	echo "Mod: <select name='mod_compare'>\n";
+	$cursel = (isset($_REQUEST['mod_compare'])) ? $_REQUEST['mod_compare'] : (($mod == $mod_compare) ? $curname : $mod_compare);
+	foreach (array_merge($curarr,$mods) as $key => $val) {
+		$sel = ($key == $cursel) ? ' SELECTED' : '';
+		echo "<option{$sel}>{$key}</option>\n";
+	}
+	echo "</select>";
+
+
+	echo "Version: <select name='version_compare'>\n";
+	$cursel = (isset($_REQUEST['version_compare'])) ? $_REQUEST['version_compare'] : (($version == $version_compare) ? $curname : $version_compare);
+//	array_unshift($versions,$curname);
+	foreach (array_merge($curarr,$mods[$mod]) as $key => $val) {
+		$sel = ($key == $cursel) ? ' SELECTED' : '';
+		echo "<option{$sel}>{$key}</option>\n";
+	}
+//	array_shift($versions);
+	echo "</select>";
+
+
 	echo "Theater: <select name='theater_compare'>\n";
 	$cursel = (isset($_REQUEST['theater_compare'])) ? $_REQUEST['theater_compare'] : (($theaterfile == $theaterfile_compare) ? $curname : $theaterfile_compare);
-	array_unshift($theaters,$curname);
-	foreach ($theaters as $tid) {
+//	array_unshift($theaters,$curname);
+	foreach (array_merge($curarr,$theaters) as $tid) {
 		$sel = ($tid == $cursel) ? ' SELECTED' : '';
 		echo "<option{$sel}>{$tid}</option>\n";
 	}
-	array_shift($theaters);
+//	array_shift($theaters);
 	echo "</select> ";
-	echo "Version: <select name='version_compare'>\n";
-	$cursel = (isset($_REQUEST['version_compare'])) ? $_REQUEST['version_compare'] : (($version == $version_compare) ? $curname : $version_compare);
-	array_unshift($versions,$curname);
-	foreach ($versions as $vid) {
-		$sel = ($vid == $cursel) ? ' SELECTED' : '';
-		echo "<option{$sel}>{$vid}</option>\n";
-	}
-	array_shift($versions);
-	echo "</select>";
 	echo "</span><br>\n";
 
 	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='range'> <select name='range_unit'>\n";
@@ -199,12 +220,17 @@ echo "		</form>";
 closePage();
 
 function closePage($bare=0) {
-	require "../include/footer.php";
 	if (isset($_REQUEST['dump'])) {
-		global $theater,$stats_tables;
+		global $theater,$stats_tables,$theater_compare;
+		if (isset($theater_compare)) {
+			echo "theater_compare<br>\n";
+			var_dump($theater_compare);
+		}
+		echo "theater<br>\n";
 		var_dump($theater);
 		var_dump($stats_tables);
 	}
+	require "../include/footer.php";
 	exit;
 }
 

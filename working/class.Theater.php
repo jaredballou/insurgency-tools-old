@@ -5,8 +5,337 @@
 	//var_dump(getobject('weapons','weapon_m249'));
 	var_dump($theater);
 	
+function GenerateStatTable() {
+	global $stats_tables, $theater, $upgrades, $armors, $range;
+	$armors = array('No Armor' => ($theater['player_settings']['damage']['DamageHitgroups']));
+	foreach ($theater["player_gear"] as $gearname => $data) {
+		$gear = getobject("player_gear", $gearname);
+		$img = getvgui($gearname,'css');
+		$thisitem = array();
+		$thisitem['Img'] = $img;
+		$thisitem['Name'] = getlookup($gear['print_name']);
+		$thisitem['Team'] = printval($gear,"team_access");
+		$thisitem['Slot'] = printval($gear,"gear_slot");
+		$thisitem['Cost'] = printval($gear,"gear_cost");
+		$thisitem['Weight'] = printval($gear,"gear_weight");
+		$thisitem['Ammo'] = printval($gear,"extra_ammo");
+		if (isset($gear["DamageHitgroups"])) {
+			$thisitem['DamageHitgroups'] = getbodygraph($gear, $gear["DamageHitgroups"],'',0,2);
+		}
+		$stats_tables['Gear']['items'][$gearname] = $thisitem;
+		if ($data["gear_slot"] == 'armor') {
+			$armors[$thisitem['Name']] = $gear["DamageHitgroups"];
+		}
+	}
+	foreach ($theater["weapons"] as $wpnname => $data) {
+		if (isset($data["IsBase"])) {
+			continue;
+		}
+		$thisitem = array();
+		$item = getobject("weapons", $wpnname);
+		$pn = getlookup($item["print_name"]);
+		$img = getvgui($wpnname,'css');
+		$thisitem['Img'] = $img;
+		$thisitem['Name'] = getlookup($item["print_name"]);
+		$thisitem['Class'] = printval($item,"weapon_class");
+		$thisitem['CR'] = (printval($item,"class_restricted")) ? printval($item,"class_restricted") : 0;
+		$thisitem['Length'] = dist($item["barrel_length"],'IN');
+		$thisitem['Cost'] = printval($item,"weapon_cost");
+		$thisitem['Slot'] = printval($item,"weapon_slot");
+		$thisitem['Weight'] = printval($item,"weapon_weight");
+		$thisitem['RPM'] = printval($item,"rounds_per_minute");
+		$thisitem['Sway'] = printval($item,"sway");
+		$thisitem['Damage'] = 0;
+		if (isset($item["ballistics"])) {
+			$thisitem['Fire Modes'] = printval($item["ballistics"],"FireModes");
+		} else {
+			$thisitem['Fire Modes'] = 'single';
+		}
+		if (isset($item["explosives"])) {
+			$thisitem['Ammo'] = printval($item["explosives"],"entity",1);
+			$expammo = getobject("ammo", $item["ammo_clip"]["ammo_type"]);
+			$thisitem['Carry'] = printval($expammo,"carry");
+			$thisitem['Carry Max'] = printval($expammo,"carry");
+		} elseif (isset($item["ammo_clip"])) {
+			$ammo = getobject("ammo", $item["ammo_clip"]["ammo_type"]);
+			$dmg = damageatrange($ammo['Damage'], $range);
+			$thisitem['Damage'] = $dmg;
+			if ($ammo['bulletcount'] > 1) {
+				$thisitem['Damage']=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
+			}
+			$thisitem['DamageChart'] = printval($ammo,"Damage");
+			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread'])."<br>{$item["ballistics"]['spread']}";
+			$thisitem['Recoil'] = getrecoilgraph($item['recoil']);
+			$thisitem['Ammo'] = printval($item["ammo_clip"],"ammo_type",1);
+			if (($item["ammo_clip"]["clip_max_rounds"] > 1) && (!($item["ballistics"]["singleReload"]))) {
+				$thisitem['Magazine'] = printval($item["ammo_clip"],"clip_max_rounds");
+				$thisitem['Carry'] = printval($item["ammo_clip"],"clip_default")." (".($item["ammo_clip"]["clip_max_rounds"]*$item["ammo_clip"]["clip_default"]).")\n";
+				$thisitem['Carry Max'] =printval($item["ammo_clip"],"clip_max")." (".($item["ammo_clip"]["clip_max_rounds"]*$item["ammo_clip"]["clip_max"]).")\n";
+			} else {
+				$thisitem['Magazine'] = printval($item["ammo_clip"],"clip_max_rounds");
+				$thisitem['Carry'] = printval($item["ammo_clip"],"clip_default");
+				$thisitem['Carry Max'] = printval($item["ammo_clip"],"clip_max");
+			}
+		} elseif (isset($item["melee"])) {
+			$thisitem['Damage'] = printval($item["melee"],"MeleeDamage");
+		}
+		$stats_tables['Weapons']['items'][$wpnname] = $thisitem;
+	}
+	foreach ($theater["weapon_upgrades"] as $upname => $data) {
+		if (isset($data["IsBase"])) {
+			continue;
+		}
+
+//		if ((substr($upname,0,5) == "base_") || (substr($upname,-5,5) == "_base")) {
+//			continue;
+//		}
+		$upgrade = getobject("weapon_upgrades", $upname,1);
+		$img = getvgui($upname,'css');
+		$thisitem = array();
+		if (isset($upgrade['attach_weapon'])) {
+			if (isset($stats_tables['Weapons']['items'][$upgrade['attach_weapon']])) {
+				$stats_tables['Weapons']['items'][$upgrade['attach_weapon']]['Img'] = $img;
+			}
+		}
+		if (substr($upname,0,5) == "ammo_") {
+			$link = "<br><a href='#{$upgrade['ammo_type_override']}'>{$upgrade['ammo_type_override']} [{$upgrade['upgrade_cost']}]</a>";
+			$fn = 'Ammo';
+		} else {
+			$link = "<a href='#{$upname}'>".getlookup($upgrade['print_name'])." [{$upgrade['upgrade_cost']}]</a><br>";
+			$fn = 'Upgrades';
+		}
+		// Add ammo and upgrade links to weapon items
+		if (isset($upgrade['allowed_weapons']['weapon'])) {
+			$tmp = $upgrade['allowed_weapons']['weapon'];
+			$upgrade['allowed_weapons'] = (is_array($tmp)) ? $tmp : array($tmp);
+			
+		}
+		$aw = array();
+		if (isset($upgrade['allowed_weapons'])) {
+			foreach ($upgrade['allowed_weapons'] as $order => $witem) {
+				$aw[] = "<a href='#{$witem}'>{$stats_tables['Weapons']['items'][$witem]['Name']}</a>";
+				$stats_tables['Weapons']['items'][$witem][$fn].=$link;
+			}
+		}
+		
+		$thisitem['Img'] = $img;
+		$thisitem['Name'] = getlookup($upgrade['print_name']);
+		$thisitem['Slot'] = printval($upgrade,"upgrade_slot");
+		$thisitem['CR'] = printval($upgrade,"class_restricted");
+		$thisitem['Cost'] = printval($upgrade,"upgrade_cost");
+		$thisitem['Ammo Type'] = printval($upgrade,"ammo_type_override",1);
+		$thisitem['Abilities'] = printval($upgrade,"weapon_abilities");
+		
+		$thisitem['Weapons'] = implode("<br>", $aw);
+		$stats_tables['Upgrades']['items'][$upname] = $thisitem;
+	}
+	foreach ($theater["ammo"] as $ammoname => $data) {
+		// Hide rockets and grenades (so we can link to them in #explosives), and other items we don't want to see at all
+		if ((substr($ammoname,0,7) == "rocket_") || (substr($ammoname,0,8) == "grenade_") || ($ammoname == 'default') || ($ammoname == 'no_carry')) {
+			continue;
+		}
+		$ammo = getobject("ammo", $ammoname);
+		if (!isset($ammo['carry']))
+			continue;
+		$thisitem = array();
+		$thisitem['Name'] = "<a id='{$ammoname}'>{$ammoname}</a>";
+		$thisitem['Carry'] = printval($ammo,"carry");
+		$thisitem['Mag'] = printval($ammo,"magsize");
+		$dmg = damageatrange($ammo['Damage'], $range);
+		if ($ammo['bulletcount'] > 1) {
+			$dmg=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
+		}
+		$thisitem['Damage'] = $dmg;
+		$thisitem['DamageGraph'] = printval($ammo,"Damage");
+		$thisitem['PenetrationPower'] = damageatrange($ammo["PenetrationPower"], $range);
+		$thisitem['PenetrationGraph'] = printval($ammo,"PenetrationPower");
+		$thisitem['Tracer'] = "Type: {$ammo["tracer_type"]}<br>Frequency: {$ammo["tracer_frequency"]}<br>Low Ammo: {$ammo["tracer_lowammo"]}";
+		$thisitem['Suppression'] = printval($ammo,"SuppressionIncrement");
+		$thisitem['DamageHitgroups'] = getbodygraph($ammo, $ammo["DamageHitgroups"],array_keys($armors));
+		$stats_tables['Ammo']['items'][$ammoname] = $thisitem;
+	}
+	foreach ($theater["explosives"] as $explosivename => $data) {
+		if (isset($data["IsBase"])) {
+			continue;
+		}
+		$explosive = getobject("explosives", $explosivename);
+		$thisitem = array();
+		$thisitem['Name'] = "<a id='{$explosivename}'>{$explosivename}</a>";
+		$thisitem['Class'] = printval($explosive,"entity_class");
+		$thisitem['FuseTime'] = printval($explosive,"FuseTime");
+		if (isset($explosive["Cookable"])) {
+			$thisitem['Cookable'] = printval($explosive,"Cookable");
+		} else {
+			$thisitem['Cookable'] = 1;
+		}
+		if (isset($explosive["RocketStartSpeed"])) {
+			$speeds = array($explosive["RocketStartSpeed"]);
+			if (isset($explosive["RocketTopSpeed"])) {
+				if (isset($explosive["RocketAcceleration"])) {
+					for ($i=(($explosive["RocketStartSpeed"])+($explosive["RocketAcceleration"]));$i<$explosive["RocketTopSpeed"];$i+=($explosive["RocketAcceleration"])) {
+						$speeds[] = $i;
+					}
+				}
+				$speeds[] = $explosive["RocketTopSpeed"];
+			}
+		}
+		if (count($speeds) > 1) {
+			$thisitem['Speed'] = getgraph($speeds,'Speed','Time');
+		} else {
+			$thisitem['Speed'] = dist($explosive["RocketStartSpeed"],'IN')."/s";
+		}
+		$dmg = ($range < $explosive["DetonateDamageRadius"]) ? round(($explosive["DetonateDamage"]) * ($explosive["DetonateDamageRadius"] / ($explosive["DetonateDamageRadius"] - $range)),2) : 0;
+		$thisitem['Damage'] = $dmg;
+		if (isset($explosive["AreaDamageAmount"])) {
+			$thisitem['DamageGraph'] = "AreaDamageTime: {$explosive["AreaDamageTime"]}<br>AreaDamageFrequency: {$explosive["AreaDamageFrequency"]}<br>AreaDamageMinRadius: ".dist($explosive["AreaDamageMinRadius"],'IN')."<br>AreaDamageMaxRadius: ".dist($explosive["AreaDamageMaxRadius"],'IN')."<br>AreaDamageGrowSpeed: {$explosive["AreaDamageGrowSpeed"]}<br>AreaDamageAmount: {$explosive["AreaDamageAmount"]}<br>DamageType: {$explosive["DamageType"]}";
+		} else {
+			$thisitem['DamageGraph'] =	getcirclegraph($explosive)."<br>DetonateDamage: {$explosive["DetonateDamage"]}<br>DetonatePenetrationRadius: ".dist($explosive["DetonatePenetrationRadius"],'IN')."<br>DetonateDamageRadius: ".dist($explosive["DetonateDamageRadius"],'IN');
+			if (isset($explosive["DetonateFlashDuration"])) {
+				$thisitem['DamageGraph'].= "<br>DetonateFlashDuration: {$explosive["DetonateFlashDuration"]}";
+			}
+		}
+		$stats_tables['Explosives']['items'][$explosivename] = $thisitem;
+	}
+	foreach ($theater['player_templates'] as $classname => $classdata) {
+		$thisitem = array();
+		$thisitem['Name'] = getlookup($classdata['print_name']);
+		$thisitem['Team'] = printval($classdata,"team");
+		$thisitem['Models'] = printval($classdata,"models");
+		if (isset($classdata["buy_order"])) {
+			foreach ($classdata["buy_order"] as $order => $buyitem) {
+				foreach ($buyitem as $type => $item) {
+					$thisitem['Buy order'].= "<a href='#{$item}'>{$item}</a><br>";
+				}
+			}
+		}
+		if (isset($classdata["allowed_items"])) {
+			foreach ($classdata["allowed_items"] as $order => $aitem) {
+				foreach ($aitem as $type => $item) {
+					if (is_array($item)) {
+						foreach ($item as $it => $in) {
+							$thisitem['Allowed Items'].= "<a href='#{$in}'>[{$type}] {$in}</a><br>";
+						}
+					} else {
+						$thisitem['Allowed Items'].= "<a href='#{$item}'>{$item}</a><br>";
+					}
+				}
+			}
+		}
+		$stats_tables['Classes']['items'][$classname] = $thisitem;
+	}
+	// Teams are goofy because of display method
+	foreach ($theater['teams'] as $teamname=>$teamdata) {
+		$thisitem = '<table>';
+		$tn = getlookup($teamdata['name']);
+		$stats_tables['Teams']['fields'][$tn] = 1;
+		if (isset($teamdata['logo'])) {
+			$thisitem.="<div style='text-align: center;'><img src='data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
+		}
+		if (isset($teamdata['squads'])) {
+			foreach ($teamdata['squads'] as $squad => $squaddata) {
+				$sn = getlookup($squad);
+				$thisitem.="<tr><td><h3>{$sn}</h3></td></tr><tr><td>\n";
+				foreach ($squaddata as $order => $slot) {
+					foreach ($slot as $title => $role) {
+						$label = getlookup($title);
+						$thisitem.="<a href='#{$role}'>{$label}<br>\n";
+					}
+				}
+				$thisitem.="</td></tr>\n";
+			}
+		}
+		$thisitem.="</table>\n";
+		$stats_tables['Teams']['items'][0][$tn] = $thisitem;
+	}
+	// Do cleanup and make links between items here
+	foreach (array_keys($stats_tables) as $sectionname) {
+		ksort($stats_tables[$sectionname]['items']);
+	}
+}
+$stats_tables = array(
+	'Weapons' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Class' => 0,
+			'CR' => 0,
+			'Length' => 0,
+			'Cost' => 1,
+			'Slot' => 0,
+			'Weight' => 0,
+			'RPM' => 1,
+			'Fire Modes' => 0,
+			'Damage' => 1,
+			'DamageChart' => 1,
+			'Spread' => 0,
+			'Recoil' => 0,
+			'Sway' => 0,
+			'Ammo' => 1,
+			'Magazine' => 1,
+			'Carry' => 1,
+			'Carry Max' => 0,
+			'Upgrades' => 1
+		)
+	),
+	'Upgrades' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Slot' => 0,
+			'CR' => 0,
+			'Cost' => 1,
+			'Ammo Type' => 1,
+			'Abilities' => 0,
+			'Weapons' => 1
+		)
+	),
+	'Ammo' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Carry' => 0,
+			'Mag' => 0,
+			'Damage' => 1,
+			'DamageGraph' => 1,
+			'PenetrationPower' => 1,
+			'PenetrationGraph' => 1,
+			'Tracer' => 0,
+			'Suppression' => 1,
+			'DamageHitgroups' => 1
+		)
+	),
+	'Explosives' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Class' => 0,
+			'FuseTime' => 1,
+			'Cookable' => 1,
+			'Speed' => 0,
+			'Damage' => 1,
+			'DamageGraph' => 1
+		)
+	),
+	'Gear' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Team' => 0,
+			'Slot' => 0,
+			'Cost' => 1,
+			'Weight' => 0,
+			'Ammo' => 1,
+			'DamageHitgroups' => 1
+		)
+	),
+	'Teams' => array(),
+	'Classes' => array(
+		'fields' => array(
+			'Name' => 1,
+			'Team' => 1,
+			'Models' => 1,
+			'Buy order' => 1,
+			'Allowed Items' => 1
+		)
+	)
+);
 	
-	
+
 class Theater {
 	public $ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
 

@@ -68,7 +68,9 @@ $custom_libpaths = array(
 	"{$rootpath}/thirdparty/steam-condenser-php/lib/SteamCondenser"
 );
 
-// Base theater path
+// Base 
+
+//theater path
 $theaterpath='';
 
 // Custom theater paths - include insurgency-theaters checkout
@@ -97,6 +99,7 @@ $cache_dir = "{$rootpath}/cache";
 
 
 // Old versions and maps that I just don't want in the list
+// New system is to use thirdparty/maps-blacklist.txt
 $excludemaps = array(
 	'amber_spirits_coop_beta3',
 	'amber_spirits_coop_beta4',

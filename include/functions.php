@@ -36,7 +36,7 @@ if (isset($use_hlstatsx_db)) {
 
 // Create cache dir if needed
 if (!file_exists($cache_dir)) {
-        mkdir($cache_dir,0755,true);
+	mkdir($cache_dir,0755,true);
 }
 
 if (isset($_REQUEST['language'])) {
@@ -59,22 +59,77 @@ foreach ($raw as $key) {
 // Get the command passed to the script
 $command = @$_REQUEST['command'];
 
-// Load versions, we use the directory names of data/theaters to get these values.
-$versions = array();
-$dirs = glob("{$datapath}/theaters/*");
-foreach ($dirs as $dir) {
-	if (is_dir($dir)) {
-		$versions[] = basename($dir);
+/**
+ * Return a relative path to a file or directory using base directory. 
+ * When you set $base to /website and $path to /website/store/library.php
+ * this function will return /store/library.php
+ * 
+ * Remember: All paths have to start from "/" or "\" this is not Windows compatible.
+ * 
+ * @param   String   $base   A base path used to construct relative path. For example /website
+ * @param   String   $path   A full path to file or directory used to construct relative path. For example /website/store/library.php
+ * 
+ * @return  String
+ */
+function getRelativePath($base, $path) {
+	// Detect directory separator
+	$separator = substr($base, 0, 1);
+	$base = array_slice(explode($separator, rtrim($base,$separator)),1);
+	$path = array_slice(explode($separator, rtrim($path,$separator)),1);
+
+	return $separator.implode($separator, array_slice($path, count($base)));
+}
+// Load mods
+function LoadMods($path,$pattern='*',$level=0) {
+	$result = array();
+	$dirname=implode("/",array_slice(explode("/",realpath($path)),-$level));
+	$items = glob("{$path}/{$pattern}");
+	foreach ($items as $item) {
+		// If it's a symlink, reference the target
+		$file = (is_link($item)) ? readlink($item) : $item;
+		$basename = basename($item);
+		if (is_dir($file)) {
+			$result[$basename] = LoadMods($item,$pattern,$level+1);
+		} else {
+			// Don't list files that are part of the mod metadata structure
+			if ($level > 1) {
+				$result[$basename] = "{$dirname}/{$basename}";
+			}
+		}
+	}
+	return $result;
+}
+$mods = LoadMods("{$datapath}/mods");
+
+// Set version and newest_version to the latest one. Try to get the version from Steam, otherwise just choose the newest available.
+ksort($mods);
+
+// Default mod
+$mod="insurgency";
+
+// If mod in request is valid, use it
+if (isset($_REQUEST['mod'])) {
+	if (isset($mods[$_REQUEST['mod']])) {
+		$mod = $_REQUEST['mod'];
 	}
 }
-// Set version and newest_version to the latest one. Try to get the version from Steam, otherwise just choose the newest available.
-asort($versions);
+
+// Set mod_compare to our mod now that we have handled user input.
+// These two need to be identical if we're not doing the mod compare dump command
+$mod_compare = $mod;
+if (isset($_REQUEST['mod_compare'])) {
+	if (isset($mods[$mod][$_REQUEST['mod_compare']])) {
+		$mod_compare = $_REQUEST['mod_compare'];
+	}
+}
+
+
 $steam_ver=getSteamVersion();
-$newest_version = $version = in_array($steam_ver,$versions) ? $steam_ver : end($versions);
+$newest_version = $version = isset($mods[$mod][$steam_ver]) ? $steam_ver : end(array_keys($mods[$mod]));
 
 // If version sent by request, set it as the version if it's valid.
 if (isset($_REQUEST['version'])) {
-	if (in_array($_REQUEST['version'],$versions)) {
+	if (isset($mods[$mod][$_REQUEST['version']])) {
 		$version = $_REQUEST['version'];
 	}
 }
@@ -83,7 +138,7 @@ if (isset($_REQUEST['version'])) {
 // These two need to be identical if we're not doing the version compare dump command
 $version_compare = $version;
 if (isset($_REQUEST['version_compare'])) {
-	if (in_array($_REQUEST['version_compare'],$versions)) {
+	if (isset($mods[$mod][$_REQUEST['version_compare']])) {
 		$version_compare = $_REQUEST['version_compare'];
 	}
 }
@@ -115,7 +170,7 @@ if (isset($_REQUEST['range'])) {
 }
 
 // Populate $theaters array with all the theater files in the selected version
-$files = glob("{$datapath}/theaters/{$version}/*.theater");
+$files = glob("{$datapath}/mods/{$mod}/{$version}/scripts/theaters/*.theater");
 foreach ($files as $file) {
 	if ((substr(basename($file),0,5) == "base_") || (substr(basename($file),-5,5) == "_base")) {
 		continue;
@@ -163,8 +218,6 @@ if (isset($_REQUEST['theater_compare'])) {
 	}
 }
 
-// Load theater now so we can create other arrays and validate
-$theater = getfile("{$theaterfile}.theater",$version,$theaterpath);
 // echo "<pre>\n";
 // var_dump($theater);
 // exit;
@@ -201,8 +254,10 @@ function LoadLanguages($pattern='English') {
 		$langcode = array();
 	if (!isset($lang))
 		$lang = array();
+	// Characters to strip. The files are binary, and the first few bytes break processing.
 	$langfile_regex = '/[\x00-\x08\x0E-\x1F\x80-\xFF]/s';
-	$langfiles = glob("{$datapath}/resource/*_".strtolower($pattern).".txt");
+	$match="*_".strtolower($pattern).".txt";
+	$langfiles = glob("{$datapath}/resource/{$match}");
 	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$datapath}/sourcemod/configs/languages.cfg")));
 	$data = parseKeyValues($data);
 	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
@@ -269,6 +324,7 @@ function delTree($dir='') {
 	}
 	return rmdir($dir);
 }
+
 // is_numeric_array - test if all values in an array are numeric
 function is_numeric_array($array) {
 	foreach ($array as $key => $value) {
@@ -276,20 +332,21 @@ function is_numeric_array($array) {
 	}
 	return true;
 }
-// kvwrite - 
+
+// kvwrite - Turn an array into KeyValues
 function kvwrite($arr) {
 	$str = "";
 	kvwriteSegment($str, $arr);
 	return $str;
 }
-// kvwriteFile - 
+// kvwriteFile - Write KeyValues array to file
 function kvwriteFile($file, $arr) {
 	$contents = kvwrite($arr);
 	$fh = fopen($file, 'w');
 	fwrite($fh, $contents);
 	fclose($fh);
 }
-// kvwriteSegment - 
+// kvwriteSegment - Create a section of a KeyValues file from array
 function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	global $ordered_fields;
 	$indent = str_repeat(chr(9), $tier);
@@ -319,7 +376,7 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	}
 	return $str;
 }
-// parseKeyValues - 
+// parseKeyValues - Take a string of KeyValues data and parse it into an array
 function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 {
 	global $ordered_fields;
@@ -529,7 +586,7 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 	return $stack;
 }
 
-// prettyPrint - 
+// prettyPrint - Print JSON with proper indents and formatting
 function prettyPrint( $json )
 {
 	$result = '';
@@ -659,7 +716,8 @@ function theater_array_replace()
 	}
 	return $res;
 }
-// formatBytes - 
+
+// formatBytes - Display human-friendly file sizes
 function formatBytes($bytes, $precision = 2) { 
 	$units = array('B', 'KB', 'MB', 'GB', 'TB'); 
 
@@ -717,12 +775,36 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 /* getfile
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
-function getfile($filename,$version='',$path='') {
-	global $custom_theater_paths,$newest_version,$theaterpath,$datapath,$base_theaters;
+function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array()) {
+	global
+		$custom_theater_paths,
+		$newest_version,
+		$theaterpath,
+		$datapath,
+		$steam_ver,
+		$mods, $mod;
 	if ($version == '')
 		$version = $newest_version;
-	$filepath = file_exists("{$path}/".basename($filename)) ? $path : (file_exists("{$theaterpath}/".basename($filename)) ?  $theaterpath: "{$datapath}/theaters/{$version}");
-	$filepath.="/".basename($filename);
+	$basename = basename($filename);
+	// Array of paths to search, in descending order, to find the file
+	$check_paths = array(
+		"{$path}",
+		"{$theaterpath}",
+		"{$datapath}/mods/{$mod}/{$version}/scripts/theaters",
+		"{$datapath}/mods/{$mod}/{$latest_version}/scripts/theaters",
+		"{$datapath}/mods/{$mod}/{$steam_ver}/scripts/theaters",
+		"{$datapath}/mods/insurgency/{$version}/scripts/theaters",
+		"{$datapath}/mods/insurgency/{$latest_version}/scripts/theaters",
+		"{$datapath}/mods/insurgency/{$steam_ver}/scripts/theaters",
+	);
+	foreach ($check_paths as $path) {
+		if (file_exists("{$path}/{$basename}")) {
+			$filepath = "{$path}/{$basename}";
+			break;
+		}
+	}
+//	echo "path is {$path} version is {$version} filename is {$filename} mod is {$mod} filepath is {$filepath}<br>\n";
+
 	$data = file_get_contents($filepath);
 	$thisfile = parseKeyValues($data);
 	$theater = $thisfile["theater"];
@@ -739,7 +821,7 @@ function getfile($filename,$version='',$path='') {
 			if (in_array($base,$base_theaters) === true)
 				continue;
 			$base_theaters[] = $base;
-			$basedata = array_merge_recursive(getfile($base,$version,$path),$basedata);
+			$basedata = array_merge_recursive(getfile($base,$mod,$version,$path,$base_theaters),$basedata);
 		}
 		$theater = theater_array_replace_recursive($basedata,$theater);
 // array_merge_recursive($basedata,$theater);
@@ -756,15 +838,21 @@ function getfile($filename,$version='',$path='') {
 	}
 	return $theater;
 }
+
+// FindDataFile - 
+function FindDataFile($path) {
+
+}
 /* getvgui
 Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
 	global $datapath;
-	$rp = "materials/{$path}/{$name}";
-	if (file_exists("{$datapath}/{$rp}.vmt")) {
-		$vmf = file_get_contents("{$datapath}/{$rp}.vmt");
-		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmf,$matches);
+	$rp = (file_exists("{$path}/{$name}")) ? "{$path}/{$name}" : "materials/{$path}/{$name}";
+	// 
+	if (!file_exists("{$datapath}/{$rp}.png") && (file_exists("{$datapath}/{$rp}.vmt"))) {
+		$vmt = file_get_contents("{$datapath}/{$rp}.vmt");
+		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
 		$rp = "materials/".$matches[1][0];
 	}
 	if (file_exists("{$datapath}/{$rp}.png")) {
