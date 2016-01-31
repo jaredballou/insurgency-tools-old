@@ -99,7 +99,8 @@ $cache_dir = "{$rootpath}/cache";
 
 
 // Old versions and maps that I just don't want in the list
-// New system is to use thirdparty/maps-blacklist.txt
+// New system is to use 
+//{$datapath}/thirdparty/maps-blacklist.txt
 $excludemaps = array(
 	'amber_spirits_coop_beta3',
 	'amber_spirits_coop_beta4',
