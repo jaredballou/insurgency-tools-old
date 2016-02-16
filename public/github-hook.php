@@ -7,8 +7,8 @@ request count low and not spam GitHub.
 require "include/functions.php";
 //User to pull the data for
 $githubuser = 'jaredballou';
-$cache_file = $cache_dir.'/content.html';
-$payload_file = $cache_dir.'/payload.json';
+$cache_file = $cachepath.'/content.html';
+$payload_file = $cachepath.'/payload.json';
 
 if (isset($_POST['payload'])) {
 	file_put_contents($payload_file,$_POST['payload']);

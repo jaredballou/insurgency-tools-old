@@ -13,7 +13,7 @@ $apiuser = '';
 $apipass = '';
 $apiauth = base64_encode("{$apiuser}:{$apipass}");
 */
-$cache_file = $cache_dir.'/content.html';
+$cache_file = $cachepath.'/content.html';
 $cache_life = '300'; //caching time, in seconds
 $filemtime = @filemtime($cache_file);	 // returns FALSE if file does not exist
 

@@ -38,15 +38,30 @@ $servers = array(
 		'rcon_password' => 'yourpassword',
 	)
 );
-
+	
 // publicpath is the publicly viewable path
 $publicpath="${rootpath}/public";
 // datapath is where the insurgency-data repo is checked out
 $datapath="${publicpath}/data";
 
 // These fields will be processed in the theater as a numerically indexed array, rather than key/values.
-$ordered_fields = array('squads','buy_order');//,'allowed_weapons','allowed_items');
+$ordered_fields = array(
+	'theater/core/precache',
+	'theater/teams/*/squads/*',
+	'theater/player_templates/*/buy_order',
+	'theater/player_templates/*/allowed_items',
+	'theater/weapon_upgrades/*/allowed_weapons',
+	'theater/weapon_upgrades/*/viewmodel_attachments/*/weapons',
+	'theater/weapon_upgrades/*/world_attachments/*/weapons',
+	'theater/weapon_upgrades/*/viewmodel_attachments/*/excluded_weapons',
+	'theater/weapon_upgrades/*/world_attachments/*/excluded_weapons',
+);
 
+$allow_duplicates_fields = array(
+	'theater/teams/*/squads/*',
+	'theater/weapon_upgrades/*/viewmodel_attachments',
+	'theater/weapon_upgrades/*/world_attachments',
+);
 // Set language
 $language = "English";
 
@@ -67,6 +82,9 @@ $custom_libpaths = array(
 	"{$rootpath}/thirdparty/steam-condenser-php/lib",
 	"{$rootpath}/thirdparty/steam-condenser-php/lib/SteamCondenser"
 );
+
+// For theater conditions
+$theater_conditions=array();
 
 // Base 
 
@@ -95,7 +113,7 @@ $hlstatsx_heatmaps="{$hlstatsx_root}/web/hlstatsimg/games/{$gamecode}/heatmaps";
 $hlstatsx_config = "{$hlstatsx_root}/heatmaps/config.inc.php";
 
 // Cache directory to stash temporary files. This should be inaccessible via your Web server!
-$cache_dir = "{$rootpath}/cache";
+$cachepath = "{$rootpath}/cache";
 
 
 // Old versions and maps that I just don't want in the list

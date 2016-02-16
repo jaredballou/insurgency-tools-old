@@ -10,3 +10,4 @@ include/config.private.php
 fastdl
 roster/
 test.php
+working/theater/out/*

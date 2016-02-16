@@ -43,3 +43,6 @@
 [submodule "thirdparty/sourcemod"]
 	path = thirdparty/sourcemod
 	url = git@github.com:jaredballou/sourcemod.git
+[submodule "thirdparty/python-valve"]
+	path = thirdparty/python-valve
+	url = git@github.com:jaredballou/python-valve.git

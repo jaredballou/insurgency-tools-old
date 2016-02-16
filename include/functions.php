@@ -35,8 +35,8 @@ if (isset($use_hlstatsx_db)) {
 }
 
 // Create cache dir if needed
-if (!file_exists($cache_dir)) {
-	mkdir($cache_dir,0755,true);
+if (!file_exists($cachepath)) {
+	mkdir($cachepath,0755,true);
 }
 
 if (isset($_REQUEST['language'])) {
@@ -280,8 +280,9 @@ function LoadLanguages($pattern='English') {
 			$key = trim($key);
 			if ($key) {
 				// Sometimes NWI declares a string twice!
-				if (is_array($val))
+				if (is_array($val)) {
 					$val = $val[0];
+				}
 				$lang[$data["lang"]["Language"]][$key] = $val;
 			}
 		}
@@ -376,10 +377,51 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 	}
 	return $str;
 }
+/*
+
+*/
+function TypecastValue($val) {
+	if (is_numeric($val)) {
+		if (strpos($val,'.') !== false) {
+			$val = (float)$val;
+		} else {
+			$val = (int)$val;
+		}
+	}
+	return($val);
+}
+
+function matchTheaterPath($paths,$matches) {
+//	var_dump($paths);
+	if (!is_array($paths)) {
+		$paths=array($paths);
+	}
+	foreach ($paths as $path) {
+		$path_parts=array_values(array_filter(explode("/",$path)));
+		foreach ($matches as $match) {
+			$match_parts=array_values(array_filter(explode("/",$match)));
+			if (count($match_parts) != count($path_parts)) {
+				continue;
+			}
+			foreach ($match_parts as $idx=>$part) {
+				if (($part != $path_parts[$idx]) && ($part != '*')) {
+					continue 2;
+				}
+				if (($idx+1) == count($match_parts)) {
+//					echo "MATCHED: {$path} to {$match}\n";
+//					var_dump($path_parts,$match_parts);
+					return $match;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 // parseKeyValues - Take a string of KeyValues data and parse it into an array
 function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 {
-	global $ordered_fields;
+	global $ordered_fields,$theater_conditions,$allow_duplicates_fields;
 	// Escape all non-quoted values
 	if ($fixquotes)
 		$KVString = preg_replace('/^(\s*)([a-zA-Z]+)/m','${1}"${2}"',$KVString);
@@ -411,7 +453,11 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 	$parents = array(&$ptr);
 	$tree = array();
 	$path="";
-	$sequential = 0;
+	$sequential = '';
+	$sequential_path = '';
+	$conditional='';
+	$conditional_path='';
+	$allowdupes='';
 	for ($i=0; $i<$len; $i++)
 	{
 		$l = $c;
@@ -426,17 +472,25 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 					if (strlen($quoteKey) && ($quoteWhat == "value"))
 					{
 						if ($sequential) {
-							if (is_array($ptr)) {
-								foreach ($ptr as $item) {
-									if (isset($item[$quoteKey])) {
-										if ($item[$quoteKey] == $quoteValue) {
-											$quoteValue = '';
+							if (!$allowdupes) {
+								// Check to make sure this value does not already exist
+								if (is_array($ptr)) {
+									foreach ($ptr as $item) {
+										if (isset($item[$quoteKey])) {
+											if ($item[$quoteKey] == $quoteValue) {
+												$quoteValue = '';
+											}
 										}
 									}
 								}
 							}
-							if ($quoteValue)
-								$ptr[] = array($quoteKey => $quoteValue);
+
+							if ($quoteValue) {
+								if ($quoteKey == "Suppressor_SG") {
+var_dump($quoteValue);
+}
+								$ptr[] = array($quoteKey => TypecastValue($quoteValue));
+							}
 						} else {
 							// If this value is already set, make it an array
 							if (isset($ptr[$quoteKey])) {
@@ -445,10 +499,10 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 									$ptr[$quoteKey] = array($ptr[$quoteKey]);
 								}
 								// Add this value to the end of the array
-								$ptr[$quoteKey][] = $quoteValue;
+								$ptr[$quoteKey][] = TypecastValue($quoteValue);
 							} else {
 								// Set the value otherwise
-								$ptr[$quoteKey] = $quoteValue;
+								$ptr[$quoteKey] = TypecastValue($quoteValue);
 							}
 						}
 						$lastLine = $line;
@@ -469,36 +523,49 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 			case "{":
 				$commentLines=1;
 				if (strlen($quoteKey)) {
-// 					if ($sequential) {
-// 						$sequential++;
-// 					} elseif ($quoteKey[0] != '?') {
-// 						$sequential = (in_array($quoteKey,$ordered_fields) === true);
-// 					}
-					// Add key to tree
-					$tree[] = $quoteKey;
-					$sequential = (array_intersect($tree,$ordered_fields));
-					// Update path in tree
-					$path = implode("/",$tree);
-					// Update parents array with current pointer in the new path location
-					$parents[$path] = &$ptr;
-					// If the object already exists, create an array of objects
-					if ($quoteKey[0] == '?') {
-						$ptr = &$ptr[][$quoteKey];
-					} elseif (isset($ptr[$quoteKey])) {
-						// Get all the keys, this assumes that the data will have non-numeric keys.
-						$keys = implode('',array_keys($ptr[$quoteKey]));
-						// So when we see non-numeric keys, we push the existing data into an array of itself before appending the next object.
-						if (!is_numeric($keys)) {
-							$ptr[$quoteKey] = array($ptr[$quoteKey]);
-						}
-						// Move the pointer to a new array under the key
-						$ptr = &$ptr[$quoteKey][];
+					if (substr($quoteKey,0,1) == '?') {
+						$conditional=$quoteKey;
+						$conditional_path=$path;
 					} else {
-						// Just put the object here if there is no existing object
-						$ptr = &$ptr[$quoteKey];
+						// Add key to tree
+						$tree[] = $quoteKey;
+						// Update path in tree
+						$path = implode("/",$tree);
+						if ($conditional) {
+							$theater_conditions[$conditional][] = $path;
+						}
+						$sequential = matchTheaterPath($path,$ordered_fields);
+						if ((!$sequential_path) && ($sequential)) {
+							$sequential_path = $path;
+//							echo "sequential {$sequential} path {$path} sequential_path {$sequential_path}\n";
+						}
+						if (!$allowdupes) {
+//							echo "test allowdupes\n";
+							$allowdupes = matchTheaterPath($path,$allow_duplicates_fields);
+//							echo "allowdupes {$allowdupes}\n";
+						}
+						// Update parents array with current pointer in the new path location
+						$parents[$path] = &$ptr;
+
+						// If the object already exists, create an array of objects
+						if ($quoteKey[0] == '?') {
+							$ptr = &$ptr[][$quoteKey];
+						} elseif (isset($ptr[$quoteKey])) {
+							// Get all the keys, this assumes that the data will have non-numeric keys.
+							$keys = implode('',array_keys($ptr[$quoteKey]));
+							// So when we see non-numeric keys, we push the existing data into an array of itself before appending the next object.
+							if (!is_numeric($keys)) {
+								$ptr[$quoteKey] = array($ptr[$quoteKey]);
+							}
+							// Move the pointer to a new array under the key
+							$ptr = &$ptr[$quoteKey][];
+						} else {
+							// Just put the object here if there is no existing object
+							$ptr = &$ptr[$quoteKey];
+						}
+						$lastPath = "{$path}/${quoteKey}";
+						$lastKey = $quoteKey;
 					}
-					$lastPath = "{$path}/${quoteKey}";
-					$lastKey = $quoteKey;
 					$quoteKey = "";
 					$quoteWhat = "key";
 				}
@@ -506,17 +573,31 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 				break;
 			// End of section
 			case "}":
-// 				if ($sequential > 1)
-// 					$sequential--;
-// 				else
-// 					$sequential=0;
 				$commentLines=1;
 				// Move pointer back to the parent
-				$ptr = &$parents[$path];
-				// Take last element off tree as we back out
-				array_pop($tree);
-				// Update path now that we have backed out
-				$path = implode("/",$tree);
+				if ($conditional_path != $path) {
+					$sequential='';
+					if ($path == $allowdupes) {
+						$allowdupes='';
+//						echo "done allowdupes\n";
+					}
+					if ($sequential) {
+//						echo "} sequential {$sequential} path {$path} sequential_path {$sequential_path}\n";
+						if ($path == $sequential_path) {
+//							echo "unset\n";
+							$sequential_path='';
+						}
+
+					}
+					$ptr = &$parents[$path];
+					// Take last element off tree as we back out
+					array_pop($tree);
+					// Update path now that we have backed out
+					$path = implode("/",$tree);
+				} else {
+					$conditional = '';
+					$conditional_path = '';
+				}
 				$lastLine = $line;
 				break;
 				
@@ -779,6 +860,7 @@ function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array())
 	global
 		$custom_theater_paths,
 		$newest_version,
+		$latest_version,
 		$theaterpath,
 		$datapath,
 		$steam_ver,
@@ -889,4 +971,38 @@ function getSteamVersion($appid=0) {
 	$url = "http://api.steampowered.com/ISteamApps/UpToDateCheck/v0001?appid={$appid}&version=0";
 	$raw = json_decode(file_get_contents($url),true);
 	return implode('.',str_split($raw['response']['required_version']));
+}
+
+// Is this array associative?
+function isAssoc($arr)
+{
+	return array_keys($arr) !== range(0, count($arr) - 1);
+}
+
+// Return the string representing data type
+function vartype($data) {
+	$words = explode(" ",$data);
+	if (is_array($data)) {
+		return "array";
+	}
+	if (count($words) == 3) {
+		foreach ($words as $idx=>$word) {
+			if (is_numeric($word)){
+				unset($words[$idx]);;
+			}
+		}
+		if (!count($words))
+			return "vector";
+	}
+	if (is_numeric($data)) {
+		if (strpos($data,'.') !== false)
+			return "float";
+		return "integer";
+	}
+	if (is_string($data)) {
+		if (substr($data,0,1) == "#")
+			return "translate";
+		return "string";
+	}
+	return "UNKNOWN";
 }

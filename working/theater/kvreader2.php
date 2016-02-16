@@ -54,16 +54,28 @@ class KVReader {
 	private function writeSegment(&$str, $arr, $tier = 0) {
 		$indent = str_repeat(chr(9), $tier);
 		// TODO check for a certain key to keep it in the same tier instead of going into the next?
-		foreach ($arr as $key => $value) {
-			if (is_array($value)) {
-				$key = '"' . $key . '"';
-				$str .= $indent . $key  . "\n" . $indent. "{\n";
+		// For ordered arrays, deconstruct them
+		if (!isAssoc($arr)) {
+			foreach ($arr as $idx=>$item) {
+				if (is_array($item)) {
+					foreach ($item as $key=>$value) {
+						$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
+					}
+				} else {
+					$str .= $indent . '"' . $idx . '"' . chr(9) . '"' . $item . "\"\n";
+				}
+			}
+		} else {
+			foreach ($arr as $key => $value) {
+				if (is_array($value)) {
+					$key = '"' . $key . '"';
+					$str .= $indent . $key  . "\n" . $indent. "{\n";
+					$this->writeSegment($str, $value, $tier+1);
 				
-				$this->writeSegment($str, $value, $tier+1);
-				
-				$str .= $indent . "}\n";
-			} else {
-				$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
+					$str .= $indent . "}\n";
+				} else {
+					$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
+				}
 			}
 		}
 		return $str;
