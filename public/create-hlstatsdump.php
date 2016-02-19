@@ -10,8 +10,8 @@ $values = array();
 echo "<form>DB Prefix:<input type='text' name='dbprefix' value='{$dbprefix}'> Game code:<input type='text' name='gamecode' value='{$gamecode}'><input type='submit'></form>\n";
 echo "<textarea style='width: 100%; height: calc(100% - 50px); box-sizing: border-box;'>";
 echo "--\n-- Add Insurgency to games\n--\n\n";
-echo "INSERT INTO `{$dbprefix}_Games` (`code`, `name`, `hidden`, `realgame`) VALUES ('{$gamecode}', 'Insurgency', '0', '{$gamecode}');\n";
-echo "INSERT INTO `{$dbprefix}_Games_Supported` (`code`, `name`) VALUES ('{$gamecode}', 'Insurgency');\n";
+echo "INSERT IGNORE INTO `{$dbprefix}_Games` (`code`, `name`, `hidden`, `realgame`) VALUES ('{$gamecode}', 'Insurgency', '0', '{$gamecode}');\n";
+echo "INSERT IGNORE INTO `{$dbprefix}_Games_Supported` (`code`, `name`) VALUES ('{$gamecode}', 'Insurgency');\n";
 foreach ($tables as $table => $tdata) {
 	$mf = current(array_values($tdata['allfields']));
 //var_dump($mf);

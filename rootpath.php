@@ -1,7 +1,7 @@
 <?php
 /*
   * rootpath.php
-  * (c) 2016, Jared Ballou <insurgency@jballoy.com>
+  * (c) 2016, Jared Ballou <insurgency@jballou.com>
   *
   * This is the file that gets included by all PHP scripts to define the paths
   * used by many of the tools in a standardized way. The code which is included to load it is:

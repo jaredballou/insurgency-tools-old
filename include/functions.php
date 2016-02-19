@@ -79,6 +79,8 @@ function getRelativePath($base, $path) {
 
 	return $separator.implode($separator, array_slice($path, count($base)));
 }
+
+//BEGIN mods
 // Load mods
 function LoadMods($path,$pattern='*',$level=0) {
 	$result = array();
@@ -122,7 +124,11 @@ if (isset($_REQUEST['mod_compare'])) {
 		$mod_compare = $_REQUEST['mod_compare'];
 	}
 }
+// END mods
 
+
+
+//BEGIN version
 
 $steam_ver=getSteamVersion();
 $newest_version = $version = isset($mods[$mod][$steam_ver]) ? $steam_ver : end(array_keys($mods[$mod]));
@@ -142,7 +148,7 @@ if (isset($_REQUEST['version_compare'])) {
 		$version_compare = $_REQUEST['version_compare'];
 	}
 }
-
+//END version
 // Units of measurement
 $range_units = array(
 	'U' => 'Game Units',
@@ -486,9 +492,6 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 							}
 
 							if ($quoteValue) {
-								if ($quoteKey == "Suppressor_SG") {
-var_dump($quoteValue);
-}
 								$ptr[] = array($quoteKey => TypecastValue($quoteValue));
 							}
 						} else {

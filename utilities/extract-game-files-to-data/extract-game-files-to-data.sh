@@ -8,7 +8,7 @@
 # Which commands to run
 EXTRACTFILES=0
 GETMAPS=0
-REMOVEBLACKLISTMAPS=0
+REMOVEBLACKLISTMAPS=1
 DECOMPILEMAPS=1
 SYNC_MAPS_TO_DATA=1
 COPY_MAP_FILES_TO_DATA=1
@@ -61,6 +61,11 @@ MAPSRCURL="rsync://ins.jballou.com/fastdl/maps/"
 
 # Get current version from steam.inf
 VERSION="$(grep -oP -i 'PatchVersion=([0-9\.]+)' "${GAMEDIR}/steam.inf" | cut -d'=' -f2)"
+
+if [ "${VERSION}" == "" ]; then
+	echo "Unable to determine game version!"
+	exit
+fi
 
 # RSYNC command
 RSYNC="rsync -av"

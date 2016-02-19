@@ -42,18 +42,10 @@ $css_content = '
 require_once realpath('./..')."/include/header.php";
 // Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
-if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
-	$theater_compare = getfile("{$theaterfile_compare}.theater", $mod_compare, $version_compare, $theaterpath_compare);
-	$index = "{$version}/{$theaterfile}";
-	$index_compare = "{$version_compare}/{$theaterfile_compare}";
-	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
-	DisplayStatsHeader();
-	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Setting</th><th>{$index}</th><th>{$index_compare}</th></tr>\n";
-	$sections = array();
-	DisplayCompare($changes, $sections, $index, $index_compare);
-	closePage(1);
-}
 
+if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
+	DisplayTheaterCompare();
+}
 
 switch ($_REQUEST['command']) {
 	case 'weaponlog':
@@ -287,6 +279,39 @@ function DisplayStatTable($startbody=1) {
 		}
 		echo "</tbody></table>\n";
 	}
+}
+
+function DisplayTheaterCompare() {
+	global
+		$theater,
+		$mod,
+		$theaterfile,
+		$theaterpath,
+		$version,
+		$mod_compare,
+		$theaterfile_compare,
+		$theaterpath_compare,
+		$version_compare;
+	$theater_compare = getfile("{$theaterfile_compare}.theater", $mod_compare, $version_compare, $theaterpath_compare);
+	$index = "{$version}/{$theaterfile}";
+	$index_compare = "{$version_compare}/{$theaterfile_compare}";
+	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
+	DisplayStatsHeader();
+	echo "<table border='1' cellpadding='2' cellspacing='0'><tr><th>Setting</th><th>{$index}</th><th>{$index_compare}</th></tr>\n";
+	$sections = array();
+	foreach ($changes as $name => $data) {
+		$sections[] = $name;
+		if (isset($data[$index]) || isset($data[$index_compare])) {
+			echo "<tr><td>".implode("/", $sections)."</td>";
+			echo "<td>".printval($data, $index,0,'-')."</td>\n";;
+			echo "<td>".printval($data, $index_compare,0,'-')."</td>\n";;
+			echo "</tr>\n";
+		} else {
+			DisplayCompare($data, $sections, $index, $index_compare);
+		}
+		array_pop($sections);
+	}
+	closePage(1);
 }
 
 function GenerateStatTable() {
@@ -655,20 +680,6 @@ function DisplayHLStatsX() {
 		}
 		asort($values[$table]);
 		echo "INSERT INTO `{$dbprefix}_{$table}`\n	(`".implode('`, `', $tdata['allfields'])."`)\n	 VALUES\n		 ".implode(",\n		 ", $values[$table])."\n	 ON DUPLICATE KEY UPDATE ".implode(', ', $fields).";\n";
-	}
-}
-function DisplayCompare($changes, $sections, $index, $index_compare) {
-	foreach ($changes as $name => $data) {
-		$sections[] = $name;
-		if (isset($data[$index]) || isset($data[$index_compare])) {
-			echo "<tr><td>".implode("/", $sections)."</td>";
-			echo "<td>".printval($data, $index,0,'-')."</td>\n";;
-			echo "<td>".printval($data, $index_compare,0,'-')."</td>\n";;
-			echo "</tr>\n";
-		} else {
-			DisplayCompare($data, $sections, $index, $index_compare);
-		}
-		array_pop($sections);
 	}
 }
 function damageatrange($dmg, $range, $dec=2) {
