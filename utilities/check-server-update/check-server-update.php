@@ -10,13 +10,13 @@
 //================================================================================
 
 //$appid = 237410;
-$datadir = "cache/steam";
 
 //error_reporting(E_ALL);
 error_reporting(E_ERROR);
 //error_reporting(E_ALL & ~(E_STRICT|E_NOTICE));
 
 include "include/functions.php";
+$steamdata = "${cachedir}/steam";
 // In a pinch, comment the above and uncomment the lines below and just put the
 // variables here if you don't want to use the rest of my library.
 /*
@@ -40,7 +40,7 @@ $apikey = 'YOUR_STEAM_API_KEY';
 $appid = 222880;
 */
 
-include "utilities/thirdparty/steam-condenser-php/vendor/autoload.php";
+include "${rootpath}/thirdparty/steam-condenser-php/vendor/autoload.php";
 
 
 
@@ -52,7 +52,7 @@ $raw = json_decode(file_get_contents($url),true);
 $required_version = $raw['response']['required_version'];
 
 // Paths for where to store the data
-$version_path = "{$datadir}/{$appid}/{$required_version}";
+$version_path = "{$steamdata}/{$appid}/{$required_version}";
 $version_schema = "{$version_path}/schema.json";
 
 //Check if this app is up to date

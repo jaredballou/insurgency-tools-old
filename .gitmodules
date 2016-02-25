@@ -46,3 +46,6 @@
 [submodule "thirdparty/python-valve"]
 	path = thirdparty/python-valve
 	url = git@github.com:jaredballou/python-valve.git
+[submodule "thirdparty/PHP-Source-Query"]
+	path = thirdparty/PHP-Source-Query
+	url = git@github.com:jaredballou/PHP-Source-Query.git
