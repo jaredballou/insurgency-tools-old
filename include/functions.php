@@ -340,12 +340,6 @@ function is_numeric_array($array) {
 	return true;
 }
 
-// kvwrite - Turn an array into KeyValues
-function kvwrite($arr) {
-	$str = "";
-	kvwriteSegment($str, $arr);
-	return $str;
-}
 // kvwriteFile - Write KeyValues array to file
 function kvwriteFile($file, $arr) {
 	$contents = kvwrite($arr);
@@ -353,17 +347,24 @@ function kvwriteFile($file, $arr) {
 	fwrite($fh, $contents);
 	fclose($fh);
 }
+// kvwrite - Turn an array into KeyValues
+function kvwrite($arr,$tier=0,$tree=array()) {
+	$str = "";
+	kvwriteSegment($str, $arr,$tier,$tree);
+	return $str;
+}
 // kvwriteSegment - Create a section of a KeyValues file from array
-function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
+function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array()) {
 	global $ordered_fields;
 	$indent = str_repeat(chr(9), $tier);
 	// TODO check for a certain key to keep it in the same tier instead of going into the next?
 	foreach ($arr as $key => $value) {
 		if (is_array($value)) {
-			$tree[$tier+1] = $key;
+			$tree[$tier] = $key;
 			$key = '"' . $key . '"';
 			$str .= $indent . $key  . "\n" . $indent. "{\n";
-			if (((in_array($tree[3],$ordered_fields) !== false) || (in_array($tree[4],$ordered_fields) !== false)) && (is_numeric_array(array_keys($value)))) {
+			$path=implode("/",$tree);
+			if ((matchTheaterPath($path,$ordered_fields)) && (is_numeric_array(array_keys($value)))) {
 // 				echo "Ordered<br>\n";
 				foreach ($value as $idx=>$item) {
 					foreach ($item as $k => $v) {
@@ -375,7 +376,7 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array('theater')) {
 				kvwriteSegment($str, $value, $tier+1,$tree);
 			}
 			$str .= $indent . "}\n";
-			unset($tree[$tier+1]);
+			unset($tree[$tier]);
 		} else {
 // 			echo "String<br>\n";
 			$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";

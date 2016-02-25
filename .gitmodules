@@ -49,3 +49,6 @@
 [submodule "thirdparty/PHP-Source-Query"]
 	path = thirdparty/PHP-Source-Query
 	url = git@github.com:jaredballou/PHP-Source-Query.git
+[submodule "thirdparty/Day-of-Infamy"]
+	path = thirdparty/Day-of-Infamy
+	url = git@github.com:NewWorldInteractive/Day-of-Infamy.git
