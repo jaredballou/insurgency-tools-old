@@ -7,9 +7,12 @@ sources pulled from game. It needs a LOT of work and is not very well built at
 this point.
 */
 
+//Root Path Discovery
+do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
+
 // Start output
 $title = "Map Viewer";
-require realpath('./..')."/include/header.php";
+require_once("{$includepath}/header.php");
 
 // Maps array holds all map data
 $maps = array();
@@ -268,14 +271,14 @@ foreach ($colors as $color => $rgb) {
 		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
 	}
 	.obj_{$color}_fg {
-		background-image: url('images/c_obj_{$color}.png');
+		background-image: url('images/maps/c_obj_{$color}.png');
 	}
 	.obj_cache_{$color}_bg {
 		background-color: rgba({$rgb},0.5);
 		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
 	}
 	.obj_cache_{$color}_fg {
-		background-image: url('images/c_obj_cache_{$color}.png');
+		background-image: url('images/maps/c_obj_cache_{$color}.png');
 	}
 ";
 }
@@ -761,6 +764,6 @@ for(var i=0; i<elmids.length; i++) {
 --></script>
 
 <?php
-require "../include/footer.php";
+require_once("{$includepath}/footer.php");
 
 ?>

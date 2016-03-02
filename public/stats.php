@@ -5,6 +5,8 @@ to represent the stats of in-game items as well as possible. It is slow, prone
 to breaking when the theater format and sections are changes and renamed, and
 should probably be rewritten from scratch at some point.
 */
+//Root Path Discovery
+do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
 $css_content = '
@@ -18,7 +20,7 @@ $css_content = '
 		position: relative;
 		height: 340px;
 		width: 157px;
-		background-image: url("images/body.png");
+		background-image: url("images/stats/body.png");
 	}
 	.vgui {
 		background-size: 256px 128px;
@@ -39,7 +41,11 @@ $css_content = '
 		background-color: #FFFFFF;
 	}
 ';
-require_once realpath('./..')."/include/header.php";
+if (isset($_REQUEST['fetch'])) {
+	require_once("{$includepath}/functions.php");
+} else {
+	require_once("{$includepath}/header.php");
+}
 // Load theater now so we can create other arrays and validate
 $theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 
@@ -121,6 +127,19 @@ foreach ($theater["weapon_upgrades"] as $upname => $data) {
 		}
 	}
 }
+if (isset($_REQUEST['fetch'])) {
+	switch ($_REQUEST['fetch']) {
+		case 'theater':
+			$data = $theater;
+			break;
+	}
+	if (isset($data)) {
+		header('Content-Type: application/json');
+		echo json_encode($theater, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+		exit;
+	}
+}
+
 ?>
 
 <script type="text/javascript" class="init">

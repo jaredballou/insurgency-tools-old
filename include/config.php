@@ -14,11 +14,13 @@ $servers = array();
 // Page Names
 $curpage = basename($_SERVER['SCRIPT_FILENAME']);
 $pages = array(
-	'stats.php' => 'Stats (Theater Parser)',
-	'maps.php' => 'Maps (Overlay Viewer)',
-	'cvarlist.php' => 'CVAR List',
+	'stats.php' => 'Stats',
+	'maps.php' => 'Maps',
+	'cvarlist.php' => 'CVARs',
+	'serverbrowser.php' => 'Server Browser',
+	'working/theater/theater.php' => 'Theater Creator',
 	"https://github.com/jaredballou' target='_blank" => 'My Github',
-	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate for Game Servers'
+	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate'
 );
 
 // GitHub secret for post-commit hooks

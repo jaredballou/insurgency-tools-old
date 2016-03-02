@@ -4,8 +4,10 @@ This is the landing page. It reads my GitHub account via the public API, gets
 and then displays the content in a single page. It uses caching to keep the
 request count low and not spam GitHub.
 */
+//Root Path Discovery
+do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 $title = "Jared Ballou's Insurgency Tools";
-require_once realpath('./..')."/include/header.php";
+require_once("{$includepath}/header.php");
 //User to pull the data for
 $githubuser = 'jaredballou';
 /*
@@ -60,6 +62,6 @@ function startsWith($haystack, $needle) {
 		// search backwards starting from haystack length characters from the end
 		return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
 }
-require "../include/footer.php";
+require_once("{$includepath}/footer.php");
 exit;
 ?>

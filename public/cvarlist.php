@@ -3,7 +3,14 @@
 This takes the CVAR list CSV files from data and displays them in a simple
 tabular format.
 */
-require realpath('./..')."/include/header.php";
+//Root Path Discovery
+$use_ob=1;
+do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
+if (isset($_REQUEST['fetch'])) {
+	require_once("{$includepath}/functions.php");
+} else {
+	require_once("{$includepath}/header.php");
+}
 $dirs = glob("${datapath}/cvarlist/*");
 foreach ($dirs as $dir) {
 	if (!is_dir($dir)) {
@@ -32,7 +39,7 @@ if ($_REQUEST['listtype']) {
 //var_dump($lists,$version,$listtype);
 if ((!$version) || (!$listtype)) {
 	echo "Data not found";
-	include "../include/footer.php";
+	include "{$includepath}/footer.php";
 	exit;
 }
 $listfile = "${datapath}/cvarlist/{$version}/{$listtype}.csv";
@@ -79,6 +86,11 @@ while (($line = fgetcsv($f)) !== false) {
 		}
 	}
 	$data[] = $row;
+}
+if ($_REQUEST['fetch'] == 'list') {
+	header('Content-Type: application/json');
+	echo json_encode($data, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+	exit;
 }
 //Collect Headers
 $header="";
@@ -144,6 +156,6 @@ $(document).ready(function() {
 <?php
 }
 fclose($f);
-require "../include/footer.php";
+require_once("{$includepath}/footer.php");
 exit;
 ?>

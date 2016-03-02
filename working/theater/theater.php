@@ -47,6 +47,7 @@ $(document).ready(function(){
 </script>
 <?php
 startbody();
+echo "<h1>This is still very new, and not much is wired up yet. Let me know what features you'd like</h1>\n";
 $snippets = array();
 LoadSnippets($snippets);
 //var_dump($snippets);

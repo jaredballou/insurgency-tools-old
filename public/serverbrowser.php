@@ -9,7 +9,7 @@
 
 
 //error_reporting(E_ALL);
-error_reporting(E_ERROR);
+//error_reporting(E_ERROR);
 //error_reporting(E_ALL & ~(E_STRICT|E_NOTICE));
 
 //Root Path Discovery
@@ -32,6 +32,9 @@ if (isset($_REQUEST['fetch'])) {
 }
 
 include "${rootpath}/thirdparty/steam-condenser-php/vendor/autoload.php";
+include "${rootpath}/thirdparty/geoip2/vendor/autoload.php";
+use GeoIp2\Database\Reader;
+$reader = new Reader("{$rootpath}/thirdparty/geoip2/GeoLite2-City.mmdb");
 
 $masters = array(
 	'GOLD_SRC'	=> 'hl1master.steampowered.com:27010',
@@ -39,15 +42,15 @@ $masters = array(
 );
 
 $regions = array(
-	'US East Coast'	=> '0x00',
-	'US West Coast'	=> '0x01',
-	'South America'	=> '0x02',
-	'Europe'	=> '0x03',
-	'Asia'		=> '0x04',
-	'Austrailia'	=> '0x05',
-	'Middle East'	=> '0x06',
-	'Africa'	=> '0x07',
-	'Other'		=> '0xFF',
+	'0x00'	=> 'US East Coast',
+	'0x01'	=> 'US West Coast',
+	'0x02'	=> 'South America',
+	'0x03'	=> 'Europe',
+	'0x04'	=> 'Asia',
+	'0x05'	=> 'Austrailia',
+	'0x06'	=> 'Middle East',
+	'0x07'	=> 'Africa',
+	'0xFF'	=> 'Other',
 );
 
 // Paths for where to store the data
@@ -56,10 +59,10 @@ $paths['appdata'] = "${cachepath}/steam/{$appid}";
 $paths['servers'] = "{$paths['appdata']}/servers";
 $paths['versions'] = "{$paths['appdata']}/versions";
 
-$region = 0x00;
+$region = '0x00';
 $filters = '\gamedir\insurgency';
-$list_file_maxage = 600;
-$server_file_maxage = 6000;
+$list_file_maxage = 60;
+$server_file_maxage = 600;
 
 $tags_file = "{$paths['servers']}/tags.json";
 $list_file = "{$paths['servers']}/list.json";
@@ -73,6 +76,12 @@ foreach ($paths as $name => $path) {
 
 if (isset($_REQUEST['fetch'])) {
 	switch ($_REQUEST['fetch']) {
+		case 'regions':
+			$data = $regions;
+			break;
+		case 'masters':
+			$data = $masters;
+			break;
 		case 'list':
 			$data = GetServerList();
 			break;
@@ -108,20 +117,22 @@ $list = GetServerList();
 
 // Get server data
 //$servers = GetAllServers();
-
+if (!isset($maps))
+	$maps = array();
 // Display fields for filtering
 $fields = array(
-	'region' => $regions,
-	'gametype' => array_keys($tag_values['g']),
-	'theater' => array_keys($tag_values['t']),
-	'playlist' => array_keys($tag_values['p']),
-	'pure' => array_keys($tag_values['pure']),
-	'deathmsgs' => '__',
-	'coop' => '__',
-	'no3dvoip' => '__',
-	'sourcemod' => '__',
-	'respawn' => '__',
-	'pvp' => '__',
+	'region'	=> $regions,
+	'gametype'	=> array_keys($tag_values['g']),
+	'theater'	=> array_keys($tag_values['t']),
+	'map'		=> $maps,
+	'playlist'	=> array_keys($tag_values['p']),
+	'pure'		=> array_keys($tag_values['pure']),
+	'deathmsgs'	=> '__',
+	'coop'		=> '__',
+	'no3dvoip'	=> '__',
+	'sourcemod'	=> '__',
+	'respawn'	=> '__',
+	'pvp'		=> '__',
 );
 
 //var_dump($servers);
@@ -135,6 +146,7 @@ $(document).ready(function() {
 </script>
 <?php
 startbody();
+echo "<h1>This is still very new, and not much is wired up yet. Let me know what features you'd like</h1>\n";
 DisplayServerList($servers);
 
 //exit;
@@ -150,7 +162,10 @@ function DisplayServerList() {
 		$list_mtime,
 		$fields,
 		$servers,
-		$list;
+		$list,
+		$region,
+		$regions,
+		$reader;
 	echo "Server List Refreshed {$list_age} seconds ago<br>\n";
 	foreach ($fields as $field => $values) {
 		if (is_array($values)) {
@@ -170,6 +185,7 @@ function DisplayServerList() {
 	echo "<tr>
 <th>Reg
 </th><th>Name
+</th><th>Map
 </th><th>Pl
 </th><th>Max
 </th><th>Game
@@ -181,7 +197,21 @@ function DisplayServerList() {
 	echo "</thead>\n";
 	foreach ($list as $region => $items) {
 		foreach ($items as $item) {
+			$tags = array();
 			$address = "{$item[0]}:{$item[1]}";
+			$record = $reader->city($item[0]);
+			$flag = "<img src='/images/locations/{$record->country->isoCode}.png' alt='{$record->country->name}' height='16' width='16'>";
+//{$record->mostSpecificSubdivision->name}
+//{$record->mostSpecificSubdivision->isoCode}
+//{$record->city->name}
+//{$record->location->latitude}
+//{$record->location->longitude}
+
+//json_decode(json_encode(
+//), true);
+
+//var_dump($record);
+//exit;
 			$server = GetServer($region,$item[0],$item[1]);
 			if (isset($server['info'])) {
 				// Parse version information into different formats for different tools
@@ -192,22 +222,37 @@ function DisplayServerList() {
 				$version_check = ($version_num == $required_version) ? "OK" : "FAIL - Should be {$required_version}";
 				$name = $server['info']['serverName'];
 			} else {
-//				continue;
 				$name = $address;
 			}
 			if (isset($server['tags'])) {
-				$tags = array();
 				$rmtags = array('v','p','g','pure','t');
 				foreach ($server['tags'] as $tag => $val) {
 					if (in_array($tag,array('v','p','g','pure','t')))
 						continue;
 					$tags[] = ($val == '__') ? $tag : "{$tag}:{$val}";
 				}
-				$tags = implode(",",$tags);
 			}
-			echo "<tr>
-<td>{$server['region']}
+			if (isset($server['error'])) {
+				$icon = 'no_response';
+			} else {
+				if (isset($server['info'])) {
+					if ($server['info']['passwordProtected']) {
+						$icon = 'online_password';
+					} else {
+						$icon = 'online';
+					}
+				} else {
+					$icon = 'unknown';
+				}
+			}
+//"operatingSystem"
+//"secureServer"
+//{$regions[$server['region']]}
+			$tags = implode(",",$tags);
+			echo "<tr id='{$address}' class='row-server'>
+<td>{$flag}<img src='/images/servers/icon_{$icon}.gif' height='16' width='16' alt='{$icon}'>
 </td><td><a href='steam://connect/{$address}'>{$name}</a>
+</td><td>{$server['info']['mapName']}
 </td><td>{$server['info']['numberOfPlayers']}
 </td><td>{$server['info']['maxPlayers']}
 </td><td>{$server['tags']['g']}
@@ -236,9 +281,11 @@ function GetServerList() {
 		$list_age;
 	if (file_exists($list_file) && (filemtime($list_file) > (time() - $list_file_maxage))) {
 		$list = json_decode(file_get_contents($list_file),TRUE);
+		$list_mtime = filemtime($list_file);
+		$list_age = time() - $list_mtime;
 	} else {
 		$list = array();
-		foreach ($regions as $name => $code) {
+		foreach ($regions as $code => $name) {
 			$path = "{$paths['servers']}/{$code}";
 			if (!file_exists($path)) {
 				mkdir($path,0755,true);
@@ -248,6 +295,8 @@ function GetServerList() {
 			$list[$code] = $master->getServers($code,$filters);
 		}
 		file_put_contents($list_file,json_encode($list, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
+		$list_mtime = time();
+		$list_age = 0;
 	}
 	return $list;
 }
@@ -260,6 +309,7 @@ function GetAllServers() {
 		$server_file_maxage,
 		$list_file_maxage,
 		$region,
+		$regions,
 		$filters,
 		$list,
 		$list_mtime,
