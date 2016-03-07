@@ -429,7 +429,7 @@ if ($map) {
 	unset($maps[$map]['gametypes']['theater_conditions']);
 	$gametypes = array_keys($maps[$map]['gametypes']);
 	// Display map overview
-	echo "						<img src='data/materials/{$maps[$map]['overview']['material']}.png' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
+	echo "						<img src='{$urlbase}data/materials/{$maps[$map]['overview']['material']}.png' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
 	// Try to open decompiled map file to get entity data
 
 	if (file_exists("${datapath}/maps/overlays/{$map}.txt")) {
@@ -488,7 +488,7 @@ if ($map) {
 		// Create the layer div
 		echo "						<div id='layer-{$layername}' class='overlay' style='display: {$display}'>\n";
 		if ($layername == 'navmesh') {
-			echo "<img height='1024' width='1024' id='navmesh-overlay' src='data/maps/navmesh/{$navmesh}.png'>\n";
+			echo "<img height='1024' width='1024' id='navmesh-overlay' src='{$urlbase}data/maps/navmesh/{$navmesh}.png'>\n";
 		}
 		if ($layername == 'grid') {
 			$ovalpha = 48;
@@ -535,7 +535,7 @@ if ($map) {
 
 
 		if ($layername == 'heatmap') {
-			echo "<img height='1024' width='1024' id='heatmap-overlay' src='hlstatsx/hlstatsimg/games/insurgency/heatmaps/{$map}-kill.png'>\n";
+			echo "<img height='1024' width='1024' id='heatmap-overlay' src='{$urlbase}hlstatsx/hlstatsimg/games/insurgency/heatmaps/{$map}-kill.png'>\n";
 		}
 		foreach ($layerdata as $row) {
 			$tclass = $teams[$row['pos_team']];

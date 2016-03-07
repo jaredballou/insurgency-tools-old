@@ -13,7 +13,7 @@
           <ul class="nav navbar-nav">
 <?php
 	foreach ($pages as $url => $page) {
-		$act = ($url == $curpage) ? ' class="active"' : '';
+		$act = (basename($url) == $curpage) ? ' class="active"' : '';
 		echo "            <li{$act}><a href='{$url}'>{$page}</a></li>\n";
 	}
 ?>

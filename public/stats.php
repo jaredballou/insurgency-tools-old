@@ -163,7 +163,7 @@ function DisplayStatsHeader($startbody=1) {
 		<div style='margin: 5px;'>
 			<h1>Insurgency Theater Parser</h1>
 			<h2>Parsing {$theaterfile} from Version {$version}</h2>\n";
-
+	echo "<div>\n";
 	echo "Mod: <select name='mod'>\n";
 	foreach ($mods as $key => $val) {
 		$sel = ($key == $mod) ? ' SELECTED' : '';
@@ -182,10 +182,11 @@ function DisplayStatsHeader($startbody=1) {
 		echo "					<option{$sel}>{$theatername}</option>\n";
 	}
 	echo "</select> ";
+	echo "</div>\n";
 
 	$curname = '-Current-';
 	$curarr = array($curname => $curname);
-	echo "<span class='beta'>Compare [BETA] ";
+	echo "<div class='beta'>Compare [BETA]<br>\n";
 	echo "Mod: <select name='mod_compare'>\n";
 	$cursel = (isset($_REQUEST['mod_compare'])) ? $_REQUEST['mod_compare'] : (($mod == $mod_compare) ? $curname : $mod_compare);
 	foreach (array_merge($curarr,$mods) as $key => $val) {
@@ -215,7 +216,7 @@ function DisplayStatsHeader($startbody=1) {
 	}
 //	array_shift($theaters);
 	echo "</select> ";
-	echo "</span><br>\n";
+	echo "</div>\n<br>\n";
 
 	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='range'> <select name='range_unit'>\n";
 	foreach ($range_units as $ru => $runame) {
@@ -248,6 +249,7 @@ function closePage($bare=0) {
 function DisplayStatTable($startbody=1) {
 	global $stats_tables, $tableclasses;
 	DisplayStatsHeader($startbody);
+	echo "<h2>Jump to Section</h2>\n";
 	foreach (array_keys($stats_tables) as $sectionname) {
 		echo "<a href='#{$sectionname}'>{$sectionname}</a><br>\n";
 	}
@@ -392,7 +394,8 @@ function GenerateStatTable() {
 				$thisitem['Damage']=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
 			}
 			$thisitem['DamageChart'] = printval($ammo,"Damage");
-			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread'])."<br>{$item["ballistics"]['spread']}";
+//			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread'])."<br>{$item["ballistics"]['spread']}";
+			$thisitem['Spread'] = $item["ballistics"]['spread'];
 			$thisitem['Recoil'] = getrecoilgraph($item['recoil']);
 			$thisitem['Ammo'] = printval($item["ammo_clip"],"ammo_type",1);
 			if (($item["ammo_clip"]["clip_max_rounds"] > 1) && (!($item["ballistics"]["singleReload"]))) {
@@ -557,7 +560,7 @@ function GenerateStatTable() {
 		$tn = getlookup($teamdata['name']);
 		$stats_tables['Teams']['fields'][$tn] = 1;
 		if (isset($teamdata['logo'])) {
-			$thisitem.="<div style='text-align: center;'><img src='data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
+			$thisitem.="<div style='text-align: center;'><img src='{$urlbase}data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
 		}
 		if (isset($teamdata['squads'])) {
 			foreach ($teamdata['squads'] as $squad => $squaddata) {

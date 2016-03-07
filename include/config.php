@@ -11,14 +11,17 @@
 // Servers, in the format 'server.domain.com:27015' - even if it's on the standard port
 $servers = array();
 
+// URL base for referencing public items
+$urlbase = '/';
+
 // Page Names
 $curpage = basename($_SERVER['SCRIPT_FILENAME']);
 $pages = array(
-	'stats.php' => 'Stats',
-	'maps.php' => 'Maps',
-	'cvarlist.php' => 'CVARs',
-	'serverbrowser.php' => 'Server Browser',
-	'working/theater/theater.php' => 'Theater Creator',
+	"{$urlbase}stats.php" => 'Stats',
+	"{$urlbase}maps.php" => 'Maps',
+	"{$urlbase}cvarlist.php" => 'CVARs',
+	"{$urlbase}serverbrowser.php" => 'Server Browser',
+	"{$urlbase}working/theater/theater.php" => 'Theater Creator',
 	"https://github.com/jaredballou' target='_blank" => 'My Github',
 	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate'
 );
@@ -221,8 +224,8 @@ $stats_tables = array(
 			'Fire Modes' => 0,
 			'Damage' => 1,
 			'DamageChart' => 1,
-			'Spread' => 0,
-			'Recoil' => 0,
+			'Spread' => 1,
+			'Recoil' => 1,
 			'Sway' => 0,
 			'Ammo' => 1,
 			'Magazine' => 1,

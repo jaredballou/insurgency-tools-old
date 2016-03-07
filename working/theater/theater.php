@@ -90,7 +90,19 @@ function LoadSnippets(&$snippets,$path='') {
 						$snippets[$path_parts['filename']] = Spyc::YAMLLoad($file);
 						break;
 					case 'theater':
-						$snippets[$path_parts['filename']] = getfile($file,$mod,$version,$path_parts['dirname']);
+						$lines = preg_split('/\n|\r\n?/', file_get_contents($file));
+						$header = "";
+						foreach ($lines as $line) {
+							$line = trim($line);
+							if (($line[0] != $line[1]) || ($line[1] != '/')) {
+								break;
+							}
+							$line = trim(preg_replace('/^[ \ta-zA-Z_\-0-9\/\.]+\.theater[ \t\-]*/','',$line));
+							$header.="{$line}\n";
+
+						}
+						$snippets[$path_parts['filename']] = $header;
+//getfile($file,$mod,$version,$path_parts['dirname']);
 						break;
 				}
 			}
@@ -179,16 +191,34 @@ function DisplayTheaterCreationMenu() {
 					break;
 			}
 			$str.="</div>\n</div>\n";
-	}
+		}
 	}
 	$str.="<div class='toggle-section section' id='header-theater-snippets'>Theater Snippets</div>\n";
 	$str.="<div id='theater-snippets'>\n";
 	foreach ($sections as $sname) {
-		$str.="<div class='toggle-section subsection' id='header-section-theater-snippets-{$sname}'>{$sname}</div>\n<div id='section-theater-snippets-{$sname}'>\n<select name='section[{$sname}]'>\n<option value=''>--None--</option>\n";
+		$str.="<div class='toggle-section subsection' id='header-section-theater-snippets-{$sname}'>{$sname}</div>\n<div id='section-theater-snippets-{$sname}'>\n";
+if ($display == 'select') {
+	$str.="<select name='section[{$sname}]'>\n<option value=''>--None--</option>\n";
 		foreach ($snippets[$sname] as $tname => $tdata) {
 			$str.="<option>{$tname}</option>\n";
 		}
-		$str.="</select>\n</div>\n";
+		$str.="</select>\n";
+} else {
+		foreach ($snippets[$sname] as $tname => $tdata) {
+			$str.="<span>\n";
+//			$str.="<span class='toggle-section' id='header-section-{$sname}-{$tname}'>\n";
+			$str.="<input type='checkbox' name='section[{$sname}][{$tname}]'>\n";
+			$str.="<b>{$tname}:</b>\n";
+//			$str.="</span>\n";
+//			$str.="<span id='section-{$sname}-{$tname}'>\n";
+			$str.=str_replace("\n","<br>\n",$tdata);
+//			$str.="</span>\n";
+			$str.="</span>\n";
+			$str.="<br>\n";
+		}
+
+}
+		$str.="</div>\n";
 	}
 	$str.="</div>\n";
 	$str.="<div>\n<input type='submit' name='go' value='Generate Theater'\n></form>\n</div>\n</div>\n";
@@ -200,11 +230,19 @@ function GenerateTheater() {
 	$data = array();
 	$hdr=array("\"#base\" \"{$theaterfile}.theater\"","// Theater generated");
 	foreach ($_GET['section'] as $section=>$snippet) {
-		if (!strlen($snippet)) {
-			continue;
+//var_dump($section,$snippet);
+		if (is_array($snippet)) {
+		} else {
+			if (!strlen($snippet)) {
+				echo "not parsing {$section}\n";
+				continue;
+			}
+			$snippet=array($snippet => "on");
 		}
-		$hdr[]="// Load {$section}/{$snippet}.theater";
-		$data = array_merge_recursive(getfile("{$snippet}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
+		foreach ($snippet as $sname=>$sval) {
+			$hdr[]="// Load {$section}/{$sname}.theater";
+			$data = array_merge_recursive(getfile("{$sname}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
+		}
 	}
 	foreach ($_GET['mutator'] as $mname => $mdata) {
 		if (!(strlen($mdata))) {
