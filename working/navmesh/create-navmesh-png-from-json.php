@@ -1,18 +1,10 @@
 <?php
-// This is an old script that needs some TLC. It basically takes a properly
-// parsed navmesh JSON file, and creates an image with walkable areas transparent
-// To be used overlaying maps in the web viewer
-/*
-require "/opt/hlstatsx-community-edition/heatmaps/config.inc.php";
+//Root Path Discovery
+do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 
-mysql_connect(DB_HOST,DB_USER,DB_PASS);
-mysql_select_db(DB_NAME);
-
-$dbprefix = isset($_REQUEST['dbprefix']) ? $_REQUEST['dbprefix'] : 'hlstats';
-*/
+require_once "${includepath}/functions.php";
 
 
-require_once "include/functions.php";
 $files = glob("${datapath}/maps/navmesh/*.json");
 //Open all files and add gamemodes and other map info to array
 //var_dump($files);
@@ -56,9 +48,9 @@ function ParseMap($map)
 		$xmax = $xmin + $row['pos_width'];
 		$ymax = $ymin + $row['pos_height'];
 		for( $x = $xmin; $x <= $xmax; $x++ ){
-												for( $y = $ymin; $y < $ymax; $y++ ){
-																imagesetpixel( $overlay, $x, $y, $trans_color );
-												}
+			for( $y = $ymin; $y < $ymax; $y++ ){
+				imagesetpixel( $overlay, $x, $y, $trans_color );
+			}
 		}
 		//$rects[$obj['pos_name']] = $obj;
 	}

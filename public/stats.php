@@ -132,10 +132,13 @@ if (isset($_REQUEST['fetch'])) {
 		case 'theater':
 			$data = $theater;
 			break;
+		case 'mods':
+			$data = $mods;
+			break;
 	}
 	if (isset($data)) {
 		header('Content-Type: application/json');
-		echo json_encode($theater, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+		echo json_encode($data, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
 		exit;
 	}
 }
@@ -149,41 +152,65 @@ $(document).ready(function() {
 } );
 </script>
 <?php
+GenerateStatTable();
+DisplayStatTable();
+echo "		</form>";
+closePage();
+exit;
+
+
+
+
 // DisplayStatsHeader - Show the page header with all the form fields to control theater display
 function DisplayStatsHeader($startbody=1) {
 	global 
-		$mods, $mod,
-		$theaterfile, $theaterfile_compare,
-		$version, $version_compare,
+		$mod, $mod_compare, $mods,
+		$theaterfile, $theaterfile_compare, $theaters,
+		$version, $version_compare, $versions,
 		$theaterpath, $theaterpath_compare,
-		$theaters, $range, $range_unit, $range_units, $versions;
+		$range, $range_unit, $range_units;
+	// Are we comparing two different items?
+	$compare = (($version != $version_compare) || ($mod != $mod_compare) || ($theaterfile != $theaterfile_compare));
+
 	startbody();
 	echo "
 		<form action='{$_SERVER['PHP_SELF']}' method='get'>
 		<div style='margin: 5px;'>
 			<h1>Insurgency Theater Parser</h1>
-			<h2>Parsing {$theaterfile} from Version {$version}</h2>\n";
+			<h2>Viewing {$theaterfile} from {$mod} {$version}</h2>\n";
+	if ($compare) {
+		echo "<h2>Comparing to {$theaterfile_compare} from {$mod_compare} {$version_compare}</h2>\n";
+	}
 	echo "<div>\n";
-	echo "Mod: <select name='mod'>\n";
+
+	// Display mod/version/theater picker
+	echo "Mod: <select name='mod' id='mod'>\n";
+/*
 	foreach ($mods as $key => $val) {
 		$sel = ($key == $mod) ? ' SELECTED' : '';
 		echo "					<option{$sel}>{$key}</option>\n";
 	}
+*/
 	echo "</select> ";
-	echo "Version: <select name='version'>\n";
+	echo "Version: <select name='version' id='version'>\n";
+/*
 	foreach ($mods[$mod] as $key => $val) {
 		$sel = ($key == $version) ? ' SELECTED' : '';
 		echo "					<option{$sel}>{$key}</option>\n";
 	}
+*/
 	echo "</select> ";
-	echo "Theater: <select name='theater'>\n";
+	echo "Theater: <select name='theater' id='theater'>\n";
+/*
 	foreach ($theaters as $theatername) {
 		$sel = (($theatername == $theaterfile) || ($theatername == $_REQUEST['theater'])) ? ' SELECTED' : '';
 		echo "					<option{$sel}>{$theatername}</option>\n";
 	}
+*/
 	echo "</select> ";
 	echo "</div>\n";
-
+/*
+	// Display comparison mod/version/theater
 	$curname = '-Current-';
 	$curarr = array($curname => $curname);
 	echo "<div class='beta'>Compare [BETA]<br>\n";
@@ -194,42 +221,94 @@ function DisplayStatsHeader($startbody=1) {
 		echo "<option{$sel}>{$key}</option>\n";
 	}
 	echo "</select>";
-
-
 	echo "Version: <select name='version_compare'>\n";
 	$cursel = (isset($_REQUEST['version_compare'])) ? $_REQUEST['version_compare'] : (($version == $version_compare) ? $curname : $version_compare);
-//	array_unshift($versions,$curname);
 	foreach (array_merge($curarr,$mods[$mod]) as $key => $val) {
 		$sel = ($key == $cursel) ? ' SELECTED' : '';
 		echo "<option{$sel}>{$key}</option>\n";
 	}
-//	array_shift($versions);
 	echo "</select>";
-
-
 	echo "Theater: <select name='theater_compare'>\n";
 	$cursel = (isset($_REQUEST['theater_compare'])) ? $_REQUEST['theater_compare'] : (($theaterfile == $theaterfile_compare) ? $curname : $theaterfile_compare);
-//	array_unshift($theaters,$curname);
 	foreach (array_merge($curarr,$theaters) as $tid) {
 		$sel = ($tid == $cursel) ? ' SELECTED' : '';
 		echo "<option{$sel}>{$tid}</option>\n";
 	}
-//	array_shift($theaters);
 	echo "</select> ";
 	echo "</div>\n<br>\n";
-
+*/
+	// Select range and units of measure
 	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='range'> <select name='range_unit'>\n";
 	foreach ($range_units as $ru => $runame) {
 		$sel = ($range_unit == $ru) ? ' SELECTED' : '';
 		echo "					<option{$sel} value='{$ru}'>{$runame}</option>\n";
 	}
 	echo "				</select><br>\n";
+
+	// Submit button
 	echo "				<input type='submit' value='Parse'>\n			</div>\n";
+
+
+
+	$jqmods = array();
+	foreach ($mods as $mname => $mdata) {
+		foreach ($mdata as $vname => $vdata) {
+			if (isset($vdata['scripts']['theaters'])) {
+				foreach ($vdata['scripts']['theaters'] as $tname => $tpath) {
+					$bn = basename($tname,".theater");
+					$jqmods[$mname][$vname][$bn] = $bn;
+				}
+			}
+		}
+	}
+?>
+<script type="text/javascript">
+jQuery(function($) {
+    var data = <?php echo json_encode($jqmods); ?>;
+
+    var $mods = $('#mod');
+    var $versions = $('#version');
+    var $theaters = $('#theater');
+
+    $('#mod').change(function () {
+        var mod = $(this).val(), vers = data[mod] || [];
+        
+        var html = $.map(Object.keys(vers), function(ver){
+            return '<option value="' + ver + '">' + ver + '</option>'
+        }).join('');
+        $versions.html(html);
+        $versions.change();
+    });
+
+    $('#version').change(function () {
+        var version = $(this).val(), mod = $('#mod').val(), items = data[mod][version] || [];
+        
+        var html = $.map(items, function(theater){
+            return '<option value="' + theater + '">' + theater + '</option>'
+        }).join('');
+        $theaters.html(html);
+        $theaters.change();
+        //'<option>' + mod + ' - ' + version + '</option>')
+    });
+	var html = $.map(Object.keys(data), function(mod){
+		return '<option value="' + mod + '">' + mod + '</option>'
+	}).join('');
+	var cur_mod = '<?php echo $mod; ?>';
+	var cur_version = '<?php echo $version; ?>';
+	var cur_theater = '<?php echo $theaterfile; ?>';
+	$mods.html(html);
+	$mods.val(cur_mod);
+	$mods.change();
+	$versions.val(cur_version);
+	$versions.change();
+	$theaters.val(cur_theater);
+	$theaters.change();
+});
+</script>
+<?php
+
 }
-GenerateStatTable();
-DisplayStatTable();
-echo "		</form>";
-closePage();
+
 
 function closePage($bare=0) {
 	if (isset($_REQUEST['dump'])) {
@@ -246,10 +325,12 @@ function closePage($bare=0) {
 	exit;
 }
 
-function DisplayStatTable($startbody=1) {
-	global $stats_tables, $tableclasses;
+function DisplayStatTable() {
+//$stats_tables,$startbody=1) {
+	global $tableclasses,$stats_tables;
 	DisplayStatsHeader($startbody);
 	echo "<h2>Jump to Section</h2>\n";
+//var_dump($stats_tables);
 	foreach (array_keys($stats_tables) as $sectionname) {
 		echo "<a href='#{$sectionname}'>{$sectionname}</a><br>\n";
 	}
@@ -336,7 +417,8 @@ function DisplayTheaterCompare() {
 }
 
 function GenerateStatTable() {
-	global $stats_tables, $theater, $upgrades, $armors, $range;
+	global $theater, $upgrades, $armors, $range, $stats_tables;
+//	$stats_tables = array();
 	$armors = array('No Armor' => ($theater['player_settings']['damage']['DamageHitgroups']));
 	foreach ($theater["player_gear"] as $gearname => $data) {
 		$gear = getobject("player_gear", $gearname);
@@ -436,19 +518,13 @@ function GenerateStatTable() {
 			$fn = 'Upgrades';
 		}
 		// Add ammo and upgrade links to weapon items
-		if (isset($upgrade['allowed_weapons']['weapon'])) {
-			$tmp = $upgrade['allowed_weapons']['weapon'];
-			$upgrade['allowed_weapons'] = (is_array($tmp)) ? $tmp : array($tmp);
-			
-		}
 		$aw = array();
 		if (isset($upgrade['allowed_weapons'])) {
 			foreach ($upgrade['allowed_weapons'] as $order => $witem) {
-				$aw[] = "<a href='#{$witem}'>{$stats_tables['Weapons']['items'][$witem]['Name']}</a>";
-				$stats_tables['Weapons']['items'][$witem][$fn].=$link;
+				$aw[] = "<a href='#{$witem['weapon']}'>{$stats_tables['Weapons']['items'][$witem['weapon']]['Name']}</a>";
+				$stats_tables['Weapons']['items'][$witem['weapon']][$fn].=$link;
 			}
 		}
-		
 		$thisitem['Img'] = $img;
 		$thisitem['Name'] = getlookup($upgrade['print_name']);
 		$thisitem['Slot'] = printval($upgrade,"upgrade_slot");
@@ -582,6 +658,7 @@ function GenerateStatTable() {
 	foreach (array_keys($stats_tables) as $sectionname) {
 		ksort($stats_tables[$sectionname]['items']);
 	}
+	return($stats_tables);
 }
 /*
 function ProcessListLinks($list) {

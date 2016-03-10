@@ -7,42 +7,6 @@ insurgency-data repo for other people to use, and then refine and process it for
 tools separately.
 */
 namespace NavMesh;
-function GetBinary($fd,$type='L',$len=0) {
-	if ($len == 0) {
-		switch($type) {
-			case 'I':
-			case 'F':
-			case 'f':
-			case 'l':
-			case 'L':
-			case 'N':
-			case 'V':
-				$len = 4;
-				break;
-			case 's':
-			case 'n':
-			case 'v':
-			case 'S':
-				$len = 2;
-				break;
-			case 'c':
-			case 'C':
-				$len = 1;
-				break;
-		}
-	}
-	// VEC is just three floats in a row
-	if ($type == 'VEC') {
-		$data = array(GetBinary($fd,'f'),GetBinary($fd,'f'),GetBinary($fd,'f'));
-		return $data;
-	} elseif ($type == 'STR') {
-		$data = fread($fd, $len);
-		return $data;
-	} else {
-		$data = unpack($type, fread($fd, $len));
-		return $data[1];
-	}
-}
 
 class Header{
 	public 
@@ -52,17 +16,17 @@ class Header{
 		$saveBspSize,
 		$isAnalyzed;
 
-	function __construct($fd){
-		$this->magicNumber	= GetBinary($fd);
-		$this->version		= GetBinary($fd);
+	function __construct(&$parent){
+		$this->magicNumber	= $parent->GetBinary();
+		$this->version		= $parent->GetBinary();
 		if ($this->version >= 10) {
-			$this->subVersion	= GetBinary($fd);
+			$this->subVersion	= $parent->GetBinary();
 		}
 		if ($this->version >= 4) {
-			$this->saveBspSize	= GetBinary($fd);
+			$this->saveBspSize	= $parent->GetBinary();
 		}
 		if ($this->version >= 14) {
-			$this->isAnalyzed	= GetBinary($fd,'C');
+			$this->isAnalyzed	= $parent->GetBinary('C');
 		}
 	}
 }
@@ -79,18 +43,18 @@ class Ladder{
 		$iLadderTopRightAreaID,
 		$iLadderTopBehindAreaID,
 		$iLadderBottomAreaID;
-	function __construct($header,$fd){
-		$this->iLadderID		= GetBinary($fd);
-		$this->flLadderWidth		= GetBinary($fd,'f');
-		$this->flLadderTop		= GetBinary($fd,'VEC');
-		$this->flLadderBottom		= GetBinary($fd,'VEC');
-		$this->flLadderLength		= GetBinary($fd,'f');
-		$this->iLadderDirection		= GetBinary($fd,'f');
-		$this->iLadderTopForwardAreaID	= GetBinary($fd);
-		$this->iLadderTopLeftAreaID	= GetBinary($fd);
-		$this->iLadderTopRightAreaID	= GetBinary($fd);
-		$this->iLadderTopBehindAreaID	= GetBinary($fd);
-		$this->iLadderBottomAreaID	= GetBinary($fd);
+	function __construct(&$parent) {
+		$this->iLadderID		= $parent->GetBinary();
+		$this->flLadderWidth		= $parent->GetBinary('f');
+		$this->flLadderTop		= $parent->GetBinary('VEC');
+		$this->flLadderBottom		= $parent->GetBinary('VEC');
+		$this->flLadderLength		= $parent->GetBinary('f');
+		$this->iLadderDirection		= $parent->GetBinary('f');
+		$this->iLadderTopForwardAreaID	= $parent->GetBinary();
+		$this->iLadderTopLeftAreaID	= $parent->GetBinary();
+		$this->iLadderTopRightAreaID	= $parent->GetBinary();
+		$this->iLadderTopBehindAreaID	= $parent->GetBinary();
+		$this->iLadderBottomAreaID	= $parent->GetBinary();
 	}
 }
 class Area{
@@ -124,115 +88,163 @@ class Area{
 		$unk01;
 
 
-	function __construct($header,$fd){
-		$this->iAreaID				= GetBinary($fd);
-		$this->iAreaFlags			= GetBinary($fd);
-		$this->pos1				= GetBinary($fd,'VEC');
-		$this->pos2				= GetBinary($fd,'VEC');
-		$this->flNECornerZ			= GetBinary($fd,'f');
-		$this->flSWCornerZ			= GetBinary($fd,'f');
-//var_dump($this);
+	function __construct(&$parent) {
+		$this->iAreaID				= $parent->GetBinary();
+		$this->iAreaFlags			= $parent->GetBinary();
+		$this->pos1				= $parent->GetBinary('VEC');
+		$this->pos2				= $parent->GetBinary('VEC');
+		$this->flNECornerZ			= $parent->GetBinary('f');
+		$this->flSWCornerZ			= $parent->GetBinary('f');
 		for ($d=0;$d<4;$d++) {
 			echo "direction {$d}\n";
-			$this->iConnectionCount[$d]		= GetBinary($fd);
+			$this->iConnectionCount[$d]		= $parent->GetBinary();
 			echo "iConnectionCount {$this->iConnectionCount[$d]}\n";
 			for ($c=0;$c<$this->iConnectionCount[$d];$c++) {
-//				echo "Connection {$c}\n";
-				GetBinary($fd); // iConnectingAreaID
+				$parent->GetBinary(); // iConnectingAreaID
 			}
 		}
-		$this->iHidingSpotCount			= GetBinary($fd,'C');
+		$this->iHidingSpotCount			= $parent->GetBinary('C');
 		echo "iHidingSpotCount {$this->iHidingSpotCount}\n";
 		for ($s=0;$s<$this->iHidingSpotCount;$s++) {
-			echo "hidingspots {$s}\n";
-			$iHidingSpotID = GetBinary($fd); // iHidingSpotID
-			$this->hidingspots[$iHidingSpotID]->flHidingSpot = GetBinary($fd,'VEC'); // flHidingSpot
-			$this->hidingspots[$iHidingSpotID]->iHidingSpotFlags = GetBinary($fd); // iHidingSpotFlags
-			var_dump($iHidingSpotID,$this->hidingspots[$iHidingSpotID]);
+			$iHidingSpotID = $parent->GetBinary(); // iHidingSpotID
+			echo "hidingspots {$s} id {$iHidingSpotID}\n";
+			$this->hidingspots[$iHidingSpotID]->flHidingSpot = $parent->GetBinary('VEC'); // flHidingSpot
+			$this->hidingspots[$iHidingSpotID]->iHidingSpotFlags = $parent->GetBinary('L'); // iHidingSpotFlags
+			var_dump("spot",$iHidingSpotID,$this->hidingspots[$iHidingSpotID]);
 		}
-//		$this->iApproachAreaCount		= GetBinary($fd,'C');
-		$this->iEncounterPathCount		= GetBinary($fd);
+//		$this->iApproachAreaCount		= $parent->GetBinary('C');
+		$this->iEncounterPathCount		= $parent->GetBinary();
 		echo "iEncounterPathCount {$this->iEncounterPathCount}\n";
 		for ($p=0;$p<$this->iEncounterPathCount;$p++) {
-//			echo "ep {$p}\n";
-			$iEncounterFromID = GetBinary($fd); // iEncounterFromID
-			$this->encounterpaths[$iEncounterFromID]->iEncounterFromDirection = GetBinary($fd,'C'); // iEncounterFromDirection
-			$this->encounterpaths[$iEncounterFromID]->iEncounterToID =GetBinary($fd); // iEncounterToID
-			$this->encounterpaths[$iEncounterFromID]->iEncounterToDirection = GetBinary($fd,'C'); // iEncounterToDirection
-			$this->encounterpaths[$iEncounterFromID]->iEncounterSpotCount = GetBinary($fd,'C'); // iEncounterSpotCount
+			$iEncounterFromID = $parent->GetBinary(); // iEncounterFromID
+			$this->encounterpaths[$iEncounterFromID]->iEncounterFromDirection = $parent->GetBinary('C'); // iEncounterFromDirection
+			$this->encounterpaths[$iEncounterFromID]->iEncounterToID =$parent->GetBinary(); // iEncounterToID
+			$this->encounterpaths[$iEncounterFromID]->iEncounterToDirection = $parent->GetBinary('C'); // iEncounterToDirection
+			$this->encounterpaths[$iEncounterFromID]->iEncounterSpotCount = $parent->GetBinary('C'); // iEncounterSpotCount
 			for ($s=0;$s<$this->encounterpaths[$iEncounterFromID]->iEncounterSpotCount;$s++) {
-//				"es {$s}\n";
-				$iEncounterSpotOrderID = GetBinary($fd); // iEncounterSpotOrderID
-				$this->encounterpaths[$iEncounterFromID]->encounterspots[$iEncounterSpotOrderID]->iEncounterSpotT = GetBinary($fd,'C'); // iEncounterSpotT
+				$iEncounterSpotOrderID = $parent->GetBinary(); // iEncounterSpotOrderID
+				$this->encounterpaths[$iEncounterFromID]->encounterspots[$iEncounterSpotOrderID]->iEncounterSpotT = $parent->GetBinary('C'); // iEncounterSpotT
 			}
 		}			
-		$this->iPlaceID				= GetBinary($fd,'S');
+		$this->iPlaceID				= $parent->GetBinary('S');
 		echo "iPlaceID {$this->iPlaceID}\n";
 		for ($d=0;$d<2;$d++) {
-			$this->iLadderConnectionCount[$d]	= GetBinary($fd);
+			$this->iLadderConnectionCount[$d]	= $parent->GetBinary();
 			echo "iLadderConnectionCount[{$d}] {$this->iLadderConnectionCount[$d]}\n";
 			for ($l=0;$l<$this->iLadderConnectionCount[$d];$l++) {
 				echo "ladder {$l}\n";
-				$this->ladderconnections[] = GetBinary($fd); // iLadderConnectionID
+				$this->ladderconnections[] = $parent->GetBinary(); // iLadderConnectionID
 			}
 		}
-		$this->flEarliestOccupyTimeFirstTeam	= GetBinary($fd,'f');
-		$this->flEarliestOccupyTimeSecondTeam	= GetBinary($fd,'f');
-		$this->flNavCornerLightIntensityNW	= GetBinary($fd,'f');
-		$this->flNavCornerLightIntensityNE	= GetBinary($fd,'f');
-		$this->flNavCornerLightIntensitySE	= GetBinary($fd,'f');
-		$this->flNavCornerLightIntensitySW	= GetBinary($fd,'f');
-		$this->iVisibleAreaCount		= GetBinary($fd);
-		echo "iVisibleAreaCount {$this->iVisibleAreaCount}\n";
-		for ($a=0;$a<$this->iVisibleAreaCount;$a++) {
-			$iVisibleAreaID = GetBinary($fd); // iVisibleAreaID
-			//$this->visibleareas[$iVisibleAreaID]->iVisibleAreaAttributes = 
-			GetBinary($fd,'C'); // iVisibleAreaAttributes
+		$this->flEarliestOccupyTimeFirstTeam	= $parent->GetBinary('f');
+		$this->flEarliestOccupyTimeSecondTeam	= $parent->GetBinary('f');
+		if ($parent->navfile_header->version >= 11) {
+			$this->flNavCornerLightIntensityNW	= $parent->GetBinary('f');
+			$this->flNavCornerLightIntensityNE	= $parent->GetBinary('f');
+			$this->flNavCornerLightIntensitySE	= $parent->GetBinary('f');
+			$this->flNavCornerLightIntensitySW	= $parent->GetBinary('f');
+var_dump($this);
+			if ($parent->navfile_header->version >= 16) {
+				$this->iVisibleAreaCount		= $parent->GetBinary();
+				echo "iVisibleAreaCount {$this->iVisibleAreaCount}\n";
+				for ($a=0;$a<$this->iVisibleAreaCount;$a++) {
+					$iVisibleAreaID = $parent->GetBinary(); // iVisibleAreaID
+					$this->visibleareas->$iVisibleAreaID->iVisibleAreaAttributes = $parent->GetBinary('C'); // iVisibleAreaAttributes
+				}
+				$this->iInheritVisibilityFrom		= $parent->GetBinary();
+				$this->unk01				= $parent->GetBinary();
+			}
 		}
-		$this->iInheritVisibilityFrom		= GetBinary($fd);
-		$this->unk01				= GetBinary($fd);
 	}
 }
 
 class File{
-	public 
-	$nav_path,
-	$nav_fd,
-	$nav_data_offset,
-	$nav_header,
-	$iPlaceCount,
-	$places = array(),
-	$iNavUnnamedAreas,
-	$iAreaCount,
+	public
 	$areas,
+	$iAreaCount,
 	$iLadderCount,
+	$iNavUnnamedAreas,
+	$iPlaceCount,
 	$ladders,
-	$nav_fd_count,
-	$nav_entries = array();
+	$navfile_data_offset,
+	$navfile_entries = array(),
+	$navfile_fd,
+	$navfile_fd_size,
+	$navfile_fd_count,
+	$navfile_header,
+	$navfile_path,
+	$places = array();
 
 
-	function __construct($nav_path){
-		$this->nav_path = $nav_path;
-		$this->nav_fd = fopen($nav_path, 'rb');
-		$this->nav_header = new Header($this->nav_fd);
-		$this->iPlaceCount = GetBinary($this->nav_fd,'S');
+	function __construct($navfile_path){
+		$this->navfile_path = $navfile_path;
+		$this->navfile_fd = fopen($navfile_path, 'rb');
+		$this->navfile_fd_size = filesize($navfile_path);
+		$this->navfile_header = new Header($this);
+		$this->iPlaceCount = $this->GetBinary('S');
 		for($p=0;$p<$this->iPlaceCount;$p++) {
 			echo "Place {$p}\n";
-			$len = GetBinary($this->nav_fd,'S');
-			$name = GetBinary($this->nav_fd,'STR',$len);
+			$len = $this->GetBinary('S');
+			$name = $this->GetBinary('STR',$len);
 			$this->places[$p] = $name;
 		}
-		$this->iNavUnnamedAreas = GetBinary($this->nav_fd,'C');
-		$this->iAreaCount = GetBinary($this->nav_fd);
+		$this->iNavUnnamedAreas = $this->GetBinary('C');
+		$this->iAreaCount = $this->GetBinary();
 		for($a=0;$a<$this->iAreaCount;$a++) {
 			echo "Area {$a}\n";
-			$this->areas[$a] = new Area($this->nav_header,$this->nav_fd);
-			//var_dump($this->areas[$a]);
+			$this->areas[$a] = new Area($this);
+			var_dump($this->areas[$a]);
 		}
+/*
 		$this->iLadderCount			= GetBinary($fd);
 		for ($l=0;$l<$this->iLadderCount;$l++) {
 			echo "Ladder {$l}\n";
-			$this->ladders[$l] = new Ladder($this->nav_fd);
+			$this->ladders[$l] = new Ladder($this);
+		}
+*/
+	}
+	public function GetBinary($type='L',$len=0) {
+		$stats = fstat($this->navfile_fd);
+		$pos = ftell($this->navfile_fd);
+		if ($len == 0) {
+			switch($type) {
+				case 'I':
+				case 'F':
+				case 'f':
+				case 'l':
+				case 'L':
+				case 'N':
+				case 'V':
+					$len = 4;
+					break;
+				case 's':
+				case 'n':
+				case 'v':
+				case 'S':
+					$len = 2;
+					break;
+				case 'c':
+				case 'C':
+					$len = 1;
+					break;
+			}
+		}
+		// VEC is just three floats in a row
+		if ($type == 'VEC') {
+			$data = array($this->GetBinary('f'),$this->GetBinary('f'),$this->GetBinary('f'));
+			return $data;
+		}
+		if ($stats['size'] < ($pos + $len)) {
+			echo "ERROR: Seek beyond file size! Size {$stats['size']}, pos {$pos}, type {$type}, len {$len}\n";
+var_dump($this);
+			exit;
+		}
+		if ($type == 'STR') {
+			$data = fread($this->navfile_fd, $len);
+			return $data;
+		} else {
+			$data = unpack($type, fread($this->navfile_fd, $len));
+			return $data[1];
 		}
 	}
 }

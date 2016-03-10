@@ -3,22 +3,28 @@ error_reporting(E_ALL);
 
 
 require_once 'GameQ.php';
-$listfile = '../../../cache/steam/222880/list.json';
-$list = json_decode(file_get_contents($listfile),TRUE);
-//var_dump($list);
 
 // Define your servers,
 // see list.php for all supported games and identifiers.
 $servers = array();
+
+$servers = array(
+	'ins2.jballou.com:27015' => array('insurgency','ins2.jballou.com',27015),
+);
+/*
+$listfile = '../../../cache/steam/222880/list.json';
+$list = json_decode(file_get_contents($listfile),TRUE);
+//var_dump($list);
+
 foreach ($list as $item) {
 	$servers[$item['info']['serverName']] = array('insurgency', $item['ipAddress'], $item['port']);
 }
+*/
 //var_dump($servers);
 // Call the class, and add your servers.
 $gq = new GameQ();
 $gq->addServers($servers);
 
-    
 // You can optionally specify some settings
 $gq->setOption('timeout', 200);
 
@@ -31,8 +37,11 @@ $gq->setFilter('sortplayers', 'gq_ping');
 // Send requests, and parse the data
 $results = $gq->requestData();
 
-//var_dump($results);
-
+foreach ($results as $id => $data) {
+	$t=0;
+}
+var_dump($results);
+exit;
 
 
 

@@ -1,0 +1,161 @@
+---
+Server:
+  desc: Game Server
+  items:
+    dedicated:
+      desc: Dedicated
+      type: string
+    game_descr:
+      desc: Game Description
+      type: string
+      source:
+        - gameDesc
+    game_dir:
+      desc: Game Directory
+      type: string
+      source:
+        - gameDir
+    id:
+      desc: Server ID
+      type: int
+      source:
+        - serverId
+    ipAddress:
+      desc: IP Address
+      sources:
+        - gq_address
+      type: ip
+    map:
+      desc: Map
+      type: string
+      source:
+        - gq_mapname
+        - mapName
+    mod:
+      desc: Mod
+      type: string
+      source:
+        - gq_mod
+    max_players:
+      desc: Max Players
+      type: int
+      source:
+        - gq_maxplayers
+        - maxPlayers
+    name:
+      desc: Server Name
+      sources:
+        - hostname
+        - serverName
+      type: string
+      default: "%(ipAddress):%(port)"
+    num_bots:
+      desc: Bot Count
+      type: int
+      source:
+        - botNumber
+    num_players:
+      desc: Player Count
+      type: int
+      source:
+        - numberOfPlayers
+    online:
+      desc: Online
+      source:
+        - gq_password
+      type: bool
+    os:
+      desc: Operating System
+      type: string
+      source:
+        - operatingSystem
+    password:
+      desc: Password Protected
+      type: bool
+      sources:
+        - gq_password
+        - passwordProtected
+    ping:
+      desc: Ping
+      type: int
+    players:
+      desc: Players
+      type: hash
+      items:
+        score:
+          desc: Score
+          type: int
+        name:
+          desc: Name
+          type: string
+        ping:
+          desc: Ping
+          type: int
+        time:
+          desc: Time connected
+          type: int
+    port:
+      desc: Port
+      sources:
+        - serverPort
+      type: int
+    protocol:
+      desc: Protocol Version
+      type: int
+      source:
+        - networkVersion
+    refreshed:
+      desc: Data refresh timestamp
+      type: timestamp
+    rules:
+      desc: Rules
+      type: hash
+      allownew: true
+      items:
+        mp_timelimit:
+          desc: Round Time Limit
+          type: int
+        mp_winlimit:
+          desc: Round Win Limit
+          type: int
+        nextlevel:
+          desc: Next Level
+          type: string
+    secure:
+      desc: Secure Server
+      type: bool
+      source:
+        - secureServer
+    steamappid:
+      desc: Steam App ID
+      type: int
+      source:
+        - appId
+        - gameId
+    tags:
+      desc: Tags
+      type: hash
+      allownew: true
+      sources:
+        - serverTags
+      items:
+        g:
+          desc: Game Mode
+          type: string
+        p:
+          desc: Playlist
+          type: string
+        t:
+          desc: Theater
+          type: string
+        v:
+          desc: Version
+          type: int
+        pure:
+          desc: Pure
+          type: int
+    version:
+      desc: Game Version
+      type: string
+      source:
+        - gameVersion
