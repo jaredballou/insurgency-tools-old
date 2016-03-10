@@ -148,7 +148,7 @@ if (isset($_REQUEST['fetch'])) {
 <script type="text/javascript" class="init">
 $(document).ready(function() {
 		$('table.display').dataTable({ saveState: true });
-		$('table.display').floatThead({scrollingTop: 50});
+		$('table.display').floatThead();
 } );
 </script>
 <?php

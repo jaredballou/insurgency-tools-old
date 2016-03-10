@@ -6,6 +6,11 @@ tabular format.
 //Root Path Discovery
 //$use_ob=1;
 
+$css_content = '
+	table.floatThead-table {
+		background-color: #FFFFFF;
+	}
+';
 $js_content = "
 $(document).ready(function() {
 		$('#cvarlist').dataTable({
@@ -18,7 +23,7 @@ $(document).ready(function() {
 				}
 			],
 		});
-//		$('#cvarlist').floatThead({scrollingTop: 50});
+		$('#cvarlist').floatThead();
 } );";
 
 do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
