@@ -1,4 +1,5 @@
 <?php
+// Read a theater file and dump it
 $theaterpath = '../../data/theaters/1.8.4.3/';
 require_once "kvreader2.php";
 $reader = new KVReader();

@@ -73,7 +73,13 @@ function DisplayTheaterCreationMenu() {
 //var_dump($mods);
 	echo "<div><form action='theater.php' method='GET'>\n";
 	echo "<div class='title'>Theater Generator</div>\n";
-	echo "<div class='help'>This tool is designed to give average users and server admins the ability to create custom theater files for their servers, without needing to understand how to modify them. Theater files are the way that Insurgency tracks practically all player/item/weapon stats and settings, allowing a good amount of customization and changing of gameplay to your tastes. The tool works in two ways. \"Mutators\" that simply read the theater files directly from game data and make changes to them based upon some simple rules. \"Snippets\" are short sections of theater files that make a tweak to gameplay in a more detailed manner, such as giving all players a specific kit or removing the ability to slide, for example. As more players use this tool, we will be accepting snippets and mutators from the community to increase the utility of this tool, so please feel free to <a href='http://steamcommunity.com/id/jballou'>add me on steam</a> if you want to contribute.</div>\n";
+	echo "<div class='help'>
+This tool is designed to give average users and server admins the ability to create custom theater files for their servers, without needing to understand how to
+ modify them. Theater files are the way that Insurgency tracks practically all player/item/weapon stats and settings, allowing a good amount of customization and
+ changing of gameplay to your tastes. The tool has several types of resources.<ul><li><b>Item Groups:</b> These are groups which can be modified to make changes to all player loadouts based on item grouping. So, it could be used to make a theater with only pistols and grenades, or give all players LMGs for example.</li><li><b>Mutators:</b> Simple scripts that change all settigs in a theater based upon rules. For example, \"Set all weapon weight to 0\".</li><li><b>Snippets:</b> Modulat theater files that make a tweak to gameplay in a more detailed manner,
+ such as:<ul><li>Giving all players a specific kit</li><li>Removing the ability to slide</li><li>Adding new weapons</li><li>Adjusting team and player class composition</li></ul></li></ul>As more players use this tool, we will be accepting snippets and 
+mutators from the community to increase the utility of this tool, so please feel free to <a href='http://steamcommunity.com/id/jballou'>add me on steam</a> if you 
+want to contribute.</div>\n";
 
 	//Theater selection
 	echo "<div class='theaterselect'>\n";
@@ -87,14 +93,16 @@ function DisplayTheaterCreationMenu() {
 		} else {
 			$name = (isset($sdata['name'])) ? $sdata['name'] : $sname;
 			$desc = (isset($sdata['desc'])) ? "{$sdata['desc']}<br>" : '';
-			echo "<div class='section toggle-section' id='header-section-{$sname}'>{$name}</div>\n<div class='desc'>{$desc}</div>\n<div id='section-{$sname}' style='display: none;'>\n";
+			$style="";//style='display: none;'";
+			echo "<div class='section toggle-section' id='header-section-{$sname}'>{$name}</div>\n<div class='desc'>{$desc}</div>\n<div id='section-{$sname}'{$style}>\n";
+
 			switch ($sname) {
 				case 'mutators':
 					foreach ($sdata['settings'] as $mutator => $mdata) {
 						$name = (isset($mdata['name'])) ? $mdata['name'] : $mutator;
 						$desc = (isset($mdata['desc'])) ? "{$mdata['desc']}<br>" : '';
-						echo "<div class='subsection toggle-section' id='header-section-{$sname}-{$mutator}'>\n<input type='checkbox' name='mutator[{$mutator}]'>{$name}</div>\n";
-						echo "<div class='desc'>{$desc}</div>\n";
+						echo "<div class='subsection toggle-section' id='header-section-{$sname}-{$mutator}'>{$name}</div>\n";
+						echo "<div class='desc'><input type='checkbox' name='mutator[{$mutator}]'>{$desc}</div>\n";
 						echo "<div id='section-{$sname}-{$mutator}'>\n";
 						foreach ($mdata['settings'] as $section => $sdata) {
 							echo "<ul>\n";

@@ -1,27 +1,4 @@
 <?php
-// New KeyValues class, create tree of objects for parsing
-$data = array(
-	'theater' => array(
-		'ammo' => array(
-			'ammo_9mm' => array(
-				'IsBase' => 0,
-				'print_name' => '9mm',
-			),
-		),
-		'weapons' => array(
-			'weapon_m9' => array(
-				'IsBase' => 0,
-				'print_name' => 'M9',
-			),
-			'?nightmap' => array(
-				'weapon_m14' => array(
-					'IsBase' => 0,
-					'print_name' => 'M14',
-				),
-			),
-		),
-	),
-);
 
 class KeyValues {
 	static $instances = 0;
@@ -89,6 +66,9 @@ class KeyValues {
 		return $this;
 	}
 }
+
+
+
 function ArrayToKV(&$array,&$parent='',$conditional='') {
 	if ($parent == '') {
 		if (count($array) == 1) {
@@ -116,5 +96,29 @@ function ArrayToKV(&$array,&$parent='',$conditional='') {
 	}
 	return $parent;
 }
+// New KeyValues class, create tree of objects for parsing
+$data = array(
+	'theater' => array(
+		'ammo' => array(
+			'ammo_9mm' => array(
+				'IsBase' => 0,
+				'print_name' => '9mm',
+			),
+		),
+		'weapons' => array(
+			'weapon_m9' => array(
+				'IsBase' => 0,
+				'print_name' => 'M9',
+			),
+			'?nightmap' => array(
+				'weapon_m14' => array(
+					'IsBase' => 0,
+					'print_name' => 'M14',
+				),
+			),
+		),
+	),
+);
+
 $kv = ArrayToKV($data);
 var_dump($kv);

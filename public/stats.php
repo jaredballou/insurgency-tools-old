@@ -9,38 +9,6 @@ should probably be rewritten from scratch at some point.
 do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 $title = "Insurgency Theater Parser";
 $tableclasses = "table table-striped table-bordered table-condensed table-responsive";
-$css_content = '
-	.beta {
-		background: #cc0000;
-		border: 1px solid black;
-		margin: 3px;
-		display: inline-block;
-	}
-	.bodygraph {
-		position: relative;
-		height: 340px;
-		width: 157px;
-		background-image: url("images/stats/body.png");
-	}
-	.vgui {
-		background-size: 256px 128px;
-		background-repeat: no-repeat;
-		background-position: top 16px center;
-		min-height: 144px;
-		height: 144px;
-		width: 256px;
-		text-align: center;
-		display: inline-block;
-		white-space: normal;
-		font-weight: bold;
-		font-size: 1.2em;
-		text-shadow: #000 0px 0px 1px, #000 -1px 0px 1px, #000 -1px 0px 1px, #000 0px 0px 1px;\
-		-webkit-font-smoothing: antialiased;
-	}
-	table.floatThead-table {
-		background-color: #FFFFFF;
-	}
-';
 if (isset($_REQUEST['fetch'])) {
 	require_once("{$includepath}/functions.php");
 } else {
