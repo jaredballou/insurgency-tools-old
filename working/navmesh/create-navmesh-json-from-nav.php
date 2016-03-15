@@ -24,7 +24,7 @@ function ParseNavmesh($navfile)
 	echo "Starting {$map}... ";
 	$outfile = "${datapath}/maps/navmesh/{$map}.json";
 	$md5 = md5($navfile);
-	if (file_exists($outfile)) {
+	if (0) {//file_exists($outfile)) {
 		$data = json_decode(file_get_contents($outfile),TRUE);
 		if ($data['md5'] == $md5) {
 			echo "<i>Not processing {$map}, no new data</i><br>\n";

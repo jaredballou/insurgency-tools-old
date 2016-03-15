@@ -20,7 +20,6 @@ $pages = array(
 	"{$urlbase}stats.php" => 'Stats',
 	"{$urlbase}maps.php" => 'Maps',
 	"{$urlbase}cvarlist.php" => 'CVARs',
-	"{$urlbase}serverbrowser.php" => 'Server Browser',
 	"{$urlbase}working/theater/theater.php" => 'Theater Creator',
 	"https://github.com/jaredballou' target='_blank" => 'My Github',
 	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate'

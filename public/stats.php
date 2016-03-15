@@ -54,6 +54,11 @@ if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 }
 
 switch ($_REQUEST['command']) {
+	case 'tc':
+		echo "<pre>\n";
+		var_dump($theater_conditions);
+		exit;
+		break;
 	case 'weaponlog':
 		DisplayLoggerConfig();
 		closePage(1);
@@ -181,134 +186,37 @@ function DisplayStatsHeader($startbody=1) {
 	if ($compare) {
 		echo "<h2>Comparing to {$theaterfile_compare} from {$mod_compare} {$version_compare}</h2>\n";
 	}
-	echo "<div>\n";
 
-	// Display mod/version/theater picker
-	echo "Mod: <select name='mod' id='mod'>\n";
-/*
-	foreach ($mods as $key => $val) {
-		$sel = ($key == $mod) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$key}</option>\n";
-	}
-*/
-	echo "</select> ";
-	echo "Version: <select name='version' id='version'>\n";
-/*
-	foreach ($mods[$mod] as $key => $val) {
-		$sel = ($key == $version) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$key}</option>\n";
-	}
-*/
-	echo "</select> ";
-	echo "Theater: <select name='theater' id='theater'>\n";
-/*
-	foreach ($theaters as $theatername) {
-		$sel = (($theatername == $theaterfile) || ($theatername == $_REQUEST['theater'])) ? ' SELECTED' : '';
-		echo "					<option{$sel}>{$theatername}</option>\n";
-	}
-*/
-	echo "</select> ";
+	// Mod/version/theater
+	echo "<div>\n";
+	DisplayModSelection();
 	echo "</div>\n";
-/*
-	// Display comparison mod/version/theater
-	$curname = '-Current-';
-	$curarr = array($curname => $curname);
-	echo "<div class='beta'>Compare [BETA]<br>\n";
-	echo "Mod: <select name='mod_compare'>\n";
-	$cursel = (isset($_REQUEST['mod_compare'])) ? $_REQUEST['mod_compare'] : (($mod == $mod_compare) ? $curname : $mod_compare);
-	foreach (array_merge($curarr,$mods) as $key => $val) {
-		$sel = ($key == $cursel) ? ' SELECTED' : '';
-		echo "<option{$sel}>{$key}</option>\n";
-	}
-	echo "</select>";
-	echo "Version: <select name='version_compare'>\n";
-	$cursel = (isset($_REQUEST['version_compare'])) ? $_REQUEST['version_compare'] : (($version == $version_compare) ? $curname : $version_compare);
-	foreach (array_merge($curarr,$mods[$mod]) as $key => $val) {
-		$sel = ($key == $cursel) ? ' SELECTED' : '';
-		echo "<option{$sel}>{$key}</option>\n";
-	}
-	echo "</select>";
-	echo "Theater: <select name='theater_compare'>\n";
-	$cursel = (isset($_REQUEST['theater_compare'])) ? $_REQUEST['theater_compare'] : (($theaterfile == $theaterfile_compare) ? $curname : $theaterfile_compare);
-	foreach (array_merge($curarr,$theaters) as $tid) {
-		$sel = ($tid == $cursel) ? ' SELECTED' : '';
-		echo "<option{$sel}>{$tid}</option>\n";
-	}
-	echo "</select> ";
-	echo "</div>\n<br>\n";
-*/
+
+	// Comparison Mod/version/theater
+	echo "<div class='beta'>\n";
+	DisplayModSelection(1);
+	echo "</div>\n";
+
 	// Select range and units of measure
-	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='range'> <select name='range_unit'>\n";
-	foreach ($range_units as $ru => $runame) {
-		$sel = ($range_unit == $ru) ? ' SELECTED' : '';
-		echo "					<option{$sel} value='{$ru}'>{$runame}</option>\n";
-	}
-	echo "				</select><br>\n";
+	echo "<div>\n";
+	DisplayRangeSelection();
+	echo "</div>\n";
 
 	// Submit button
 	echo "				<input type='submit' value='Parse'>\n			</div>\n";
 
-
-
-	$jqmods = array();
-	foreach ($mods as $mname => $mdata) {
-		foreach ($mdata as $vname => $vdata) {
-			if (isset($vdata['scripts']['theaters'])) {
-				foreach ($vdata['scripts']['theaters'] as $tname => $tpath) {
-					$bn = basename($tname,".theater");
-					$jqmods[$mname][$vname][$bn] = $bn;
-				}
-			}
-		}
-	}
-?>
-<script type="text/javascript">
-jQuery(function($) {
-    var data = <?php echo json_encode($jqmods); ?>;
-
-    var $mods = $('#mod');
-    var $versions = $('#version');
-    var $theaters = $('#theater');
-
-    $('#mod').change(function () {
-        var mod = $(this).val(), vers = data[mod] || [];
-        
-        var html = $.map(Object.keys(vers), function(ver){
-            return '<option value="' + ver + '">' + ver + '</option>'
-        }).join('');
-        $versions.html(html);
-        $versions.change();
-    });
-
-    $('#version').change(function () {
-        var version = $(this).val(), mod = $('#mod').val(), items = data[mod][version] || [];
-        
-        var html = $.map(items, function(theater){
-            return '<option value="' + theater + '">' + theater + '</option>'
-        }).join('');
-        $theaters.html(html);
-        $theaters.change();
-        //'<option>' + mod + ' - ' + version + '</option>')
-    });
-	var html = $.map(Object.keys(data), function(mod){
-		return '<option value="' + mod + '">' + mod + '</option>'
-	}).join('');
-	var cur_mod = '<?php echo $mod; ?>';
-	var cur_version = '<?php echo $version; ?>';
-	var cur_theater = '<?php echo $theaterfile; ?>';
-	$mods.html(html);
-	$mods.val(cur_mod);
-	$mods.change();
-	$versions.val(cur_version);
-	$versions.change();
-	$theaters.val(cur_theater);
-	$theaters.change();
-});
-</script>
-<?php
-
 }
 
+function DisplayRangeSelection($inputname='range') {
+	global $range_units;
+	$range = $GLOBALS[$inputname];
+	echo "				Range: <input type='text' value='".dist($range,'IN',null,0)."' name='{$inputname}'> <select name='{$inputname}_unit'>\n";
+	foreach ($range_units as $ru => $runame) {
+		$sel = ($GLOBALS["{$inputname}_unit"] == $ru) ? ' SELECTED' : '';
+		echo "					<option{$sel} value='{$ru}'>{$runame}</option>\n";
+	}
+	echo "				</select>\n";
+}
 
 function closePage($bare=0) {
 	if (isset($_REQUEST['dump'])) {

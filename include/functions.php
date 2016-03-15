@@ -1019,3 +1019,4 @@ function var_dump_ret($mixed = null) {
 	return $content;
 }
 
+require_once("{$includepath}/classes.php");
