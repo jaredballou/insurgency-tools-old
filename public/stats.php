@@ -158,11 +158,10 @@ function DisplayStatsHeader($startbody=1) {
 	// Mod/version/theater
 	echo "<div>\n";
 	DisplayModSelection();
-	echo "</div>\n";
-
 	// Comparison Mod/version/theater
-	echo "<div class='beta'>\n";
+	echo "<div class='beta' style='float: right;'><b>Compare to another theater:</b> \n";
 	DisplayModSelection(1);
+	echo "</div>\n";
 	echo "</div>\n";
 
 	// Select range and units of measure
@@ -205,11 +204,13 @@ function DisplayStatTable() {
 //$stats_tables,$startbody=1) {
 	global $tableclasses,$stats_tables;
 	DisplayStatsHeader($startbody);
-	echo "<h2>Jump to Section</h2>\n";
+	echo "<div style='text-align: center; width: 100%;'><h3>\n";
 //var_dump($stats_tables);
+	$links =array();
 	foreach (array_keys($stats_tables) as $sectionname) {
-		echo "<a href='#{$sectionname}'>{$sectionname}</a><br>\n";
+		$links[] = "<a href='#{$sectionname}'>{$sectionname}</a>";
 	}
+	echo implode(" .:. ",$links)."</h3></div>\n";
 	foreach ($stats_tables as $sectionname => $sectiondata) {
 		echo "		<a id='{$sectionname}'><h2>{$sectionname}</h2></a>
 		<table class='display row-border' id='table-{$sectionname}' width='100%'>

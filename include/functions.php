@@ -368,7 +368,7 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array()) {
 // 				echo "Ordered<br>\n";
 				foreach ($value as $idx=>$item) {
 					foreach ($item as $k => $v) {
-						$str .= chr(9) . $indent . '"' . $k . '"' . chr(9) . '"' . $v . "\"\n";
+						$str .= chr(9) . $indent . QuoteAndTabKeyValue($k,$v) . "\n";
 					}
 				}
 			} else {
@@ -379,10 +379,22 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array()) {
 			unset($tree[$tier]);
 		} else {
 // 			echo "String<br>\n";
-			$str .= $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
+			$str .= $indent . QuoteAndTabKeyValue($key,$value) . "\n";
 		}
 	}
 	return $str;
+}
+// This function displays a spaced key value pair, quoted in aligned columns
+function QuoteAndTabKeyValue($key,$val,$tabs=8) {
+
+	$tabsize=4;
+	$len = strlen($key)+2;
+	$mod = ($len % $tabsize);
+	$diff = floor($tabs - ($len / $tabsize))+($mod>0);
+	$sep = str_repeat("\t",$diff);
+
+	return "\"{$key}\"\t{$sep}\"{$val}\"";// {$len} {$mod} {$diff}";
+	
 }
 /*
 

@@ -27,6 +27,18 @@ if (isset($_REQUEST['fetch'])) {
 		case 'snippets':
 			$fetch_data = $snippets;
 			break;
+		case 'Download Theater':
+			$data = $_REQUEST['theaterdata'];//GenerateTheater();
+			$filename = $_REQUEST['filename'];
+			header('Content-type: text/plain');
+			header("Content-Disposition: attachment; filename=\"{$filename}\"");
+			header('Expires: 0');
+			header('Cache-Control: must-revalidate');
+			header('Pragma: public');
+			header('Content-Length: '.strlen($data));
+			print $data;
+			exit;
+			break;
 	}
 	if (isset($fetch_data)) {
 		header('Content-Type: application/json');
@@ -34,14 +46,15 @@ if (isset($_REQUEST['fetch'])) {
 		exit;
 	}
 }
+
 /*
 <script>
-$(document).ready(function(){
-    $(".toggle-section").click(function(){
-        var target = "#" + $(this).attr('id').replace("header-","");
-        $(target).toggle();
-    });
-});
+	$(document).ready(function(){
+		$(".toggle-section").click(function(){
+			var target = "#" + $(this).attr('id').replace("header-","");
+			$(target).toggle();
+		});
+	});
 	$('#tbody').on('click', 'td.details-control', function () {
 		var tr = $(this).closest('tr');
 		var row = table.row( tr );
@@ -63,10 +76,15 @@ $(document).ready(function(){
 //var_dump("{$theaterfile}.theater",$mod,$version,$theaterpath);
 
 startbody();
-echo "<div class='beta'>This tool is still new and may be buggy. Please report problems and let me know what theaters you want to see added.</div>\n";
+echo "<div style='text-align: center'><span class='beta'>This tool is still new and may be buggy. Please report problems and let me know what theaters you want to see added.</span></div>\n";
 
 if ($_REQUEST['go'] == "Generate Theater") {
-	echo "<textarea rows='20' cols='120'>".GenerateTheater()."</textarea>";
+	$data = GenerateTheater();
+	$md5 = md5($data);
+	echo "<form method='POST' action='theater.php'>\n";
+	echo "<div><textarea rows='20' cols='120' name='theaterdata'>{$data}</textarea></div>\n";
+	echo "<div><input type='text' name='filename' value='{$md5}.theater' size='50'><input type='submit' name='fetch' value='Download Theater'></div>\n";
+	echo "</form>\n";
 } else {
 	DisplayTheaterCreationMenu();
 }
