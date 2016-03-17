@@ -6,6 +6,7 @@ tabular format.
 //Root Path Discovery
 //$use_ob=1;
 
+$title = "CVAR List";
 $css_content = '
 	table.floatThead-table {
 		background-color: #FFFFFF;

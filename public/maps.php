@@ -268,14 +268,14 @@ foreach ($colors as $color => $rgb) {
 	}
 	.obj_{$color}_bg {
 		background-color: rgba({$rgb},0.5);
-		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
+		-webkit-mask-image: url('".GetDataURL("materials/vgui/hud/obj_cache_{$color}.png")."');
 	}
 	.obj_{$color}_fg {
 		background-image: url('images/maps/c_obj_{$color}.png');
 	}
 	.obj_cache_{$color}_bg {
 		background-color: rgba({$rgb},0.5);
-		-webkit-mask-image: url('data/materials/vgui/hud/obj_cache_{$color}.png');
+		-webkit-mask-image: url('".GetDataURL("materials/vgui/hud/obj_cache_{$color}.png")."');
 	}
 	.obj_cache_{$color}_fg {
 		background-image: url('images/maps/c_obj_cache_{$color}.png');
@@ -429,7 +429,9 @@ if ($map) {
 	unset($maps[$map]['gametypes']['theater_conditions']);
 	$gametypes = array_keys($maps[$map]['gametypes']);
 	// Display map overview
-	echo "						<img src='{$urlbase}data/materials/{$maps[$map]['overview']['material']}.png' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
+	$img = GetDataURL("materials/{$maps[$map]['overview']['material']}.png");
+//var_dump("materials/{$maps[$map]['overview']['material']}.png",$GLOBALS['datapath'],$GLOBALS['urlbase'],$img);
+	echo "						<img src='{$img}' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
 	// Try to open decompiled map file to get entity data
 
 	if (file_exists("${datapath}/maps/overlays/{$map}.txt")) {

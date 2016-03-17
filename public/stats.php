@@ -513,7 +513,9 @@ function GenerateStatTable() {
 		$tn = getlookup($teamdata['name']);
 		$stats_tables['Teams']['fields'][$tn] = 1;
 		if (isset($teamdata['logo'])) {
-			$thisitem.="<div style='text-align: center;'><img src='{$urlbase}data/materials/vgui/{$teamdata['logo']}.png' style='width: 64px; height: 64px;'></div>\n";
+			$img = getvgui($teamdata['logo'],'bare','vgui');
+			$thisitem.="<div style='text-align: center;'><img src='{$img}' style='width: 64px; height: 64px;'></div>\n";
+
 		}
 		if (isset($teamdata['squads'])) {
 			foreach ($teamdata['squads'] as $squad => $squaddata) {

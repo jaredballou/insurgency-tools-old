@@ -45,17 +45,6 @@ if (isset($_REQUEST['language'])) {
 	}
 }
 
-// Loading languages here because we are only loading the core language at this time
-LoadLanguages($language);
-$gamemodes = array();
-$raw = preg_grep('/^[\#]*game_gm_(.*)$/', array_keys($lang[$language]));
-foreach ($raw as $key) {
-	$bits = explode("_",$key,3);
-	$gm = $bits[2];
-	$gamemodes[$gm]['name'] = @$lang[$language][$key];
-	$gamemodes[$gm]['desc'] = @$lang[$language]["#game_description_{$gm}"];
-	$gamemodes[$gm]['desc_short'] = @$lang[$language]["#game_description_short_{$gm}"];
-}
 // Get the command passed to the script
 $command = @$_REQUEST['command'];
 
@@ -239,6 +228,17 @@ foreach ($gtlist as $type=>$modes) {
 }
 // explode(":",implode(array_values($gtlist['pvp'] + $gtlist['coop']),":"));
 
+// Loading languages here because we are only loading the core language at this time
+LoadLanguages($language);
+$gamemodes = array();
+$raw = preg_grep('/^[\#]*game_gm_(.*)$/', array_keys($lang[$language]));
+foreach ($raw as $key) {
+	$bits = explode("_",$key,3);
+	$gm = $bits[2];
+	$gamemodes[$gm]['name'] = @$lang[$language][$key];
+	$gamemodes[$gm]['desc'] = @$lang[$language]["#game_description_{$gm}"];
+	$gamemodes[$gm]['desc_short'] = @$lang[$language]["#game_description_short_{$gm}"];
+}
 
 
 /*
@@ -252,21 +252,64 @@ foreach ($gtlist as $type=>$modes) {
 */
 // TODO: Break these out into separate classes and better define them.
 
+function GetDataFiles($filename,$which=-1) {
+	global $langcode, $lang,$datapath,$mod,$version;
+	$paths = array(
+		"{$datapath}/mods/{$mod}/{$version}",
+		"{$datapath}/mods/{$mod}/*",
+		"{$datapath}/mods/insurgency/{$version}",
+		"{$datapath}/mods/insurgency/{$latest_version}",
+		"{$datapath}/mods/insurgency/*",
+		$datapath
+	);
+	$files = array();
+	foreach ($paths as $path) {
+		$files = array_merge($files,glob("{$path}/{$filename}"));
+	}
+	$files = array_unique($files);
+	if (($which > -1) && (isset($files[$which]))) {
+		return $files[$which];
+	} else {
+		return $files;
+	}
+}
+function GetDataFile($filename) {
+	return GetDataFiles($filename,0);
+}
+
+function GetURL($file) {
+	return str_replace($GLOBALS['datapath'],"{$GLOBALS['urlbase']}data",$file);
+}
+
+function GetDataURLs($filename,$which=-1) {
+	$files = GetDataFiles($filename,$which);
+	if (is_array($files)) {
+		foreach ($files as $idx => $file) {
+			$files[$idx] = GetURL($file);
+		}
+		return $files;
+	} else {
+		return GetURL($files);
+	}
+}
+function GetDataURL($filename) {
+	return GetDataURLs($filename,0);
+}
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
 function LoadLanguages($pattern='English') {
-	global $langcode, $lang,$rootpath,$command,$datapath;
+	global $langcode, $lang,$rootpath,$command,$datapath,$mod,$version;
 	if (!isset($langcode))
 		$langcode = array();
 	if (!isset($lang))
 		$lang = array();
+
 	// Characters to strip. The files are binary, and the first few bytes break processing.
 	$langfile_regex = '/[\x00-\x08\x0E-\x1F\x80-\xFF]/s';
-	$match="*_".strtolower($pattern).".txt";
-	$langfiles = glob("{$datapath}/resource/{$match}");
+
+	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 	$data = trim(preg_replace($langfile_regex, '', file_get_contents("{$datapath}/sourcemod/configs/languages.cfg")));
 	$data = parseKeyValues($data);
-	// Load languages into array with the key as the proper name and value as the code, ex: ['English'] => 'en'
 	foreach ($data['Languages'] as $code => $name) {
 		$names = (is_array($name)) ? $name : array($name);
 		foreach ($names as $name) {
@@ -274,7 +317,9 @@ function LoadLanguages($pattern='English') {
 			$langcode[$name] = $code;
 		}
 	}
+
 	// Load all language files
+	$langfiles = GetDataFiles("resource/*_".strtolower($pattern).".txt");
 	foreach ($langfiles as $langfile) {
 		$data = trim(preg_replace($langfile_regex, '', file_get_contents($langfile)));
 		$data = parseKeyValues($data,false);
@@ -289,7 +334,8 @@ function LoadLanguages($pattern='English') {
 				if (is_array($val)) {
 					$val = $val[0];
 				}
-				$lang[$data["lang"]["Language"]][$key] = $val;
+				if (!isset($lang[$data["lang"]["Language"]][$key]))
+					$lang[$data["lang"]["Language"]][$key] = $val;
 			}
 		}
 	}
@@ -941,25 +987,35 @@ function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array())
 function FindDataFile($path) {
 
 }
+/*
+GetMaterial
+Get the material path
+*/
+function GetMaterial($name,$type='img',$path='vgui/inventory') {
+	$rp = (file_exists(GetDataFile("{$path}/{$name}.vmt"))) ? "{$path}/{$name}" : "materials/{$path}/{$name}";
+	// 
+	if (!file_exists(GetDataFile("{$rp}.png")) && (file_exists(GetDataFile("{$rp}.vmt")))) {
+		$vmt = file_get_contents(GetDataFile("{$rp}.vmt"));
+		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
+		$rp = "materials/".$matches[1][0];
+	}
+	//var_dump($name,$rp,$img);
+	return GetDataURL("{$rp}.png");
+}
+
 /* getvgui
 Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
-	global $datapath;
-	$rp = (file_exists("{$path}/{$name}")) ? "{$path}/{$name}" : "materials/{$path}/{$name}";
-	// 
-	if (!file_exists("{$datapath}/{$rp}.png") && (file_exists("{$datapath}/{$rp}.vmt"))) {
-		$vmt = file_get_contents("{$datapath}/{$rp}.vmt");
-		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
-		$rp = "materials/".$matches[1][0];
-	}
-	if (file_exists("{$datapath}/{$rp}.png")) {
+	//var_dump($name,$path);
+	$img = GetMaterial($name,$type,$path);
+	if ($img) {
 		if ($type == 'img')
-			return "<img src='data/{$rp}.png' alt='{$name}' height='128' width='256'/><br>";
+			return "<img src='{$img}' alt='{$name}' height='128' width='256'/><br>";
 		if ($type == 'bare')
-			return "data/{$rp}.png";
+			return $img;
 		if ($type == 'css')
-			return " style=\"background-image: url('data/{$rp}.png');\" class='vgui'";
+			return " style=\"background-image: url('{$img}');\" class='vgui'";
 	}
 }
 

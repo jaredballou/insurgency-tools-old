@@ -25,7 +25,6 @@ $tb['pubfiles'] = 'pubfiles';
 $dbfields = array();
 $pubfiles = array();
 $steamusers = array();
-$json_pubfiles = array();
 
 if ($_REQUEST['command'] == 'update') {
 	UpdateWorkshopDatabase();
@@ -103,13 +102,13 @@ function GetSteamUsernameFromUID($uid) {
 }
 
 
-function GetWorkshopPages($page=0,$numperpage=100) {
+function GetWorkshopPages($page=1,$numperpage=100) {
 	global
-		$json_pubfiles,
 		$pubfiles,
 		$apikey,
 		$appid,
 		$cachepath;
+	$json_pubfiles = array();
 	echo "Fetching page {$page}\n";
 	$url='https://api.steampowered.com/IPublishedFileService/QueryFiles/v1/';
 	$args = array(
@@ -139,7 +138,7 @@ function GetWorkshopPages($page=0,$numperpage=100) {
 	$data = file_get_contents($url);
 
 	//Store local copy for failback
-	file_put_contents("${cachepath}/workshop-${page}.json",$data);
+//	file_put_contents("${cachepath}/workshop-${page}.json",$data);
 
 	//Decode JSON to array
 	$json = json_decode($data,true);
@@ -151,13 +150,14 @@ function GetWorkshopPages($page=0,$numperpage=100) {
 	$pages = ceil($total/$args['numperpage']);
 
 	if (is_array($json['response']['publishedfiledetails'])) {
-		$json_pubfiles = array_merge($json_pubfiles,$json['response']['publishedfiledetails']);
+		$json_pubfiles = $json['response']['publishedfiledetails'];
 	} else {
 		var_dump($json);
 	}
 	if ($pages > $page) {
-		GetWorkshopPages($page+1);
+		$json_pubfiles = array_merge($json_pubfiles,GetWorkshopPages($page+1));
 	}
+	return $json_pubfiles;
 }
 function GetTableColumns($table) {
 	$fields = array();
@@ -185,7 +185,7 @@ function CreateTables($tables) {
 // Update Workshop MySQL database
 function UpdateWorkshopDatabase()
 {
-	global $dbfields,$pubfiles,$json_pubfiles,$tb;
+	global $dbfields,$pubfiles,$tb;
 
 	// Get current column list if we haven't loaded it yet
 	if (!count($dbfields)) {
@@ -210,7 +210,8 @@ function UpdateWorkshopDatabase()
 		$pubfiles[$row['publishedfileid']] = $row;
 	}
 
-	GetWorkshopPages();
+	$json_pubfiles = GetWorkshopPages();
+	file_put_contents("${cachepath}/workshop.json",$json_pubfiles);
 	foreach ($json_pubfiles as $pubfile) {
 		foreach ($pubfile as $key=>$val) {
 			CheckDatabaseField($key,$val);
@@ -223,6 +224,7 @@ function UpdateWorkshopDatabase()
 		}
 	}
 }
+
 function GetWorkshopFiles() {
 	global $dbfields,$pubfiles,$tb,$cachepath;
 	$mydir = dirname(__FILE__);
@@ -250,6 +252,7 @@ function GetWorkshopFiles() {
 		var_dump($output);
 	}
 }
+
 function AddDatabaseRow($row) {
 	global $dbfields,$pubfiles,$tb;
 	$vals = array();
@@ -273,6 +276,7 @@ function UpdateDatabaseRow($publishedfileid,$key,$val) {
 		$pubfiles['publishedfileid'][$key] = $vals;
 	}
 }
+
 function UsesLength($type) {
 	switch ($type) {
 		case 'text':
@@ -283,6 +287,7 @@ function UsesLength($type) {
 			return true;
 	}
 }
+
 function UpdateDatabaseField($key,$type,$length) {
 	global $dbfields,$pubfiles,$tb;
 	$dbtype = UsesLength($type) ? $type."({$length})" : $type;
@@ -317,6 +322,7 @@ function UpdateDatabaseField($key,$type,$length) {
 	}
 
 }
+
 function CheckDatabaseField($key,$val) {
 	global $dbfields,$pubfiles;
 	if (is_array($val)) {
@@ -344,10 +350,12 @@ function CheckDatabaseField($key,$val) {
 		UpdateDatabaseField($key,$dbtype,$len);
 	}
 }
+
 function do_mysql_query($query) {
 	//echo $query."\n";
 	return mysql_query($query);
 }
+
 function DisplayWorkshopItems($page=0,$perpage=25)
 {
 	global $steamusers,$pubfiles;

@@ -14,7 +14,8 @@
 <?php
 	foreach ($pages as $url => $page) {
 		$act = (basename($url) == $curpage) ? ' class="active"' : '';
-		echo "            <li{$act}><a href='{$url}'>{$page}</a></li>\n";
+		$pre = (preg_match('%^((https?://)|(www\.))([a-z0-9-].?)+(:[0-9]+)?(/.*)?%i',$url)) ? '' : $GLOBALS['urlbase'];
+		echo "            <li{$act}><a href='{$pre}{$url}'>{$page}</a></li>\n";
 	}
 ?>
           </ul>

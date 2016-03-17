@@ -17,10 +17,10 @@ $urlbase = '/';
 // Page Names
 $curpage = basename($_SERVER['SCRIPT_FILENAME']);
 $pages = array(
-	"{$urlbase}stats.php" => 'Stats',
-	"{$urlbase}maps.php" => 'Maps',
-	"{$urlbase}cvarlist.php" => 'CVARs',
-	"{$urlbase}theater.php" => 'Theater Creator',
+	"stats.php" => 'Stats',
+	"maps.php" => 'Maps',
+	"cvarlist.php" => 'CVARs',
+	"theater.php" => 'Theater Creator',
 	"https://github.com/jaredballou' target='_blank" => 'My Github',
 	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate'
 );

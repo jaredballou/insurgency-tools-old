@@ -52,3 +52,6 @@
 [submodule "thirdparty/Day-of-Infamy"]
 	path = thirdparty/Day-of-Infamy
 	url = git@github.com:NewWorldInteractive/Day-of-Infamy.git
+[submodule "thirdparty/lysis-java"]
+	path = thirdparty/lysis-java
+	url = git@github.com:jaredballou/lysis-java.git
