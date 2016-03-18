@@ -32,9 +32,9 @@ if [ "${SYSTEM}" == "Linux" ]; then
 	# Game dir
 	GAMEDIR="$(cd "${REPODIR}/../serverfiles/insurgency" && pwd)"
 	# VPK Converter
-	VPK="$(readlink -f "${SCRIPTDIR}/../vpk/vpk.php")"
+	VPK="${SCRIPTDIR}/../vpk/vpk.php"
 	# VTF2TGA Converter
-	VTF2TGA="$(readlink -f "${SCRIPTDIR}/../vtf2tga/vtf2tga")"
+	VTF2TGA="${SCRIPTDIR}/../vtf2tga/vtf2tga"
 else
 	# Script name and directory
 	SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
@@ -44,9 +44,9 @@ else
 	# Game dir
 	GAMEDIR="${REPODIR}/.."
 	# VPK Converter
-	VPK="${GAMEDIR}/../bin/vpk"
+	VPK="${GAMEDIR}/../win/vpk"
 	# VTF2TGA Converter
-	VTF2TGA="${SCRIPTDIR}/win/VTFCmd.exe"
+	VTF2TGA="${SCRIPTDIR}/../win/VTFCmd.exe"
 fi
 # Data dir
 DATADIR="${REPODIR}/public/data"
@@ -60,12 +60,7 @@ MANIFEST_FILE="${DATADIR}/manifest.md5"
 MAPSRCURL="rsync://ins.jballou.com/fastdl/maps/"
 
 # Get current version from steam.inf
-VERSION="$(grep -i 'PatchVersion=[0-9\.]' "${GAMEDIR}/steam.inf" | cut -d'=' -f2)"
-
-if [ "${VERSION}" == "" ]; then
-	echo "Unable to determine game version!"
-	exit
-fi
+VERSION="$(egrep -oP -i 'PatchVersion=([0-9\.]+)' "${GAMEDIR}/steam.inf" | cut -d'=' -f2)"
 
 # RSYNC command
 RSYNC="rsync -av"
@@ -74,20 +69,20 @@ BSPSRC="java -cp ${REPODIR}/thirdparty/bspsrc/bspsrc.jar info.ata4.bspsrc.cli.Bs
 # Pakrat command
 PAKRAT="java -jar ${REPODIR}/thirdparty/pakrat/pakrat.jar"
 # This version theater dir
-VERDIR="${DATADIR}/mods/insurgency/${VERSION}"
-TD="${VERDIR}/scripts/theaters"
+TD="${DATADIR}/theaters/${VERSION}"
 # This version playlists dir
-PD="${VERDIR}/scripts/playlists"
+PD="${DATADIR}/playlists/${VERSION}"
 # Maps blacklist (will skip downloads and clean up date based upon these items)
 BLACKLIST="${DATADIR}/thirdparty/maps-blacklist.txt"
 
 # Directories to extract from bsp files using Pakrat
-MAPSRCDIRS="materials/vgui/ materials/overviews/ resource/ maps/*.txt"
+MAPSRCDIRS="materials/vgui/* materials/overviews/* resource/* maps/*.txt"
 
 # List the paths to extract from the VPK files
+declare -a VPKPATHS
 VPKPATHS=(
-	"insurgency_misc_dir scripts/theaters:${TD} scripts/playlists:${PD} resource:${DATADIR}/resource maps:${DATADIR}/maps"
-	"insurgency_materials_dir materials/vgui:${DATADIR}/materials/vgui materials/overviews:${DATADIR}/materials/overviews"
+	"insurgency_misc_dir|scripts/theaters:${TD}|scripts/playlists:${PD}|resource:${DATADIR}/resource|maps:${DATADIR}/maps"
+	"insurgency_materials_dir|materials/vgui:${DATADIR}/materials/vgui|materials/overviews:${DATADIR}/materials/overviews"
 )
 # If the theater directory for this version is missing, extract files
 if [ ! -d "${TD}" ]
@@ -99,18 +94,17 @@ fi
 # This is not the "best" way to track versions, but it works for now
 function extractfiles()
 {
+	echo "BROKEN"
+	return
 	echo "> Extracting VPK files"
-	for set in "${VPKPATHS[@]}"
+	for k in "${!VPKPATHS[@]}"
 	do
-		VPKFILE=""
-		for item in $set; do
-			if [ "${VPKFILE}" == "" ]; then
-				VPKFILE="${item}"
-				continue
-			fi
-			IFS=':' read -r -a PATHS <<< "${item}"
+		echo ">> Processing ${k}..."
+		for PAIR in ${VPKPATHS[$k]}
+		do
+			IFS=':' read -r -a PATHS <<< "${PAIR}"
 			echo ">>> Extracting ${PATHS[0]} -> ${PATHS[1]}"
-			$VPK "${GAMEDIR}/${VPKFILE}.vpk" "${PATHS[0]}" "${PATHS[1]}"
+			$VPK "${GAMEDIR}/${k}.vpk" "${PATHS[0]}" "${PATHS[1]}"
 		done
 	done
 }
@@ -140,53 +134,37 @@ function removeblacklistmaps()
 function decompilemaps()
 {
 	echo "> Updating decompiled maps as needed"
-	MAPSRCDIRS_EGREP="^($(echo $(for SRCDIR in $(echo $MAPSRCDIRS | sed -e 's/\./\\\./g' -e 's/\([^\.]\)\*/\1\.\*/g'); do echo -ne "${SRCDIR} "; done) | sed -e 's/[ \t]\+/\|/g'))"
-	BLACKLIST_EGREP="^($(echo $(cat "${BLACKLIST}" | sed -e 's/\./\\\./g' -e 's/\*/\.\*/') | sed -e 's/[ \t\n\r]\+/\|/g'))"
+	MAPSRCDIRS_EGREP=$(echo $(for SRCDIR in $(echo $MAPSRCDIRS | sed -e 's/\*[^ ]*//g'); do echo -ne "${SRCDIR} "; done) | sed -e 's/ /\|/g' -e 's/\//\\\//g')
 	for MAP in ${MAPSDIR}/*.bsp
 	do
-		# Don't do blacklisted maps
-		if [ "$(basename "${MAP}")" =~ "${BLACKLIST_EGREP}" ]; then
-#			echo ">> Skipping $(basename "${MAP}") for blacklist"
-			continue
-		fi
-
-		# Don't do symlinks if they aren't the same name as the target
-		if [ -L "${MAP}" ]; then
-			if [ "$(basename $(readlink -f "${MAP}"))" != "$(basename "${MAP}")" ]; then
-				continue
-			fi
-		fi
+		# Don't do symlinks
+		if [ -L "${MAP}" ]; then continue; fi
 		if [ "$(echo "${MAP}" | sed -e 's/ //g')" != "${MAP}" ]
 		then
 			#echo "> SPACE"
 			continue
 		fi
 		BASENAME=$(basename "${MAP}" .bsp)
-		SRCFILE="${DATADIR}/maps/src/${BASENAME}_d.vmf"
-		ZIPFILE="${MAP}.zip"
-		if [ "${SRCFILE}" -ot "${MAP}" ]; then
-			echo ">> Decompile ${MAP} to ${SRCFILE}"
-			$BSPSRC "${MAP}" -o "${SRCFILE}"
-			add_manifest_md5 "${SRCFILE}"
-		fi
-		# Check if the map even needs to be unzipped/extracted
-		PAKLIST="${DATADIR}/maps/paklist/${BASENAME}.txt"
-		if [ "${PAKLIST}" -ot "${MAP}" ]; then
-			$PAKRAT -list "${MAP}" > "${PAKLIST}"
-		fi
-		MAPSRCLIST=$(egrep -i "${MAPSRCDIRS_EGREP}" "${PAKLIST}" | awk '{print $1}')
-		if [ "${MAPSRCLIST}" == "" ]; then continue; fi
-		DOUNZIP=0
-		if [ "${ZIPFILE}" -ot "${MAP}" ]; then DOUNZIP=1; fi
-		# If we are missing resources, unzip
-		for SRCTEST in $MAPSRCLIST; do
-			if [ ! -e "${DATADIR}/${SRCTEST}" ]; then DOUNZIP=1; fi
-		done
-		if [ "${DOUNZIP}" == "1" ]; then
-			echo ">> Extract files from ${MAP} to ${ZIPFILE}"
-			$PAKRAT -dump "${MAP}"
-			echo ">> Extracting map files from ZIP"
-			unzip -o "${ZIPFILE}" -d "${DATADIR}/" $MAPSRCLIST 2>/dev/null
+		if [ $(grep -c "^${BASENAME}\..*\$" "${BLACKLIST}") -eq 0 ]
+		then
+			SRCFILE="${DATADIR}/maps/src/${BASENAME}_d.vmf"
+			ZIPFILE="${MAP}.zip"
+			if [ "${SRCFILE}" -ot "${MAP}" ]; then
+				echo ">> Decompile ${MAP} to ${SRCFILE}"
+				$BSPSRC "${MAP}" -o "${SRCFILE}"
+				add_manifest_md5 "${SRCFILE}"
+			fi
+			MAPSRCLIST=$($PAKRAT -list "${MAP}" | egrep -i "^(${MAPSRCDIRS_EGREP})" | awk '{print $1}')
+			echo $MAPSRCLIST
+			if [ "$ZIPFILE" -ot "${MAP}" ]; then
+				echo ">> Extract files from ${MAP} to ${ZIPFILE}"
+				$PAKRAT -dump "${MAP}"
+				echo ">> Extracting map files from ZIP"
+#				unzip -o "${ZIPFILE}" -x '*.vhv' 'maps/*' 'models/*' 'scripts/*' 'sound/*' 'materials/maps/*' -d "${GAMEDIR}/maps/out"
+				for SRCDIR in $MAPSRCDIRS; do
+					unzip -o "${ZIPFILE}" "${SRCDIR}" -d "${DATADIR}/" 2>/dev/null
+				done
+			fi
 		fi
 	done
 }
@@ -391,7 +369,7 @@ fi
 
 if [ $MAPDATA == 1 ]
 then
-	"${SCRIPTDIR}/../maps/mapdata.php"
+	"${SCRIPTDIR}/mapdata.php"
 fi
 
 if [ $FULL_MD5_MANIFEST == 1 ]; then
