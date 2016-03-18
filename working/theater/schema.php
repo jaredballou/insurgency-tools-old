@@ -8,7 +8,6 @@
 //Root Path Discovery
 do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 require_once("${includepath}/functions.php");
-require_once("${includepath}/class.Spyc.php");
 require_once "kvreader2.php";
 // 
 $theaterfile="default_checkpoint";

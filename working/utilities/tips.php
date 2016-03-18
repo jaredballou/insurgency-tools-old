@@ -3,7 +3,7 @@
 * This reads a bunch of in-game tips from a YAML file and dumps an
 * Advertisements file that SourceMod can use to display in-game.
 */
-require_once "../include/class.Spyc.php";
+require_once "../include/functions.php"
 require_once "../include/kvreader.php";
 $tips = Spyc::YAMLLoad("../public/data/thirdparty/tips.yaml");
 $out = "\"Advertisements\"\n{\n";
