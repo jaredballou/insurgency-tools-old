@@ -12,11 +12,12 @@ overview image, and adds in some information about the entities and points.
 ================================================================================
 */
 
-//Root Path Discovery
-do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
+// Set paths
+$scriptpath = realpath(dirname(__FILE__));
+$rootpath=dirname(dirname($scriptpath));
 
 // Include key-value reader
-require_once "{$includepath}/functions.php";
+require_once "{$rootpath}/include/functions.php";
 require_once "{$rootpath}/working/theater/kvreader2.php";
 
 // Set linebreak character
@@ -25,15 +26,13 @@ if (php_sapi_name() == "cli") {
 	$force = (isset($argv[2])) ? $argv[2] : 0;
 	$linebreak="\n";
 } else {
-	// Only run from CLI
-	exit;
 	$mapfilter = isset($_REQUEST['mapfilter']) ? $_REQUEST['mapfilter'] : '*';
 	$force = (isset($_REQUEST['force']));
 	$linebreak="<br>\n";
 }
 
 // Get all map text files. This could probably be safer.
-$files = GetDataFiles("resource/overviews/{$mapfilter}.txt");
+$files = glob("{$datapath}/resource/overviews/{$mapfilter}.txt");
 
 // Open all files and add gamemodes and other map info to array
 foreach ($files as $file) {
@@ -57,17 +56,15 @@ function ParseMap($mapname,$force)
 	$map_objects = array();
 	$map = array();
 	$reader = new KVReader();
-
-	//Check if we need to run the parser. Unless forced, this will not run if the checksums in the file match existing source files.
-	$dstfile = GetDataFile("maps/parsed/{$mapname}.json",-2);
-
+	//Check if we need to run the parser. Unless forced, this will not run if the JSON output is newer than the cpsetup.txt file
+	$dstfile = "{$datapath}/maps/parsed/{$mapname}.json";
 	if (file_exists($dstfile)) {
 		$dstdata = json_decode(file_get_contents($dstfile),true);
 	}
 	$srcfiles = array(
-		"CPSetup"    => GetDataFile("maps/{$mapname}.txt"),
-		"Overview"   => GetDataFile("resource/overviews/{$mapname}.txt"),
-		"VMF Source" => GetDataFile("maps/src/{$mapname}_d.vmf"),
+		"CPSetup"    => "{$datapath}/maps/{$mapname}.txt",
+		"Overview"   => "{$datapath}/resource/overviews/{$mapname}.txt",
+		"VMF Source" => "{$datapath}/maps/src/{$mapname}_d.vmf",
 	);
 	// Check source files
 	foreach ($srcfiles as $name => $file) {
@@ -90,17 +87,14 @@ function ParseMap($mapname,$force)
 
 //TODO: Proper KeyValues parser!!!
 	//Load cpsetup.txt
-	$data = $reader->read(strtolower(file_get_contents($srcfiles["CPSetup"])));
+	$data = $reader->read(strtolower(file_get_contents("{$datapath}/maps/{$mapname}.txt")));
 
-	// Merge in bases
 	foreach ($data as $name=>$item) {
 		if ($name == "#base") {
-			$data = array_merge_recursive($reader->read(strtolower(file_get_contents(GetDataFile("maps/{$item}")))),$data);
+			$data = array_merge_recursive($reader->read(strtolower(file_get_contents("{$datapath}/maps/{$item}"))),$data);
 			unset($data[$name]);
 		}
 	}
-
-	// Process all nodes
 	foreach ($data as $name=>$item) {
 		if (is_array($item)) {
 			foreach ($item as $key=>$val) {
@@ -112,9 +106,8 @@ function ParseMap($mapname,$force)
 			}
 		}
 	}
-
 	//Get overview information (file, position, scale)
-	$lines = file($srcfiles["Overview"], FILE_IGNORE_NEW_LINES);
+	$lines = file("{$datapath}/resource/overviews/{$mapname}.txt", FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
 		$data = explode("\t",preg_replace('/\s+/', "\t",str_replace('"','',trim($line))));
 		if (isset($data[1])) {
@@ -123,9 +116,9 @@ function ParseMap($mapname,$force)
 	}
 
 	//Parse the decompiled VMF file
-	if (file_exists($srcfiles["VMF Source"])) {
+	if (file_exists("{$datapath}/maps/src/{$mapname}_d.vmf")) {
 		// Remove non-printable characters to make processing easier
-                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents($srcfiles["VMF Source"])));
+                $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents("{$datapath}/maps/src/{$mapname}_d.vmf")));
                 //Change to lowercase to make array indexing simpler
                 $data = preg_replace('/(\s*)([a-zA-Z0-9]+)(\s*{)/','${1}"${2}"${3}',$data);
                 //Get all nested objects
@@ -315,9 +308,8 @@ function ParseMap($mapname,$force)
 	}
 	recur_ksort($map);
 	$json = prettyPrint(json_encode($map));
-	file_put_contents($dstfile,$json);
+	file_put_contents("{$datapath}/maps/parsed/{$mapname}.json",$json);
 	echo "OK: Parsed {$mapname}{$linebreak}";
-//	var_dump(array_merge_recursive($srcfiles,$map['source_files']));
 }
 
 //Process an entity and prepare it for display on the map

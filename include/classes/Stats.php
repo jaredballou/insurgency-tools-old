@@ -1,90 +1,81 @@
 <?php
-function DisplayModSelection($compare=0, $type='theater') {
-	$fields = array('mod','version',$type);
-	$fieldname = $ext = $type;
+function DisplayModSelection($compare=0) {
+	
 	$suffix = ($compare) ? '_compare' : '';
-	$js = $vars = $data = array();
-
-	$path = array("{$type}s");
-	foreach ($fields as $field) {
-		switch ($field) {
-			case 'theater':
-				$fieldname = 'theaterfile';
-				array_unshift($path,'scripts');
-				break;
-			case 'map':
-				$path = array('resource','overviews');
-			default:
-				$fieldname = $field;
-		}
+	$fields = array('mod','version','theater' => 'theaterfile');
+	$vars = $data = array();
+	foreach ($fields as $field => $varname) {
+		if (is_numeric($field))
+			$field = $varname;
+//var_dump($field,$varname);
 		$data[$field] = 
 			($suffix) ?
-				(($GLOBALS["{$fieldname}{$suffix}"] == $GLOBALS[$fieldname]) ? '-' : $GLOBALS["{$fieldname}{$suffix}"]) :
-				$GLOBALS[$fieldname];
+				(($GLOBALS["{$varname}{$suffix}"] == $GLOBALS[$varname]) ? '-' : $GLOBALS["{$varname}{$suffix}"]) :
+				$GLOBALS[$varname];
 		echo "{$field}: <select name='{$field}{$suffix}' id='{$field}{$suffix}'></select>\n";
 		$vars[$field] = $data[$field];
-		$jsf = ($field == $type) ? 'item' : $field;
-		$js[] = "var select_{$jsf}{$suffix} = \$('#{$field}{$suffix}');";
-		$js[] = "var cur_{$jsf}{$suffix} = '{$vars[$field]}';";
 	}
 
 	// If showing comparison options, put in blank as first entry to denote no comparison
 	if ($compare)
 		$vars['data']['-']['-']['-'] = '-';
-
-	// Populate data hash
 	foreach ($GLOBALS['mods'] as $mname => $mdata) {
 		foreach ($mdata as $vname => $vdata) {
-			foreach ($path as $key) {
-				if (!isset($vdata[$key])) {
-					continue 2;
+			if (isset($vdata['scripts']['theaters'])) {
+				foreach ($vdata['scripts']['theaters'] as $tname => $tpath) {
+					$bn = basename($tname,".theater");
+					$vars['data'][$mname][$vname][$bn] = $bn;
 				}
-				$vdata = &$vdata[$key];
-			}
-			foreach ($vdata as $tname => $tpath) {
-				$bn = preg_replace('/\.[^\.]+$/','',basename($tname));
-				if ($type == 'map') {
-					if (!(GetDataFile("maps/parsed/{$bn}.json"))) {
-						continue;
-					}
-				}
-				$vars['data'][$mname][$vname][$bn] = $bn;
 			}
 		}
 	}
+
+/*
+foreach ($data as $field => $val) {
+	var select_{$field}{$suffix} = \$('#{$field}{$suffix}');
+	var cur_{$field}{$suffix} = '{$vars[$field]}';"
+*/
 ?>
 <script type="text/javascript">
 jQuery(function($) {
 	var data = <?php echo json_encode($vars['data'], JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT); ?>;
-	<?php echo implode("\n\t",$js)."\n"; ?>
+	var suffix = '<?php echo $suffix; ?>';
+	var compare = '<?php echo $compare; ?>';
+	var mods = $('#mod' + suffix);
+	var versions = $('#version' + suffix);
+	var theaters = $('#theater' + suffix);
 
-	$(select_mod).change(function () {
+	$('#mod' + suffix).change(function () {
 		var mod = $(this).val(), vers = data[mod] || [];
-		var html =  $.map(Object.keys(vers).sort().reverse(), function(ver){
+		var html = $.map(Object.keys(vers), function(ver){
 			return '<option value="' + ver + '">' + ver + '</option>'
 		}).join('');
-		select_version.html(html);
-		select_version.change();
+		versions.html(html);
+		versions.change();
 	});
 
-	$(select_version).change(function () {
-		var version = $(this).val(), mod = $(select_mod).val(), values = data[mod][version] || [];
-		var html =  $.map(Object.keys(values), function(item){
-			return '<option value="' + item + '">' + item + '</option>'
+	$('#version' + suffix).change(function () {
+		var version = $(this).val(), mod = $('#mod' + suffix).val(), items = data[mod][version] || [];
+
+		var html = $.map(items, function(theater){
+			return '<option value="' + theater + '">' + theater + '</option>'
 		}).join('');
-		select_item.html(html);
-		select_item.change();
+		theaters.html(html);
+		theaters.change();
 	});
-	var html =  $.map(Object.keys(data), function(mod){
+	var html = $.map(Object.keys(data), function(mod){
 		return '<option value="' + mod + '">' + mod + '</option>'
 	}).join('');
-	select_mod.html(html);
-	select_mod.val(cur_mod);
-	select_mod.change();
-	select_version.val(cur_version);
-	select_version.change();
-	select_item.val(cur_item);
-	select_item.change();
+	var cur_mod = '<?php echo $vars['mod']; ?>';
+	var cur_version = '<?php echo $vars['version']; ?>';
+	var cur_theater = '<?php echo $vars['theater']; ?>';
+	mods.html(html);
+	mods.val(cur_mod);
+	mods.change();
+	versions.val(cur_version);
+	versions.change();
+	theaters.val(cur_theater);
+	theaters.change();
 });
 </script>
 <?php

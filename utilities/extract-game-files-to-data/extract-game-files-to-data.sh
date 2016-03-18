@@ -152,8 +152,6 @@ function decompilemaps()
 
 		# Don't do symlinks if they aren't the same name as the target
 		if [ -L "${MAP}" ]; then
-			# Actually, just skip all linked maps.
-			continue
 			if [ "$(basename $(readlink -f "${MAP}"))" != "$(basename "${MAP}")" ]; then
 				continue
 			fi
