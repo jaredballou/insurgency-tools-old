@@ -4,9 +4,6 @@
 [submodule "thirdparty/steam-condenser-php"]
 	path = thirdparty/steam-condenser-php
 	url = git@github.com:jaredballou/steam-condenser-php.git
-[submodule "theaters"]
-	path = theaters
-	url = git@github.com:jaredballou/insurgency-theaters.git
 [submodule "thirdparty/php-vpk-reader"]
 	path = thirdparty/php-vpk-reader
 	url = git@github.com:jaredballou/php-vpk-reader.git
@@ -55,3 +52,6 @@
 [submodule "thirdparty/lysis-java"]
 	path = thirdparty/lysis-java
 	url = git@github.com:jaredballou/lysis-java.git
+[submodule "theaters"]
+	path = theaters
+	url = git@github.com:jaredballou/insurgency-theaters.git
