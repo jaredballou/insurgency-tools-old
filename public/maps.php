@@ -364,7 +364,7 @@ function toggleButton(obj){
 
 function getlookat()
 {
-	var map = document.getElementById("map");
+	var map = document.getElementById("map-view");
 	var mouse_at_x = map.get("mouse.x");
 	var mouse_at_y = map.get("mouse.y");
 	document.getElementById("mouse_x").innerHTML = mouse_at_x + "px";
@@ -421,7 +421,7 @@ function GetCoordinates(e)
 </script>
 <?php startbody(); ?>
 <div class="minwidth">
-<div id="map" class="map">
+<div id="map-view" class="map">
 <?php
 // Display map if selected
 if ($map) {
@@ -429,8 +429,8 @@ if ($map) {
 	unset($maps[$map]['gametypes']['theater_conditions']);
 	$gametypes = array_keys($maps[$map]['gametypes']);
 	// Display map overview
-	$img = GetDataURL("materials/{$maps[$map]['overview']['material']}.png");
-//var_dump("materials/{$maps[$map]['overview']['material']}.png",$GLOBALS['datapath'],$GLOBALS['urlbase'],$img);
+	$img = GetMaterial($maps[$map]['overview']['material'], 'bare');
+//var_dump($maps[$map]['overview'],"materials/{$maps[$map]['overview']['material']}.png",$GLOBALS['datapath'],$GLOBALS['urlbase'],$img);
 	echo "						<img src='{$img}' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
 	// Try to open decompiled map file to get entity data
 
@@ -652,13 +652,18 @@ if ($map) {
 }
 
 	// Right column
-	echo "					<div id='key' class='key'>
-								<form>Map: <select name='map'>";
+	echo "					<div id='key' class='key'>\n";
+	echo "								<form>\n";
+	DisplayModSelection(0,'map');
+/*
+Map: <select name='map'>";
 	foreach ($maps as $mapname => $mapdata) {
 		$sel = ($mapname == $map) ? ' SELECTED' : '';
 		echo "<option{$sel}>{$mapname}</option>\n";
 	}
-	echo "</select><input type='submit' value='Go'></form>\n";
+	echo "</select>\n";
+*/
+	echo "<input type='submit' value='Go'></form>\n";
 if ($map) {
 ?>
 						<h2>MAP OVERLAYS</h2>

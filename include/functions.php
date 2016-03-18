@@ -253,7 +253,7 @@ foreach ($raw as $key) {
 // TODO: Break these out into separate classes and better define them.
 
 function GetDataFiles($filename,$which=-1) {
-	global $langcode, $lang,$datapath,$mod,$version;
+	global $langcode, $lang,$datapath,$mod,$version,$latest_version;
 	$paths = array(
 		"{$datapath}/mods/{$mod}/{$version}",
 		"{$datapath}/mods/{$mod}/*",
@@ -267,14 +267,23 @@ function GetDataFiles($filename,$which=-1) {
 		$files = array_merge($files,glob("{$path}/{$filename}"));
 	}
 	$files = array_unique($files);
+
+	// -2 is special case that defaults to the value given. Useful for checking if a file exists, and using the base path as a default if none are found.
+	if ($which == -2) {
+		if (!count($files)) {
+			return "{$datapath}/{$filename}";
+		}
+		$which = 0;
+	}
 	if (($which > -1) && (isset($files[$which]))) {
 		return $files[$which];
-	} else {
+	}
+	if (count($files)) {
 		return $files;
 	}
 }
-function GetDataFile($filename) {
-	return GetDataFiles($filename,0);
+function GetDataFile($filename,$which=0) {
+	return GetDataFiles($filename,$which);
 }
 
 function GetURL($file) {
@@ -991,16 +1000,27 @@ function FindDataFile($path) {
 GetMaterial
 Get the material path
 */
-function GetMaterial($name,$type='img',$path='vgui/inventory') {
-	$rp = (file_exists(GetDataFile("{$path}/{$name}.vmt"))) ? "{$path}/{$name}" : "materials/{$path}/{$name}";
-	// 
-	if (!file_exists(GetDataFile("{$rp}.png")) && (file_exists(GetDataFile("{$rp}.vmt")))) {
+function GetMaterial($name,$type='img',$path='') {
+	// This is shit path munging, fix it
+	$filepath = implode("/",array_filter(array_merge(explode("/",preg_replace('/\.(vmt|vtf|png)$/','',"{$path}/{$name}")))));
+
+	// FIXME: What if the PNG exists, but the VTF doesn't?
+	$rp = (file_exists(GetDataFile("{$filepath}.vmt"))) ? "{$filepath}" : "materials/{$filepath}";
+
+	// If we have a PNG, just send it
+	if (file_exists(GetDataFile("{$rp}.png"))) {
+		return GetDataURL("{$rp}.png");
+	}
+
+	// Try to use VMT to get image
+	if (file_exists(GetDataFile("{$rp}.vmt"))) {
 		$vmt = file_get_contents(GetDataFile("{$rp}.vmt"));
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
-		$rp = "materials/".$matches[1][0];
+		return GetMaterial($matches[1][0],$type,$path);
 	}
-	//var_dump($name,$rp,$img);
-	return GetDataURL("{$rp}.png");
+
+	// No hope
+	return '';
 }
 
 /* getvgui
@@ -1087,4 +1107,7 @@ function var_dump_ret($mixed = null) {
 	return $content;
 }
 
-require_once("{$includepath}/classes.php");
+$files = glob("{$includepath}/classes/*");
+foreach ($files as $file) {
+	require_once($file);
+}
