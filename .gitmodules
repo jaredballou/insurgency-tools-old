@@ -1,57 +1,76 @@
 [submodule "public/data"]
 	path = public/data
 	url = git@github.com:jaredballou/insurgency-data.git
+	branch = master
 [submodule "thirdparty/steam-condenser-php"]
 	path = thirdparty/steam-condenser-php
 	url = git@github.com:jaredballou/steam-condenser-php.git
+	branch = master
 [submodule "thirdparty/php-vpk-reader"]
 	path = thirdparty/php-vpk-reader
 	url = git@github.com:jaredballou/php-vpk-reader.git
+	branch = master
 [submodule "thirdparty/vtf2tga"]
 	path = thirdparty/vtf2tga
 	url = git@github.com:jaredballou/vtf2tga.git
+	branch = master
 [submodule "thirdparty/VTFLib"]
 	path = thirdparty/VTFLib
 	url = git@github.com:jaredballou/VTFLib.git
+	branch = master
 [submodule "thirdparty/libtxc_dxtn"]
 	path = thirdparty/libtxc_dxtn
 	url = git@github.com:jaredballou/libtxc_dxtn.git
+	branch = master
 [submodule "thirdparty/source-sdk-2013"]
 	path = thirdparty/source-sdk-2013
 	url = git@github.com:jaredballou/source-sdk-2013.git
+	branch = master
 [submodule "thirdparty/pysmx"]
 	path = thirdparty/pysmx
 	url = git@github.com:jaredballou/pysmx.git
+	branch = master
 [submodule "thirdparty/php-binary"]
 	path = thirdparty/php-binary
 	url = git@github.com:jaredballou/php-binary.git
+	branch = master
 [submodule "thirdparty/webgl-source"]
 	path = thirdparty/webgl-source
 	url = git@github.com:jaredballou/webgl-source.git
+	branch = master
 [submodule "thirdparty/SteamWorks"]
 	path = thirdparty/SteamWorks
 	url = git@github.com:jaredballou/SteamWorks.git
+	branch = master
 [submodule "thirdparty/open-steamworks"]
 	path = thirdparty/open-steamworks
 	url = git@github.com:jaredballou/open-steamworks.git
+	branch = master
 [submodule "thirdparty/sourcepawn-inc-parser"]
 	path = thirdparty/sourcepawn-inc-parser
 	url = git@github.com:jaredballou/sourcepawn-inc-parser.git
+	branch = master
 [submodule "thirdparty/sourcemod"]
 	path = thirdparty/sourcemod
 	url = git@github.com:jaredballou/sourcemod.git
+	branch = master
 [submodule "thirdparty/python-valve"]
 	path = thirdparty/python-valve
 	url = git@github.com:jaredballou/python-valve.git
+	branch = master
 [submodule "thirdparty/PHP-Source-Query"]
 	path = thirdparty/PHP-Source-Query
 	url = git@github.com:jaredballou/PHP-Source-Query.git
+	branch = master
 [submodule "thirdparty/Day-of-Infamy"]
 	path = thirdparty/Day-of-Infamy
 	url = git@github.com:NewWorldInteractive/Day-of-Infamy.git
+	branch = master
 [submodule "thirdparty/lysis-java"]
 	path = thirdparty/lysis-java
 	url = git@github.com:jaredballou/lysis-java.git
+	branch = master
 [submodule "theaters"]
 	path = theaters
 	url = git@github.com:jaredballou/insurgency-theaters.git
+	branch = master
