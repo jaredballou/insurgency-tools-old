@@ -55,7 +55,7 @@ function DisplayModSelection($compare=0, $type='theater') {
 ?>
 <script type="text/javascript">
 jQuery(function($) {
-	var data = <?php echo json_encode($vars['data'], JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT); ?>;
+	var data = <?php echo prettyPrint(json_encode($vars['data'])); ?>;
 	<?php echo implode("\n\t",$js)."\n"; ?>
 
 	$(select_mod).change(function () {

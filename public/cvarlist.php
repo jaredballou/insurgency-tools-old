@@ -77,7 +77,7 @@ $data = GetCVARList($version,$listtype);
 
 if ($_REQUEST['fetch'] == 'list') {
 	header('Content-Type: application/json');
-	echo json_encode($data, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+	echo prettyPrint(json_encode($data));
 	exit;
 }
 

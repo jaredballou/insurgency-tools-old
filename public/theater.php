@@ -41,7 +41,7 @@ if (isset($_REQUEST['fetch'])) {
 	}
 	if (isset($fetch_data)) {
 		header('Content-Type: application/json');
-		echo json_encode($fetch_data, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+		echo prettyPrint(json_encode($fetch_data));
 		exit;
 	}
 }

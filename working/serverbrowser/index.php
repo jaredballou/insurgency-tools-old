@@ -104,7 +104,7 @@ if (isset($_REQUEST['fetch'])) {
 	}
 	if (isset($data)) {
 		header('Content-Type: application/json');
-		echo json_encode($data, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+		echo prettyPrint(json_encode($data));
 	}
 	exit;
 }
@@ -187,8 +187,8 @@ foreach ($list as $server) {
 
 ksort($maps);
 ksort($tag_values);
-file_put_contents($tags_file,json_encode($tag_values, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
-file_put_contents($maps_file,json_encode($maps, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
+file_put_contents($tags_file,prettyPrint(json_encode($tag_values)), LOCK_EX);
+file_put_contents($maps_file,prettyPrint(json_encode($maps)), LOCK_EX);
 
 
 
@@ -493,7 +493,7 @@ function GetList() {
 				$list[] = GetServer($item[0],$item[1],$code);
 			}
 		}
-		file_put_contents($list_file,json_encode($list, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
+		file_put_contents($list_file,prettyPrint(json_encode($list)), LOCK_EX);
 		$list_mtime = time();
 		$list_age = 0;
 	}
@@ -585,12 +585,12 @@ function GetServer($host,$port,$region='',$cacheonly=1,$forcerefresh=0) {
 				}
 			}
 			$server['updated'] = time();
-			file_put_contents($cache_file,json_encode($server, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
+			file_put_contents($cache_file,prettyPrint(json_encode($server)), LOCK_EX);
 		}
 		catch(Exception $e) {
 //			echo 'Caught exception: ',  $e->getMessage(), "\n";
 			$server['error'] = $e->getMessage();
-			file_put_contents($cache_file,json_encode($server, JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT), LOCK_EX);
+			file_put_contents($cache_file,prettyPrint(json_encode($server)), LOCK_EX);
 		}
 	}
 	// Skip processing for servers with errors
