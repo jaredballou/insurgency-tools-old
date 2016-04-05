@@ -35,7 +35,7 @@ if (isset($_REQUEST['fetch'])) {
 			header('Cache-Control: must-revalidate');
 			header('Pragma: public');
 			header('Content-Length: '.strlen($data));
-			print $data;
+			echo $data;
 			exit;
 			break;
 	}

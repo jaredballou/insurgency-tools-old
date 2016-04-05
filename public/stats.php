@@ -216,8 +216,10 @@ function DisplayStatTable() {
 		<table class='display row-border' id='table-{$sectionname}' width='100%'>
 			<thead>
 				<tr>\n";
+/*
 		if ($sectionname != 'Teams')
 			echo "					<th>Cmp</th>\n";
+*/
 		foreach ($sectiondata['fields'] as $fieldname => $show) {
 			if (!$show)
 				continue;
@@ -225,6 +227,7 @@ function DisplayStatTable() {
 		}
 		echo "			</tr>\n			 </thead>\n			 <tbody>\n";
 		foreach ($sectiondata['items'] as $itemname => $itemdata) {
+/*
 			if ($sectionname != 'Teams')
 			{
 				$sel = '';
@@ -239,6 +242,7 @@ function DisplayStatTable() {
 				}
 				echo "			<tr><td><input type='checkbox' name='compare_{$sectionname}[]' value='{$itemname}'{$sel}></td>\n";
 			}
+*/
 			foreach ($sectiondata['fields'] as $fieldname => $show) {
 				if (!$show)
 					continue;

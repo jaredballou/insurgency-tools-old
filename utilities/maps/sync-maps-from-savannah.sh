@@ -32,8 +32,9 @@ for MAP in $(curl -s "${URL}" | grep -o '<a href=\([^>]\+\)>' | cut -d'"' -f2 | 
 	fi
 	if [ ! -e "${MAPSDIR}/${MAP}.bsp" ] && [ ! -e "${GAMEDIR}/maps/${MAP}.bsp" ]; then
 		SRC="${URL}${MAP}.zip"
-		DST="${MAP}.zip"
-		CMD="cd \"${MAPSDIR}\" && wget \"${SRC}\" && unzip \"${DST}\" && rm \"${DST}\""
-		echo $CMD
+		DST="${MAPSDIR}/${MAP}.zip"
+		wget "${SRC}" -O "${DST}"
+		unzip "${DST}" -d "${MAPSDIR}"
+		rm "${DST}"
 	fi
 done

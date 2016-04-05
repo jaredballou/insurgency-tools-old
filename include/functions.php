@@ -138,6 +138,8 @@ if (isset($_REQUEST['version_compare'])) {
 	}
 }
 //END version
+
+// BEGIN range
 // Units of measurement
 $range_units = array(
 	'U' => 'Game Units',
@@ -164,6 +166,9 @@ if (isset($_REQUEST['range'])) {
 	}
 }
 
+// END range
+
+// BEGIN theater
 // Populate $theaters array with all the theater files in the selected version
 $files = glob("{$datapath}/mods/{$mod}/{$version}/scripts/theaters/*.theater");
 foreach ($files as $file) {
@@ -212,6 +217,7 @@ if (isset($_REQUEST['theater_compare'])) {
 		$theaterfile_compare = $_REQUEST['theater_compare'];
 	}
 }
+// END theater
 
 // echo "<pre>\n";
 // var_dump($theater);
@@ -252,8 +258,10 @@ foreach ($raw as $key) {
 */
 // TODO: Break these out into separate classes and better define them.
 
-function GetDataFiles($filename,$which=-1) {
-	global $langcode, $lang,$datapath,$mod,$version,$latest_version;
+function GetDataFiles($filename,$mod=null,$version=null,$which=-1) {
+	global $langcode, $lang,$datapath,$latest_version;
+	if (is_null($mod)) $mod = $GLOBALS['mod'];
+	if (is_null($version)) $version = $GLOBALS['version'];
 	$paths = array(
 		"{$datapath}/mods/{$mod}/{$version}",
 		"{$datapath}/mods/{$mod}/*",
@@ -282,16 +290,16 @@ function GetDataFiles($filename,$which=-1) {
 		return $files;
 	}
 }
-function GetDataFile($filename,$which=0) {
-	return GetDataFiles($filename,$which);
+function GetDataFile($filename,$mod=null,$version=null,$which=0) {
+	return GetDataFiles($filename,$mod,$version,$which);
 }
 
 function GetURL($file) {
 	return str_replace($GLOBALS['datapath'],"{$GLOBALS['urlbase']}data",$file);
 }
 
-function GetDataURLs($filename,$which=-1) {
-	$files = GetDataFiles($filename,$which);
+function GetDataURLs($filename,$mod=null,$version=null,$which=-1) {
+	$files = GetDataFiles($filename,$mod,$version,$which);
 	if (is_array($files)) {
 		foreach ($files as $idx => $file) {
 			$files[$idx] = GetURL($file);
@@ -301,7 +309,7 @@ function GetDataURLs($filename,$which=-1) {
 		return GetURL($files);
 	}
 }
-function GetDataURL($filename) {
+function GetDataURL($filename,$mod=null,$version=null) {
 	return GetDataURLs($filename,0);
 }
 // LoadLanguages - Load all the language files from the data directory

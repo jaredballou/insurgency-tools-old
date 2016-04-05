@@ -75,15 +75,35 @@ if ($_REQUEST['command'] == 'symlinks') {
 if ($_REQUEST['command'] == 'mapcycle') {
 	$maps = array();
 	$maplist = array();
-	$files = glob("${datapath}/maps/*.txt");
-	foreach ($files as $file) {
-		$mapname = basename($file,".txt");
+	$mapfiles = GetDataFiles("maps/*.txt",'*','*');
+	foreach ($mapfiles as $mapfile) {
+		$mapname = basename($mapfile,".txt");
 		if (in_array($mapname,$excludemaps)) {
 			continue;
 		}
-		$mapdata = parseKeyValues(strtolower(file_get_contents($file)));
+
+		$mapdir = dirname($mapfile);
+		$mapver = basename(dirname($mapdir));
+		$mapmod = basename(dirname(dirname($mapdir)));
+
+		$mapdata = parseKeyValues(strtolower(file_get_contents($mapfile)));
+
+		foreach ($mapdata as $name=>$item) {
+			if ($name == "#base") {
+				if (!is_array($item)) $item = array($item);
+				foreach ($item as $base) {
+					$mapdata = array_merge_recursive(parseKeyValues(strtolower(file_get_contents(GetDataFile("maps/{$base}",$mapmod,$mapver)))),$mapdata);
+				}
+				unset($mapdata[$name]);
+			}
+		}
+
 		$maplist[$mapname] = 1;
-		$maps[$mapname]['gametypes'] = array_shift(array_values($mapdata));
+
+		$maps[$mapname]['dir'] = $mapdir;
+		$maps[$mapname]['mod'] = $mapmod;
+		$maps[$mapname]['version'] = $mapver;
+		$maps[$mapname]['cpsetup'] = array_shift(array_values($mapdata));
 	}
 	$gametypes = (isset($_REQUEST["gametypes"])) ? $_REQUEST["gametypes"] : array('checkpoint','hunt');
 	$mc.="";
@@ -98,7 +118,7 @@ if ($_REQUEST['command'] == 'mapcycle') {
 				continue;
 			}
 		}
-		foreach ($mapdata['gametypes'] as $gametype => $gtdata) {
+		foreach ($mapdata['cpsetup'] as $gametype => $gtdata) {
 			if (!is_array($gtdata)) {
 				continue;
 			}
@@ -162,6 +182,7 @@ if ($_REQUEST['command'] == 'mapcycle') {
 			}
 		}
 	}
+//var_dump($maps);
 	echo "<input type='checkbox' id='custom' class='mapselector' CHECKED>custom<br>\n";
 	echo "<select name='maps[]' multiple size='10' id='mapbox'>";
 	foreach ($maps as $mapname => $mapdata) {
@@ -423,17 +444,88 @@ function GetCoordinates(e)
 <div class="minwidth">
 <div id="map-view" class="map">
 <?php
+
+function GetControlPoint($map,$gtname,$idx) {
+	global $maps;
+
+	$cpname = chr(65+$idx);
+	$gtdata = $maps[$map]['gametypes'][$gtname];
+	$cp = $gtdata['controlpoint'][$idx];
+	$return = GetEntity($map,$gtname,$cp,array('point_controlpoint','obj_weapon_cache'));
+/*
+	$points = (isset($maps[$map]['gametypes'][$gtname]['points'])) ? array_merge_recursive($maps[$map]['gametypes'][$gtname]['points'],$maps[$map]['points']) : $maps[$map]['points'];
+	foreach ($points as $name=>$point) {
+		if (($point['pos_classname'] != 'point_controlpoint') && ($point['pos_classname'] != 'obj_weapon_cache')) {
+			continue;
+		}
+		if (isset($point['pos_controlpoint'])) {
+			if ($point['pos_controlpoint'] == $cp) {
+				$return = $point;
+				break;
+			}
+		}
+		if (($name == $cp) || ($point['pos_name'] == $cp) || ($point['pos_targetname'] == $cp)) {
+			$return = $point;
+		}
+	}
+	if (isset($return)) {
+*/
+		if (isset($gtdata['attackingteam'])) {
+			$return['pos_team'] = ($gtdata['attackingteam'] == 'security') ? 3 : 2;
+		}
+		$return['pos_name'] = $cpname;
+		return $return;
+//	}
+}
+function GetEntity($map,$gtname,$names='',$classnames='') {
+	$return = GetEntities($map,$gtname,$names,$classnames);
+	return ($return[0]);
+}
+function GetEntities($map,$gtname,$names='',$classnames='',$max=-1) {
+	global $maps;
+	if (($classnames != '') && (!is_array($classnames))) {
+		$classnames = array($classnames);
+	}
+	if (($names != '') && (!is_array($names))) {
+		$names = array($names);
+	}
+	$gtdata = $maps[$map]['gametypes'][$gtname];
+	$points = (isset($maps[$map]['gametypes'][$gtname]['points'])) ? array_merge_recursive($maps[$map]['gametypes'][$gtname]['points'],$maps[$map]['points']) : $maps[$map]['points'];
+	$return = array();
+	foreach ($points as $name=>$point) {
+		// Only do specified classnames if provided
+		foreach ($names as $cp) {
+			if (is_array($classnames)) {
+				if (!in_array($point['pos_classname'],$classnames)) {
+					continue;
+				}
+			}
+			// Always get item with pos_controlpoint set before targetname, then break
+			if (isset($point['pos_controlpoint'])) {
+				if ($point['pos_controlpoint'] == $cp) {
+					array_unshift($return,$point);
+				}
+			}
+			// Set return to point if name matches, but keep going to find controlpoint match if available
+			if (($name == $cp) || ($point['pos_name'] == $cp) || ($point['pos_targetname'] == $cp)) {
+				$return[] = $point;
+			}
+		}
+	}
+//var_dump($return);
+	return $return;
+}
+
 // Display map if selected
 if ($map) {
 	// Load gametype data
-	unset($maps[$map]['gametypes']['theater_conditions']);
 	$gametypes = array_keys($maps[$map]['gametypes']);
+
 	// Display map overview
 	$img = GetMaterial($maps[$map]['overview']['material'], 'bare');
-//var_dump($maps[$map]['overview'],"materials/{$maps[$map]['overview']['material']}.png",$GLOBALS['datapath'],$GLOBALS['urlbase'],$img);
 	echo "						<img src='{$img}' class='map-image' id='map-image' alt='{$map}' style='z-index: 0;'/><br />\n";
-	// Try to open decompiled map file to get entity data
 
+	// Include overlays if they exist
 	if (file_exists("${datapath}/maps/overlays/{$map}.txt")) {
 		$data = parseKeyValues(strtolower(file_get_contents("${datapath}/maps/overlays/{$map}.txt")));
 		foreach ($data as $layername => $layerdata) {
@@ -445,25 +537,58 @@ if ($map) {
 			}
 		}
 	}
+	// Set navmesh to map name by default
 	$navmesh = $map;
+
+	$types = array('ins_spawnzone' => 'spawn','trigger_capture_zone' => 'cap', 'ins_blockzone' => 'block');
 	foreach ($maps[$map]['gametypes'] as $gtname => $gtdata) {
+		// Skip theater conditions
 		if ($gtname == 'theater_conditions') {
 			continue;
 		}
+		// Override nav file if set
 		if (isset($gtdata['navfile'])) {
 			$navmesh = $gtdata['navfile'];
 		}
-		// Loop over each point in this gametype
-		foreach ($gtdata['controlpoint'] as $cp => $cpdata) {
-			$map_objects[$gtname][] = $cpdata;
-		}
-		foreach ($gtdata['spawnzones'] as $szid => $szdata) {
+
+		// Put in control points
+		foreach ($gtdata['controlpoint'] as $idx => $cpname) {
+			$cpletter = chr(65+$idx);
+//			$layer = (($gtname == 'checkpoint') || ($gtname == 'outpost') || ($gtname == 'hunt') || ($gtname == 'survival')) ? "{$gtname}_spawns" : $gtname;
+			$cp = GetControlPoint($map,$gtname,$idx);
+//var_dump($cp);
+			$map_objects[$gtname][] = $cp;
+/*
+			// Get entities for each spawn zone
+//			$entfields = array(
+// TODO: Collect all pos_blockzones from entities
+// Add to collector for each layer
+			$szents = GetEntities($map,$gtname,$gtdata['spawnzones'][$idx],'ins_spawnzone');
+//var_dump($szents);
+//,$cp['pos_controlpoint'],$cpname);
+			$entfields = array($gtdata['spawnzones'][$idx],$cp['pos_controlpoint'],$cpname);
+			$szents = GetEntities($map,$gtname,$entfields,array_keys($types));
+//var_dump(array_keys($types),$szents);
+			// Ensure that this is an array of entities, not a single entity.
+//			if (!is_numeric_array(array_keys($szents)))
+			foreach ($szents as $szidx=>$szent) {
+				$type = $types[$szent['pos_classname']];
+//var_dump($szidx,$szent,$type);
+				$szent['pos_name'] = "{$type} {$cpletter}";
+				// Handle block zones
+//				if (isset($szent['pos_blockzone'])) {
+//				}
+				$map_objects["{$gtname}_{$cpletter}"][] = $szent;
+			}
+//var_dump($szents);
+//GetEntities
 			if (is_array($gtdata['spawnzones'][$szid])) {
 				foreach ($gtdata['spawnzones'][$szid] as $szname => $szdata) {
 					$idx = (($gtname == 'checkpoint') || ($gtname == 'outpost') || ($gtname == 'hunt') || ($gtname == 'survival')) ? "{$gtname}_spawns" : $gtname;
 					$map_objects[$idx][] = $szdata;
 				}
 			}
+*/
 		}
 	}
 	if (file_exists("{$hlstatsx_heatmaps}/{$map}-kill.png")) {
