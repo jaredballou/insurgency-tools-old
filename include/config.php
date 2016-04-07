@@ -54,6 +54,7 @@ $ordered_fields = array(
 	'theater/teams/*/squads/*',
 	'theater/player_templates/*/buy_order',
 	'theater/player_templates/*/allowed_items',
+	'theater/player_templates/*/allowed_weapons',
 	'theater/weapon_upgrades/*/allowed_weapons',
 	'theater/weapon_upgrades/*/viewmodel_attachments/*/weapons',
 	'theater/weapon_upgrades/*/world_attachments/*/weapons',

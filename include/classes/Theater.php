@@ -4,6 +4,76 @@ $snippets = array();
 $sections = array();
 $snippet_path = "{$rootpath}/theaters/snippets";
 
+// theater_recurse - 
+function theater_recurse($array, $array1)
+{
+	foreach ($array1 as $key => $value)
+	{
+		// create new key in $array, if it is empty or not an array
+// 		if (!isset($array[$key])) {
+// || (isset($array[$key]) && !is_array($array[$key])))
+// 			$array[$key] = array();
+// 		}
+
+		// overwrite the value in the base array
+		if (is_array($value))
+		{
+			if (isset($array[$key]))
+				$value = theater_recurse($array[$key], $value);
+		}
+		if ($value !== NULL) {
+			$array[$key] = $value;
+		}
+	}
+	return $array;
+}
+// theater_array_replace_recursive - 
+function theater_array_replace_recursive($array, $array1)
+{
+	// handle the arguments, merge one by one
+	$args = func_get_args();
+	$array = $args[0];
+	if (!is_array($array))
+	{
+		return $array;
+	}
+	for ($i = 1; $i < count($args); $i++)
+	{
+		if (is_array($args[$i]))
+		{
+			$array = theater_recurse($array, $args[$i]);
+		}
+	}
+	return $array;
+}
+
+// theater_array_replace - 
+function theater_array_replace()
+{
+	$args = func_get_args();
+	$num_args = func_num_args();
+	$res = array();
+	for($i=0; $i<$num_args; $i++)
+	{
+		if(is_array($args[$i]))
+		{
+			foreach($args[$i] as $key => $val)
+			{
+				$res[$key] = $val;
+			}
+		}
+		else
+		{
+			echo "ERROR: Not arrays!\n";
+			var_dump($args[0]);
+			var_dump($args[$i]);
+			trigger_error(__FUNCTION__ .'(): Argument #'.($i+1).' is not an array', E_USER_WARNING);
+			return NULL;
+		}
+	}
+	return $res;
+}
+
 function ShowItemGroupOptions($groupname) {
 	echo "<select name='item_groups[{$groupname}]'>\n";
 	foreach (array('Ignore','Disable','AllClasses','OnlyThese') as $option) {
@@ -231,6 +301,11 @@ function GenerateTheater() {
 		}
 	}
 	$onlythese=array();
+	$group_keys = array(
+		'weapons'		=> 'weapon',
+		'weapon_upgrades'	=> 'weapon_upgrade',
+		'player_gear'		=> 'gear',
+	);
 	foreach ($_GET['item_groups'] as $gname => $gstatus) {
 		if ($gstatus == 'Ignore') {
 			continue;
@@ -251,7 +326,7 @@ function GenerateTheater() {
 					foreach ($allowed_items as $idx=>$pair) {
 						foreach ($pair as $type=>$name) {
 //var_dump($type,$field,$name,$item);
-							if ((($type == $field) || ("{$type}s" == $field)) && ($name == $item)) {
+							if ((($type == $field) || ($type == $group_keys[$field])) && ($name == $item)) {
 								$match = $idx;
 								break;
 							}
@@ -266,7 +341,7 @@ function GenerateTheater() {
 						case 'AllClasses':
 						case 'OnlyThese':
 							if ($match == -1) {
-								$allowed_items[] = array($field => $item);
+								$allowed_items[] = array($group_keys[$field] => $item);
 							}
 							break;
 					}
