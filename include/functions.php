@@ -300,18 +300,25 @@ function GetURL($file) {
 
 function GetDataURLs($filename,$mod=null,$version=null,$which=-1) {
 	$files = GetDataFiles($filename,$mod,$version,$which);
+//var_dump($files,$which);
 	if (is_array($files)) {
-		foreach ($files as $idx => $file) {
-			$files[$idx] = GetURL($file);
+		if ($which < 0) {
+			foreach ($files as $idx => $file) {
+				$files[$idx] = GetURL($file);
+			}
+			return $files;
+		} else {
+			return GetURL($files[$which]);
 		}
-		return $files;
 	} else {
 		return GetURL($files);
 	}
 }
 function GetDataURL($filename,$mod=null,$version=null) {
-	return GetDataURLs($filename,0);
+	return GetDataURLs($filename,$mod,$version,0);
 }
+//var_dump(GetMaterial('materials/vgui/inventory/ammo_ap_model10'));
+//exit;
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
 function LoadLanguages($pattern='English') {
@@ -427,6 +434,7 @@ function kvwriteSegment(&$str, $arr, $tier = 0,$tree=array()) {
 			$key = '"' . $key . '"';
 			$str .= $indent . $key  . "\n" . $indent. "{\n";
 			$path=implode("/",$tree);
+			// If this item is an ordered array, deserialize it
 			if ((matchTheaterPath($path,$ordered_fields)) && (is_numeric_array(array_keys($value)))) {
 // 				echo "Ordered<br>\n";
 				foreach ($value as $idx=>$item) {
@@ -479,9 +487,13 @@ function matchTheaterPath($paths,$matches) {
 		$paths=array($paths);
 	}
 	foreach ($paths as $path) {
-		$path_parts=array_values(array_filter(explode("/",$path)));
+		$path_parts = array_filter(explode("/",$path), function($val) {return ($val[0] != '?' && $val != '');});
+//var_dump($path_parts);
+//array_values(array_filter(explode("/",$path)));
 		foreach ($matches as $match) {
-			$match_parts=array_values(array_filter(explode("/",$match)));
+			$match_parts = array_filter(explode("/",$match), function($val) {return ($val[0] != '?' && $val != '');});
+//var_dump($match_parts);
+//array_values(array_filter(explode("/",$match)));
 			if (count($match_parts) != count($path_parts)) {
 				continue;
 			}
@@ -941,10 +953,10 @@ Get the material path
 function GetMaterial($name,$type='img',$path='') {
 	// This is shit path munging, fix it
 	$filepath = implode("/",array_filter(array_merge(explode("/",preg_replace('/\.(vmt|vtf|png)$/','',"{$path}/{$name}")))));
-
+var_dump($filepath);
 	// FIXME: What if the PNG exists, but the VTF doesn't?
 	$rp = (file_exists(GetDataFile("{$filepath}.vmt"))) ? "{$filepath}" : "materials/{$filepath}";
-
+var_dump($rp);
 	// If we have a PNG, just send it
 	if (file_exists(GetDataFile("{$rp}.png"))) {
 		return GetDataURL("{$rp}.png");
@@ -954,7 +966,7 @@ function GetMaterial($name,$type='img',$path='') {
 	if (file_exists(GetDataFile("{$rp}.vmt"))) {
 		$vmt = file_get_contents(GetDataFile("{$rp}.vmt"));
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
-		return GetMaterial($matches[1][0],$type,$path);
+		return GetMaterial($matches[1][0],$type,'materials');
 	}
 
 	// No hope

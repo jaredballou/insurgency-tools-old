@@ -77,7 +77,7 @@ function theater_array_replace()
 function ShowItemGroupOptions($groupname) {
 	echo "<select name='item_groups[{$groupname}]'>\n";
 	foreach (array('Ignore','Disable','AllClasses','OnlyThese') as $option) {
-		$checked = ($_GET["item_groups[{$groupname}]"] == $option) ? ' SELECTED' : '';
+		$checked = ($_REQUEST["item_groups[{$groupname}]"] == $option) ? ' SELECTED' : '';
 		echo "<option{$checked}>{$option}</option>\n";
 	}
 	echo "</select>\n";
@@ -272,7 +272,7 @@ function GenerateTheater() {
 	} else {
 		array_unshift($hdr,"\"#base\" \"{$theaterfile}.theater\"");
 	}
-	foreach ($_GET['section'] as $section=>$snippet) {
+	foreach ($_REQUEST['section'] as $section=>$snippet) {
 //var_dump($section,$snippet);
 		if (is_array($snippet)) {
 		} else {
@@ -287,11 +287,11 @@ function GenerateTheater() {
 			$data = theater_array_replace_recursive(getfile("{$sname}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
 		}
 	}
-	foreach ($_GET['mutator'] as $mname => $mdata) {
+	foreach ($_REQUEST['mutator'] as $mname => $mdata) {
 		if (!(strlen($mdata))) {
 			continue;
 		}
-		foreach ($_GET['setting'][$mname] as $section=>$settings) {
+		foreach ($_REQUEST['setting'][$mname] as $section=>$settings) {
 			foreach ($settings as $key => $val) {
 				$hdr[]="// Change {$section}.{$key} to {$val}";
 				foreach ($theater[$section] as $iname=>$idata) {
@@ -306,7 +306,7 @@ function GenerateTheater() {
 		'weapon_upgrades'	=> 'weapon_upgrade',
 		'player_gear'		=> 'gear',
 	);
-	foreach ($_GET['item_groups'] as $gname => $gstatus) {
+	foreach ($_REQUEST['item_groups'] as $gname => $gstatus) {
 		if ($gstatus == 'Ignore') {
 			continue;
 		}
