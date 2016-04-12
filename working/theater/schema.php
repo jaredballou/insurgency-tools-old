@@ -11,7 +11,7 @@ require_once("${includepath}/functions.php");
 require_once "kvreader2.php";
 // 
 $theaterfile="default_checkpoint";
-$theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
+$theater = ParseTheaterFile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 //$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items','weapon_upgrade');
 $object_fields=array(
 	'theater/ammo',

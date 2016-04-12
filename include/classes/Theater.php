@@ -82,6 +82,8 @@ function ShowItemGroupOptions($groupname) {
 	}
 	echo "</select>\n";
 }
+
+
 function LoadSnippets(&$snippets,$path='') {
 	global $sections,$snippet_path,$version,$mod,$mods;
 	if ($path == '') { $path = $snippet_path; }
@@ -113,7 +115,7 @@ function LoadSnippets(&$snippets,$path='') {
 						$snippets[$path_parts['filename']] = array(
 							'name'		=> $path_parts['filename'],
 							'desc'		=> trim($header),
-							'settings'	=> getfile($file,$mod,$version,$path_parts['dirname']),
+							'settings'	=> ParseTheaterFile($file,$mod,$version,$path_parts['dirname']),
 						);
 						break;
 				}
@@ -121,6 +123,7 @@ function LoadSnippets(&$snippets,$path='') {
 		}
 	}
 }
+
 function ProcessItemGroup($group) {
 /*
 	global $theater;
@@ -153,8 +156,10 @@ want to contribute.</div>\n";
 
 	//Theater selection
 	echo "<div class='theaterselect'>\n";
+	echo "<div class='title'>Base Theater</div>\n";
+	echo "Select the base theater file to use. This will be used as the starting point for the modifications you select.<br>\n";
 	echo DisplayModSelection();
-	echo "<input type='checkbox' name='include_all_theaters'> Include all base theaters into one standalone theater? Will create a bigger theater, but it will have no dependencies.</div>\n";
+	echo "<br>\n<input type='checkbox' name='include_all_theaters'> Include all base theaters into one standalone theater? Will create a bigger theater, but it will have no dependencies.</div>\n";
 
 	// Merge snippets
 	foreach ($snippets as $sname => $sdata) {
@@ -264,7 +269,7 @@ function GenerateTheater() {
 	$data = array();
 	$hdr = array("// Theater generated");
 	$ib = ($_REQUEST['include_all_theaters'] == 'on');
-//$basedata = array_merge_recursive(getfile($base,$mod,$version,$path,$base_theaters),$basedata);
+//$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters),$basedata);
 //$theater = theater_array_replace_recursive($basedata,$theater);
 	if ($ib) {
 		$hdr[]="// Load {$theaterfile}.theater";
@@ -284,7 +289,7 @@ function GenerateTheater() {
 		}
 		foreach ($snippet as $sname=>$sval) {
 			$hdr[]="// Load {$section}/{$sname}.theater";
-			$data = theater_array_replace_recursive(getfile("{$sname}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
+			$data = theater_array_replace_recursive(ParseTheaterFile("{$sname}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
 		}
 	}
 	foreach ($_REQUEST['mutator'] as $mname => $mdata) {

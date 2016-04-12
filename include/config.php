@@ -48,7 +48,19 @@ $publicpath="${rootpath}/public";
 // datapath is where the insurgency-data repo is checked out
 $datapath="${publicpath}/data";
 
-// These fields will be processed in the theater as a numerically indexed array, rather than key/values.
+$theater_object_fields=array(
+	'theater/ammo',
+	'theater/explosives',
+	'theater/player_gear',
+	'theater/player_templates',
+	'theater/teams',
+	'theater/teams/*/squads',
+	'theater/weapons',
+	'theater/weapon_upgrades',
+	'theater/weapon_upgrades/*/world_attachments',
+	'theater/weapon_upgrades/*/viewmodel_attachments/*/weapons',
+);
+
 $ordered_fields = array(
 	'theater/core/precache',
 	'theater/teams/*/squads/*',

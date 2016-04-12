@@ -399,10 +399,10 @@ class Theater {
 	}
 	
 	
-	/* getfile
+	/* ParseTheaterFile
 	Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 	*/
-	public function getfile($filename,$version='',$path='',$collapse_conditionals=true) {
+	public function ParseTheaterFile($filename,$version='',$path='',$collapse_conditionals=true) {
 		global $custom_theater_paths,$newest_version,$theaterpath,$rootpath;
 		if ($version == '')
 			$version = $newest_version;
@@ -424,7 +424,7 @@ class Theater {
 		//This appears to be the way the game processes these files it appears.
 		if (count($bases)) {
 			foreach ($bases as $base) {
-				$basedata = merge_theaters($basedata,getfile($base,$version,$path,$collapse_conditionals));
+				$basedata = merge_theaters($basedata,ParseTheaterFile($base,$version,$path,$collapse_conditionals));
 			}
 			$this->theater = merge_theaters($basedata,$thisfile["theater"]);
 		}

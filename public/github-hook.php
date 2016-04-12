@@ -9,15 +9,18 @@ do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}
 require_once("{$includepath}/functions.php");
 //User to pull the data for
 $githubuser = 'jaredballou';
-$cache_file = $cachepath.'/content.html';
-$payload_file = $cachepath.'/payload.json';
 
+
+$cache_file = 'website/content.html';
+$payload_file = 'website/payload.json';
+/*
 if (isset($_POST['payload'])) {
 	file_put_contents($payload_file,$_POST['payload']);
 //	$payload = json_decode($_POST['payload']);
 //	$branch = substr($payload->ref, strrpos($payload->ref, '/') + 1);
 //	$repository = $payload->repository->name;
 }
+*/
 //var_dump($_POST);
 function GetGithibReadmes($githubuser) {
 	$data = GetGithubURL("users/{$githubuser}/repos");
@@ -28,7 +31,10 @@ function GetGithibReadmes($githubuser) {
 		if (startsWith($repo['name'],'insurgency-'))
 			$data[] = GetReadme($repo['name']);
 	}
-	file_put_contents($cache_file,implode("\r\n",$data));
+	PutCacheFile($cache_file,implode("\r\n",$data));
+//"theaters/{$mod}/{$version}/{$filename}.json",prettyPrint(json_encode($cache)));
+
+//	file_put_contents($cache_file
 }
 
 function GetReadme($repo)

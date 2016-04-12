@@ -219,9 +219,6 @@ if (isset($_REQUEST['theater_compare'])) {
 }
 // END theater
 
-// echo "<pre>\n";
-// var_dump($theater);
-// exit;
 
 // Load maplist and gametypes
 $mldata = json_decode(file_get_contents("{$datapath}/thirdparty/maplist.json"),true);
@@ -300,7 +297,6 @@ function GetURL($file) {
 
 function GetDataURLs($filename,$mod=null,$version=null,$which=-1) {
 	$files = GetDataFiles($filename,$mod,$version,$which);
-//var_dump($files,$which);
 	if (is_array($files)) {
 		if ($which < 0) {
 			foreach ($files as $idx => $file) {
@@ -317,7 +313,6 @@ function GetDataURLs($filename,$mod=null,$version=null,$which=-1) {
 function GetDataURL($filename,$mod=null,$version=null) {
 	return GetDataURLs($filename,$mod,$version,0);
 }
-//var_dump(GetMaterial('materials/vgui/inventory/ammo_ap_model10'));
 //exit;
 // LoadLanguages - Load all the language files from the data directory
 // Also loads the language codes from SourceMod (also in data directory)
@@ -482,18 +477,13 @@ function TypecastValue($val) {
 }
 
 function matchTheaterPath($paths,$matches) {
-//	var_dump($paths);
 	if (!is_array($paths)) {
 		$paths=array($paths);
 	}
 	foreach ($paths as $path) {
 		$path_parts = array_filter(explode("/",$path), function($val) {return ($val[0] != '?' && $val != '');});
-//var_dump($path_parts);
-//array_values(array_filter(explode("/",$path)));
 		foreach ($matches as $match) {
 			$match_parts = array_filter(explode("/",$match), function($val) {return ($val[0] != '?' && $val != '');});
-//var_dump($match_parts);
-//array_values(array_filter(explode("/",$match)));
 			if (count($match_parts) != count($path_parts)) {
 				continue;
 			}
@@ -502,8 +492,6 @@ function matchTheaterPath($paths,$matches) {
 					continue 2;
 				}
 				if (($idx+1) == count($match_parts)) {
-//					echo "MATCHED: {$path} to {$match}\n";
-//					var_dump($path_parts,$match_parts);
 					return $match;
 				}
 			}
@@ -752,9 +740,7 @@ function parseKeyValues($KVString,$fixquotes=true,$debug=false)
 	if ($debug) {
 		echo "<hr><pre>";
 		var_dump("stack: ",$stack);
-// 		var_dump("ptr: ",$ptr);
 	}
-// 	var_dump($comments);
 	return $stack;
 }
 
@@ -874,10 +860,11 @@ function multi_diff($name1,$arr1,$name2,$arr2) {
 	}
 	return $result;
 }
-/* getfile
+/* ParseTheaterFile
 Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 */
-function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array()) {
+function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters=array(),$depth=0) {
+//var_dump("ParseTheaterFile",$filename,$mod,$version,$path,$base_theaters,$depth);
 	global
 		$custom_theater_paths,
 		$newest_version,
@@ -889,46 +876,78 @@ function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array())
 	if ($version == '')
 		$version = $newest_version;
 	$basename = basename($filename);
-	// Array of paths to search, in descending order, to find the file
-	$check_paths = array(
-		"{$path}",
-		"{$theaterpath}",
-		"{$datapath}/mods/{$mod}/{$version}/scripts/theaters",
-		"{$datapath}/mods/{$mod}/{$latest_version}/scripts/theaters",
-		"{$datapath}/mods/{$mod}/{$steam_ver}/scripts/theaters",
-		"{$datapath}/mods/insurgency/{$version}/scripts/theaters",
-		"{$datapath}/mods/insurgency/{$latest_version}/scripts/theaters",
-		"{$datapath}/mods/insurgency/{$steam_ver}/scripts/theaters",
-	);
-	foreach ($check_paths as $path) {
-		if (file_exists("{$path}/{$basename}")) {
-			$filepath = "{$path}/{$basename}";
-			break;
+
+
+	if (file_exists($filename)) {
+		$filepath = $filename;
+	} else {
+		if (file_exists("{$path}/{$filename}")) {
+			$filepath = "{$path}/{$filename}";
+		} else {
+			$filepath = GetDataFile("scripts/theaters/{$basename}",$mod,$version);
 		}
 	}
-//	echo "path is {$path} version is {$version} filename is {$filename} mod is {$mod} filepath is {$filepath}<br>\n";
+	$base_theaters[$basename] = md5($filepath);
 
+	$sniproot = "${GLOBALS['rootpath']}/theaters/snippets/";
+	$snipfile = str_replace($sniproot,"",$filepath);
+	if ($snipfile != $filepath) {
+		$cachefile = "theaters/snippets/".str_replace("/","_","{$snipfile}");
+//var_dump($sniproot,$snipfile,$snippath,$cachefile);
+	} else {
+		$cachefile = "theaters/{$mod}/{$version}/{$basename}";
+	}
+	// Attempt to load file from cache
+	$cachedata = GetCacheFile($cachefile);
+	if (isset($cachedata['base']) && isset($cachedata['theater'])) {
+		// Check all files for MD5
+		foreach ($cachedata['base'] as $file => $md5) {
+			if ($file == $basename) {
+				$filemd5 = $base_theaters[$basename];
+			} else {
+				$bfpath = GetDataFile("scripts/theaters/{$file}",$mod,$version);
+				$filemd5 = md5($bfpath);
+			}
+			if ($filemd5  != $md5) {
+				break 1;
+			}
+		}
+		// If we haven't left the loop yet, and there is data in theater, return that
+		if ($cachedata['theater']) {
+			return $cachedata['theater'];
+		}
+	}
+
+	// Load raw theater file
 	$data = file_get_contents($filepath);
+	// Parse KeyValues data
 	$thisfile = parseKeyValues($data);
+	// Get theater array
 	$theater = $thisfile["theater"];
+
 	// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
 	// This appears to be the way the game processes these files it appears.
 	if (isset($thisfile["#base"])) {
 		$basedata = array();
+		// Create an array of base files
 		if (is_array($thisfile["#base"])) {
 			$bases = $thisfile["#base"];
 		} else {
 			$bases = array($thisfile["#base"]);
 		}
+		// Merge all base files into basedata array
 		foreach ($bases as $base) {
-			if (in_array($base,$base_theaters) === true)
+			$base_file = GetDataURL("scripts/theaters/{$base}",$mod,$version);
+			if (in_array($base,array_keys($base_theaters)) === true)
 				continue;
-			$base_theaters[] = $base;
-			$basedata = array_merge_recursive(getfile($base,$mod,$version,$path,$base_theaters),$basedata);
+			$base_theaters[$base] = md5($base_file);
+			$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters,$depth+1),$basedata);
 		}
+		// Merge this theater on top of combined base
 		$theater = theater_array_replace_recursive($basedata,$theater);
 // array_merge_recursive($basedata,$theater);
 	}
+/*
 	// Include parts that might be conditional in their parents, basically put everything in flat arrays
 	// This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
 	foreach ($theater as $sec => $data) {
@@ -939,13 +958,56 @@ function getfile($filename,$mod='',$version='',$path='',&$base_theaters=array())
 			}
 		}
 	}
+*/
+	// Prepare data to go to cache
+	$cache = array(
+		'base' => $base_theaters,
+		'theater' => $theater,
+	);
+
+	// Save cache data
+	PutCacheFile($cachefile,$cache);
+
+	// Send back theater object
 	return $theater;
 }
 
-// FindDataFile - 
-function FindDataFile($path) {
-
+function FormatCacheFileName($filename,$format='json') {
+	$path = "{$GLOBALS['cachepath']}/{$filename}";
+	$path = dirname($path)."/".basename($path,".{$format}").".{$format}";
+	return $path;
 }
+
+function PutCacheFile($filename,$data,$format='json') {
+	$path = FormatCacheFileName($filename,$format);
+	switch ($format) {
+		case 'json':
+			if (is_array($data) || is_object($data)) {
+				$data = prettyPrint(json_encode($data));
+			}
+			break;
+	}
+	if (!file_exists(dirname($path))) {
+		mkdir(dirname($path),0755,true);
+	}
+	file_put_contents($path,$data);
+}
+
+function GetCacheFile($filename,$format='json') {
+	$path = FormatCacheFileName($filename,$format);
+	if (!file_exists($path)) {
+		return;
+	}
+	switch ($format) {
+		case 'json':
+			$data = json_decode(file_get_contents($path),true);
+			break;
+	}
+	if (isset($data)) {
+		return $data;
+	}
+}
+
 /*
 GetMaterial
 Get the material path
@@ -953,10 +1015,8 @@ Get the material path
 function GetMaterial($name,$type='img',$path='') {
 	// This is shit path munging, fix it
 	$filepath = implode("/",array_filter(array_merge(explode("/",preg_replace('/\.(vmt|vtf|png)$/','',"{$path}/{$name}")))));
-var_dump($filepath);
 	// FIXME: What if the PNG exists, but the VTF doesn't?
 	$rp = (file_exists(GetDataFile("{$filepath}.vmt"))) ? "{$filepath}" : "materials/{$filepath}";
-var_dump($rp);
 	// If we have a PNG, just send it
 	if (file_exists(GetDataFile("{$rp}.png"))) {
 		return GetDataURL("{$rp}.png");
@@ -977,7 +1037,6 @@ var_dump($rp);
 Display the icon for an object
 */
 function getvgui($name,$type='img',$path='vgui/inventory') {
-	//var_dump($name,$path);
 	$img = GetMaterial($name,$type,$path);
 	if ($img) {
 		if ($type == 'img')
@@ -999,6 +1058,7 @@ function parseLibPath() {
 		addLibPath($path);
 	}
 }
+
 // addLibPath - Add path to include path, this is how we should add new libraries
 function addLibPath($path) {	
 	global $libpaths;
@@ -1057,6 +1117,7 @@ function var_dump_ret($mixed = null) {
 	return $content;
 }
 
+// Include classes
 $files = glob("{$includepath}/classes/*");
 foreach ($files as $file) {
 	require_once($file);

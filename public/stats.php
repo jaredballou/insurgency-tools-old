@@ -15,7 +15,7 @@ if (isset($_REQUEST['fetch'])) {
 	require_once("{$includepath}/header.php");
 }
 // Load theater now so we can create other arrays and validate
-$theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
+$theater = ParseTheaterFile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 
 if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 	DisplayTheaterCompare();
@@ -196,7 +196,7 @@ function closePage($bare=0) {
 		var_dump($theater);
 		var_dump($stats_tables);
 	}
-	require "../include/footer.php";
+	require_once "{$GLOBALS['includepath']}/footer.php";
 	exit;
 }
 
@@ -275,7 +275,7 @@ function DisplayTheaterCompare() {
 		$theaterfile_compare,
 		$theaterpath_compare,
 		$version_compare;
-	$theater_compare = getfile("{$theaterfile_compare}.theater", $mod_compare, $version_compare, $theaterpath_compare);
+	$theater_compare = ParseTheaterFile("{$theaterfile_compare}.theater", $mod_compare, $version_compare, $theaterpath_compare);
 	$index = "{$version}/{$theaterfile}";
 	$index_compare = "{$version_compare}/{$theaterfile_compare}";
 	$changes = multi_diff($index, $theater, $index_compare, $theater_compare);
@@ -297,6 +297,7 @@ function DisplayTheaterCompare() {
 	closePage(1);
 }
 
+// GenerateStatTable - 
 function GenerateStatTable() {
 	global $theater, $upgrades, $armors, $range, $stats_tables;
 //	$stats_tables = array();

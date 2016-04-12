@@ -9,7 +9,7 @@
 	$theaterpath = "../data/theaters/2.1.1.2/";
 	$theaterfile="default_coop_shared.theater";
 	$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items');
-	$theater = getfile($theaterfile,"2.1.1.2",$theaterpath);
+	$theater = ParseTheaterFile($theaterfile,"2.1.1.2",$theaterpath);
 	//var_dump(getobject('weapons','weapon_m249'));
 	var_dump($theater);
 	
@@ -74,10 +74,10 @@
 	}
 	
 	
-	/* getfile
+	/* ParseTheaterFile
 	Takes a KeyValues file and parses it. If #base directives are included, pull those and merge contents on top
 	*/
-	function getfile($filename,$version='',$path='',$collapse_conditionals=true) {
+	function ParseTheaterFile($filename,$version='',$path='',$collapse_conditionals=true) {
 		global $custom_theater_paths,$newest_version,$theaterpath,$rootpath;
 		if ($version == '')
 			$version = $newest_version;
@@ -99,7 +99,7 @@
 		//This appears to be the way the game processes these files it appears.
 		if (count($bases)) {
 			foreach ($bases as $base) {
-				$basedata = merge_theaters($basedata,getfile($base,$version,$path,$collapse_conditionals));
+				$basedata = merge_theaters($basedata,ParseTheaterFile($base,$version,$path,$collapse_conditionals));
 			}
 			$theater = merge_theaters($basedata,$thisfile["theater"]);
 		}

@@ -10,7 +10,7 @@ do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}
 require_once("${includepath}/functions.php");
 // 
 $theaterfile="default_checkpoint";
-$theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
+$theater = ParseTheaterFile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 $ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items','weapon_upgrade');
 function isAssoc($arr)
 {

@@ -20,7 +20,7 @@ if (isset($_REQUEST['fetch'])) {
 }
 
 LoadSnippets($snippets);
-$theater = getfile("{$theaterfile}.theater",$mod,$version,$theaterpath);
+$theater = ParseTheaterFile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 if (isset($_REQUEST['fetch'])) {
 	switch ($_REQUEST['fetch']) {
 		case 'snippets':

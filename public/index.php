@@ -15,7 +15,7 @@ $apiuser = '';
 $apipass = '';
 $apiauth = base64_encode("{$apiuser}:{$apipass}");
 */
-$cache_file = $cachepath.'/content.html';
+$cache_file = 'website/content.html';
 $cache_life = '300'; //caching time, in seconds
 $filemtime = @filemtime($cache_file);	 // returns FALSE if file does not exist
 
@@ -34,9 +34,9 @@ if ((!file_exists($cache_file)) || !$filemtime || (time() - $filemtime >= $cache
 		if (startsWith($repo['name'],'insurgency-'))
 			$data[] = GetReadme($repo['name']);
 	}
-	file_put_contents($cache_file,implode("\r\n",$data));
+	PutCacheFile($cache_file,implode("\r\n",$data));
 }
-readfile($cache_file);
+echo GetCacheFile($cache_file);
 
 function GetReadme($repo)
 {
