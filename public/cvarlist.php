@@ -137,6 +137,11 @@ function GetCVARList($version,$listtype) {
 	// Load settings if available
 	$settings = array();
 	$settingfile = "${datapath}/cvarlist/{$version}/{$listtype}.txt";
+	$cachefile = "cvarlist/{$version}/{$listtype}.json";
+	$data = GetCacheFile($cachefile);
+	if ($data) {
+		return $data;
+	}
 	if (file_exists($settingfile)) {
 		$lines = file($settingfile);
 		foreach ($lines as $line) {
@@ -168,6 +173,7 @@ function GetCVARList($version,$listtype) {
 		$data[] = $row;
 	}
 	fclose($f);
+	PutCacheFile($cachefile,$data);
 	return $data;
 }
 

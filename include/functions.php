@@ -361,26 +361,26 @@ function LoadLanguages($pattern='English') {
 }
 
 // rglob - recursively locate all files in a directory according to a pattern
-function rglob($pattern, $files=1,$dirs=0,$flags=0) {
+function rglob($pattern, $getfiles=1,$getdirs=0,$flags=0) {
 	$dirname = dirname($pattern);
 	$basename = basename($pattern);
 	$glob = glob($pattern, $flags);
 	$files = array();
 	$dirlist = array();
 	foreach ($glob as $path) {
-		if (is_file($path) && (!$files)) {
+		if (is_file($path) && (!$getfiles)) {
 			continue;
 		}
 		if (is_dir($path)) {
 			$dirlist[] = $path;
-			if (!$dirs) {
+			if (!$getdirs) {
 				continue;
 			}
 		}
 		$files[] = $path;
 	}
 	foreach (glob("{$dirname}/*", GLOB_ONLYDIR|GLOB_NOSORT) as $dir) {
-		$dirfiles = rglob($dir.'/'.$basename, $files,$dirs,$flags);
+		$dirfiles = rglob($dir.'/'.$basename, $getfiles,$getdirs,$flags);
 		$files = array_merge($files, $dirfiles);
 	}
 	return $files;
@@ -1116,6 +1116,25 @@ function var_dump_ret($mixed = null) {
 	ob_end_clean();
 	return $content;
 }
+
+function GetSmarty() {
+	require_once("{$rootpath}/thirdparty/smarty/libs/Autoloader.php");
+	Smarty_Autoloader::register();
+	$smarty = new Smarty;
+	return $smarty;
+}
+/*
+// Handle keywords
+$keywords = (isset ($_REQUEST['keywords'])) ? explode (" ", $_REQUEST['keywords']) : array();
+$smarty->assign('keywords_active',$keywords);
+
+//Load resume data
+$smarty->assign('format', $_REQUEST['format']);
+$smarty->assign('data', $data);
+
+// Display content
+$smarty->display('templates/resume.tpl');
+*/
 
 // Include classes
 $files = glob("{$includepath}/classes/*");

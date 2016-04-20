@@ -267,15 +267,16 @@ want to contribute.</div>\n";
 function GenerateTheater() {
 	global $theater,$version,$theaterfile,$snippet_path,$snippets,$mod,$mods;
 	$data = array();
-	$hdr = array("// Theater generated");
+	$hdr = array();//"// Theater generated");
 	$ib = ($_REQUEST['include_all_theaters'] == 'on');
 //$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters),$basedata);
 //$theater = theater_array_replace_recursive($basedata,$theater);
 	if ($ib) {
-		$hdr[]="// Load {$theaterfile}.theater";
+		$hdr[]="//\"#base\"\t\t\"mods/{$mod}/{$version}/scripts/theaters/{$theaterfile}.theater\"";
 		$data = $theater;
 	} else {
 		array_unshift($hdr,"\"#base\" \"{$theaterfile}.theater\"");
+		$hdr[]="//\"#base\"\t\t\"mods/{$mod}/{$version}/scripts/theaters/{$theaterfile}.theater\"";
 	}
 	foreach ($_REQUEST['section'] as $section=>$snippet) {
 //var_dump($section,$snippet);
@@ -288,7 +289,7 @@ function GenerateTheater() {
 			$snippet=array($snippet => "on");
 		}
 		foreach ($snippet as $sname=>$sval) {
-			$hdr[]="// Load {$section}/{$sname}.theater";
+			$hdr[]="//\"#base\"\t\t\"snippets/{$section}/{$sname}.theater\"";
 			$data = theater_array_replace_recursive(ParseTheaterFile("{$sname}.theater",$mod,$version,"{$snippet_path}/{$section}"),$data);
 		}
 	}
@@ -298,7 +299,7 @@ function GenerateTheater() {
 		}
 		foreach ($_REQUEST['setting'][$mname] as $section=>$settings) {
 			foreach ($settings as $key => $val) {
-				$hdr[]="// Change {$section}.{$key} to {$val}";
+				$hdr[]="//mutator: {$section}.{$key}: {$val}";
 				foreach ($theater[$section] as $iname=>$idata) {
 					$data[$section][$iname][$key] = $val;
 				}
