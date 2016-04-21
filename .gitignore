@@ -11,3 +11,4 @@ fastdl
 roster/
 test.php
 working/theater/out/*
+.vscode/*
