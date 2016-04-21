@@ -134,6 +134,77 @@ function checkConditional($conditional, $conditions)
 	}
 }
 
+class Node
+{
+    public $depth = 0;          //for printing
+    public $parentNode = null;  //reference to parent node
+    public $text = '';          //display text
+    public $children = array(); //children node(s)
+    
+    function __construct($params = null)
+    {
+        foreach($params as $key=>$val)
+            $this->$key = $val;
+        if (isset($this->parentNode))
+            $this->parentNode->addChild($this);
+    }
+    public function addChild(Node $node)
+    {
+        $this->children[] = $node;
+    }
+}
+//-------------- end of class Node
+class Tree
+{
+    public $root = null;
+    private $maxLevel = 5;
+    function __construct($maxLevel = -1)
+    {
+		if ($maxLevel) {
+			$this->maxLevel = $maxLevel;
+		}
+        $this->buildTree();
+    }
+    
+    public function buildTree()
+    {
+        $this->root = new Node(array('text'=>'Root'));
+        $this->populateChildren($this->root, 1);
+    }
+    
+    public function printNodes()
+    {
+        $this->printChildren($this->root);
+    }
+    
+    private function printChildren(Node $node)
+    {
+        echo str_repeat('>',$node->depth);
+            
+        echo $node->text . "<br />\n";
+        foreach($node->children as $child)
+            $this->printChildren($child);
+    }
+    
+    private function populateChildren(Node $pnode, $level)
+    {
+        //demonstrate how to populate tree's node
+        if ($level <= $this->maxLevel)
+        {
+            for($idx = 0; $idx < $level; $idx++)
+            {
+                $child = new Node(array(
+                    'parentNode'=> $pnode, 
+                    'text' => "$level::Node[$idx]", 
+                    'depth'=>$level)
+                );
+                $this->populateChildren($child, $level + 1);
+            }
+        }
+    }	
+}
+//-------------- end of class Tree
+
 class KeyValues
 {
 	public $escapeCharacters = true;
@@ -142,6 +213,7 @@ class KeyValues
 	public $key;
 	public $value;
 	public $retrieveKeyValueFile = null;
+	//public $tree = new Tree(7);
 	function __constructor($key = "", $value = "", $options = array())
 	{
 		if ($key)
@@ -448,3 +520,8 @@ var_dump("load",$key,$value);
 		return $this->recursiveSave(0, $options);
 	}
 }
+
+//test displaying tree
+$tree = new Tree(2);
+$tree->printNodes();
+var_dump($tree);

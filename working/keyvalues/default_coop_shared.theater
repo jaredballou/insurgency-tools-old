@@ -1,7 +1,9 @@
 "#base" "default.theater"
+// this is a comment
 
 "theater"
 {
+	// this is another comment
 	"core"
 	{
 		"precache"

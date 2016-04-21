@@ -1,0 +1,12 @@
+{
+    "name": "jballou/keyvalues",
+    "description": "Class for processing Valve KeyValues files",
+    "license": "GPLv2",
+    "authors": [
+        {
+            "name": "Jared Ballou",
+            "email": "insurgency@jballou.com"
+        }
+    ],
+    "require": {}
+}
