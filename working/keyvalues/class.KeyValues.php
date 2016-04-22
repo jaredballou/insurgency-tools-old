@@ -1,10 +1,12 @@
 <?php
 /*
+class.Tree.php
+KeyValues Tree Data Structure
 
-More mucking about with KeyValues parsing
-
+This is the base set of classes for processing KeyValues files. This should be
+constrained to the standards compliant processing directives and methods as the
+Source SDK implements them.
 */
-
 function startsWith($haystack, $needle)
 {
 	// search backwards starting from haystack length characters from the end
@@ -16,512 +18,211 @@ function endsWith($haystack, $needle)
 	// search forward starting from end minus needle length characters
 	return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== false);
 }
-function getNextToken($string, $options)
-{
-	$token = '';
-	$trimmed = false;
-	while (!$trimmed) {
-		$string = trim($string);
-		if (startsWith($string,'//')) {
-			$string = trim(substr($string,strpos($string,'\n')+1));
-		} else {
-			$trimmed = true;
+	// KVNode is the generic object that represents all sections and keyvalue pairs
+    class KVNode {
+		public $name;
+		public $root = NULL;
+		public $parent = NULL;
+		public $children = array();
+        public $value = NULL;
+		public $depth = -1;
+		public $path = '';
+		public $condition = NULL;
+		public $escapeCharacters = false;
+		public $maxname = 0;
+		
+		// Instantiate object
+        public function __construct($name='root',$value=NULL,&$parent=NULL) {
+            $this->name = $name;
+            $this->value = $value;
+			if ($parent) {
+				$this->root = $this->parent =& $parent;
+				// If root isn't set on parent, assume parent is the root
+				if ($parent->root) {
+					$this->root =& $parent->root;
+				}
+				if (strlen($name) > $this->parent->maxname) {
+					$this->parent->maxname = strlen($name);
+				}
+				$this->depth = $parent->depth+1;
+				$this->path = $parent->path;
+				$this->condition = $parent->condition;
+			}
+			$this->path.= "/{$name}";
+        }
+		// Add child node to this node
+		public function addNode($name,$value=NULL) {
+			$node = new KVNode($name,$value,$this);
+			$this->children[] =& $node;
+			return $node;
 		}
-	}
-//var_dump($string);
-	if (startsWith($string, '"'))
-	{
-		if ($options['escapeCharacters'])
-		{
-			$endFound = false;
-			$index = 1;
-			while (!$endFound)
-			{
-				$index = strpos($string,'"',1);
-				if ($index === -1)
-				{
-					$index = count($string);
-					$endFound = true;
+		// Emit KeyValues data as text
+		public function outputKV() {
+			$out = '';
+			$indent = str_repeat("\t",$this->depth);
+            $out.="{$indent}\"{$this->name}\"";
+			if ($this->value) {
+				// Display KeyValue pair
+				// TODO: Unfuck this tab calculation
+				// Get difference from maxname and this name
+				$diff = ($this->parent->maxname-strlen($this->name));
+				// Raw tab count
+				$tabs = ceil($diff/4)+1;
+				// Add tab for values that divide by 4
+				$tabs+=((strlen($this->name) % 4 == 0) || ($this->parent->maxname % 4 == 0) || ($diff % 4 == 0));
+				// Subtract a tab for those that will be thrown off by the addition of the quotes
+				$tabs-=(($diff % 4 == 1) && ($this->parent->maxname % 4 == 1));
+				//echo "{$this->name} tabs {$tabs} diff {$diff} maxname {$this->parent->maxname} strlen ".strlen($this->name)."\n";
+				//var_dump($tabs);
+				$out.=str_repeat("\t",$tabs);
+				$out.="\"{$this->value}\"\n";
+			} else {
+				// Display section
+				$out.="\n{$indent}{\n";
+				foreach( $this->children as $child) {
+					if ($child) {
+					//var_dump($child->maxname);
+						$out.=$child->outputKV();
+					}
+				}
+            	$out.="{$indent}}\n";
+            }
+			return $out;
+        }
+    }
+	// Core KeyValues class that is created for each file to process
+	class KeyValues extends KVNode {
+		public $bases = array();
+		public $includes = array();
+		public $filepath = '';
+		public $filename = '';
+		public $kvString = '';
+		public $kvBuffer;
+		
+		// Pull the next token off the kvBuffer and advance the pointer
+		public function getToken() {
+			$string =& $this->kvBuffer;
+			$token = '';
+			$trimmed = false;
+			while (!$trimmed) {
+				$string = trim($string);
+				if (startsWith($string,"//")) {
+					$string = trim(substr($string,strpos($string,"\n",2)-1));
 				} else {
-					if (!$index) {
+					$trimmed = true;
+				}
+			}
+			if (startsWith($string, '"'))
+			{
+				$endFound = false;
+				$index = 1;
+				while (!$endFound)
+				{
+					$index = strpos($string,'"',$index);
+					if ($index === -1)
+					{
+						$index = strlen($string);
 						$endFound = true;
 					} else {
-						if ($string[$index - 1] !== '\\')
-						{
+						if (!$index) {
 							$endFound = true;
+						} else {
+							if ($string[$index - 1] !== '\\') {
+								$endFound = true;
+							}
 						}
 					}
 				}
+				$token = trim(substr($string, 1, $index-1));
+				$string = trim(substr($string, $index+1));
 			}
-			$token = substr($string, 0, $index + 1);
-			$string = substr($string, $index + 1);
+			else if (startsWith($string, '{') || startsWith($string, '}'))
+			{
+				$token = $string[0];
+				$string = trim(substr($string, 1));
+			} else {
+				$stop = preg_match('/[ \t\n\v\f\r"{}]/', $string);
+				if ($stop) {
+					$token = substr($string, 0, $stop);
+					$string = substr($string, $stop);
+				} else {
+					$token = $string;
+					$string = '';
+				}
+			}
+			return $token;
 		}
-		else
-		{
-			$index = strpos($string,'"',1);
-			$token = substr($string, 0, $index + 1);
-			$string = substr($string, $index + 1);
+		// Load a file into this object
+		public function loadFile($filename) {
+			$this->filepath = realpath($filename);
+			$this->filename = basename($filename);
+			$this->load(file_get_contents($filename));
 		}
-	}
-	else if (startsWith($string, '{') || startsWith($string, '}'))
-	{
-		$token = $string[0];
-		$string = substr($string, 1);
-	}
-	else
-	{
-		$stop = preg_match('/[ \t\n\v\f\r"{}]/', $string);
-		if ($stop)
-		{
-			$token = substr($string, 0, $stop);
-			$string = substr($string, $stop);
+		// Load a string into buffer and parse
+		public function load($kvString) {
+			$this->kvString = $kvString;
+			$this->parse();
 		}
-		else
-		{
-			$token = $string;
-			$string = '';
+		// Parse KeyValues data string
+		public function parse() {
+			if (!$this->kvString) {
+				return;
+			}
+			$this->kvBuffer = $this->kvString;
+			$node =& $this;
+			while ($this->kvBuffer) {
+				$name = $this->getToken();
+				if ($name == "}") { // End section
+					if ($node->parent) {
+						$ns =& $node->parent;
+						$node =& $ns;
+					}
+				} else {
+					$value = $this->getToken();					
+					if ($value == "{") { // Begin section
+						$ns = $node->addNode($name);
+						$node =& $ns;
+					} else { // Value
+						$node->addNode($name,$value);
+					}
+				}
+			}
 		}
-	}
-	$result = array(
-		"token" => $token,
-		"remainder" => $string
-	);
-//	var_dump($token);
-	return $result;
-}
-function escapeString($value, $options)
-{
-	if ($options['escapeCharacters'])
-	{
-		$value = preg_replace('/\\/', '\\\\', $value);
-	}
-	$value = preg_replace('/"/', '\\"', $value);
-	return $value;
-}
-function parseQuotedValue($value, $options)
-{
-	$value = substr($value,1, -1);
-	/*
-	if ($options->escapeCharacters) {
-	$value = preg_replace('/\n/', '\n', $value);
-	$value = preg_replace('/\t/', '\t', $value);
-	$value = preg_replace('/\v/', '\v', $value);
-	$value = preg_replace('/\b/', '\b', $value);
-	$value = preg_replace('/\r/', '\r', $value);
-	$value = preg_replace('/\f/', '\f', $value);
-	$value = preg_replace('/\a/', '\a', $value);
-	$value = preg_replace('/\\\\/', '\\', $value);
-	$value = preg_replace('/\\\?/', '?', $value);
-	$value = preg_replace('/\'/', '\'', $value);
-	$value = preg_replace('/\\"/', '"', $value);
-	}
-	 */
-//var_dump($value);
-	return $value;
-}
-function checkConditional($conditional, $conditions)
-{
-	if (startsWith($conditional, '[') && endsWith($conditional, ']'))
-	{
-		$conditional = $conditional->slice(1, -1);
-		$negate = false;
-		if (startsWith($conditional, '!'))
-		{
-			$negate = true;
-			$conditional = $conditional->slice(1);
-		}
-		return array_search($conditional, $conditions) !== -1^$negate;
-	}
-}
-
-class Node
-{
-    public $depth = 0;          //for printing
-    public $parentNode = null;  //reference to parent node
-    public $text = '';          //display text
-    public $children = array(); //children node(s)
-    
-    function __construct($params = null)
-    {
-        foreach($params as $key=>$val)
-            $this->$key = $val;
-        if (isset($this->parentNode))
-            $this->parentNode->addChild($this);
-    }
-    public function addChild(Node $node)
-    {
-        $this->children[] = $node;
-    }
-}
-//-------------- end of class Node
-class Tree
-{
-    public $root = null;
-    private $maxLevel = 5;
-    function __construct($maxLevel = -1)
-    {
-		if ($maxLevel) {
-			$this->maxLevel = $maxLevel;
-		}
-        $this->buildTree();
-    }
-    
-    public function buildTree()
-    {
-        $this->root = new Node(array('text'=>'Root'));
-        $this->populateChildren($this->root, 1);
-    }
-    
-    public function printNodes()
-    {
-        $this->printChildren($this->root);
-    }
-    
-    private function printChildren(Node $node)
-    {
-        echo str_repeat('>',$node->depth);
-            
-        echo $node->text . "<br />\n";
-        foreach($node->children as $child)
-            $this->printChildren($child);
-    }
-    
-    private function populateChildren(Node $pnode, $level)
-    {
-        //demonstrate how to populate tree's node
-        if ($level <= $this->maxLevel)
-        {
-            for($idx = 0; $idx < $level; $idx++)
-            {
-                $child = new Node(array(
-                    'parentNode'=> $pnode, 
-                    'text' => "$level::Node[$idx]", 
-                    'depth'=>$level)
-                );
-                $this->populateChildren($child, $level + 1);
+		// Output data as formatted KeyValues
+		public function outputKV() {
+			$out = '';
+			foreach( $this->children as $child) {
+				if ($child) {
+					$out.=$child->outputKV();
+                }
             }
+			return $out;
         }
-    }	
-}
-//-------------- end of class Tree
+		// Dump KeyValues data to output
+		public function dump() {
+			echo $this->outputKV();
+		}
+	}
+$kv = new KeyValues();
+//$kv->loadFile("default_checkpoint.theater");
+$kv->loadFile("default_coop_shared.theater");
+$kv->dump();
+//echo "oh\n";
+//var_dump($kv);
+//echo "oh\n";
 
-class KeyValues
-{
-	public $escapeCharacters = true;
-	public $evaluateConditionals = false;
-	public $conditions = array();
-	public $key;
-	public $value;
-	public $retrieveKeyValueFile = null;
-	//public $tree = new Tree(7);
-	function __constructor($key = "", $value = "", $options = array())
-	{
-		if ($key)
-			$this->key = $key;
-		if ($value)
-			$this->value = $value;
+//echo "oh\n";
 /*
-		$this->escapeCharacters = isset($options['escapeCharacters']) ? $options['escapeCharacters'] : true;
-		$this->evaluateConditionals = isset($options['evaluateConditionals']) ? $options['evaluateConditionals'] : false;
-		$this->conditions = isset($options['conditions']) ? $options['conditions'] : [];
-		$this->retrieveKeyValueFile = isset($options['retrieveKeyValueFile']) ? $options['retrieveKeyValueFile'] : null;
+$kv->addNode("#base","default.theater");
+$kv->addNode("#base","default_coop_shared.theater");
+$kv->addNode("#base","default_checkpoint.theater");
+$theater = $kv->addNode("theater");
+$ammo = $theater->addNode("ammo");
+$weapons = $theater->addNode("weapons");
+$weapon_m14 = $weapons->addNode("weapon_m14");
+$weapon_m14->addNode("print_name","#weapon_m14");
+$weapon_m14->addNode("cost","2");
+$weapon_m14->addNode("weight","32");
+$weapon_m14->addNode("class","weapon_rifle");
+$core = $theater->addNode("core");
 */
-	}
-	function addSubKey($key, $value)
-	{
-		if (!is_array($this->value))
-		{}
-
-		array_push($this->value, new KeyValues($key, $value));
-	}
-	function findKey($key)
-	{
-		$result = null;
-		if (is_array($this->value))
-		{
-			for ($i = 0;
-				$i < count($this->value); $i++)
-			{
-				$current = $this->value[$i];
-				if ($current instanceof $KeyValues && $current->key === $key)
-				{
-					$result = $current;
-					break;
-				}
-			}
-		}
-		return $result;
-	}
-	function mergeKeys($kv)
-	{
-		if (is_array($kv->value))
-		{
-			$kv->value->forEach(function ($source)
-			{
-				if ($source instanceof KeyValues)
-				{
-					$destination = $this->findKey($source->key);
-					if ($destination)
-					{
-						$destination->mergeKeys($source);
-					}
-					else
-					{
-						$this->addSubKey($source->key, $source->value);
-					}
-				}
-			}
-			);
-		}
-	}
-	function recursiveSave($depth, $options)
-	{
-		$kvString = '';
-		if (is_array($this->value))
-		{
-			$subKeys = $this->value->slice();
-			if ($options->sortKeys)
-			{
-				$subKeys->sort(function ($a, $b)
-				{
-					if (!$a instanceof $KeyValues && !$b instanceof $KeyValues)
-					{
-						return 0;
-					}
-					if (!$a instanceof $KeyValues)
-					{
-						return -1;
-					}
-					if (!$b instanceof $KeyValues)
-					{
-						return 1;
-					}
-					$firstKey = strtolower($a->key);
-					$secondKey = strtolower($b->key);
-					return ($firstKey < $secondKey) ? -1 : ($firstKey > $secondKey) ? 1 : 0;
-				}
-				);
-			}
-			for ($i = 0;
-				$i < $depth; $i++)
-			{
-				$kvString += '\t';
-			}
-			$kvString += '"' + escapeString($this->key, $options) + '"' + '\n';
-			for ($i = 0;
-				$i < $depth; $i++)
-			{
-				$kvString += '\t';
-			}
-			$kvString += '{' + '\n';
-			$subKeys->forEach(function ($subKey)use( & $depth,  & $options)
-			{
-				if ($subKey instanceof $KeyValues)
-				{
-					$kvString += $subKey->recursiveSave($depth + 1, $options);
-				}
-			}
-			);
-			for ($i = 0;
-				$i < $depth; $i++)
-			{
-				$kvString += '\t';
-			}
-			$kvString += '}' + '\n';
-		}
-		else if ($options['allowEmptyStrings'] === true || $this->value !== '')
-		{
-			for ($i = 0;
-				$i < $depth; $i++)
-			{
-				$kvString += '\t';
-			}
-			$kvString += '"' + escapeString($this->key, $options) + '"' + '\t\t' + '"' + escapeString($this->value, $options) + '"' + '\n';
-		}
-		return $kvString;
-	}
-	function recursiveLoad($kvString, $options)
-	{
-		$finished = false;
-		$extracted = array();
-		$opening = getNextToken($kvString, $options);
-		$kvString = $opening['remainder'];
-//var_dump($opening,$kvString);
-		while (!$finished && $kvString)
-		{
-			$results = getNextToken($kvString, $options);
-			if ($results['token'] === '')
-			{}
-
-			if ($results['token'] === '}')
-			{
-				$finished = true;
-				break;
-			}
-			$key = $results['token'];
-			if (startsWith($key,'"') && endsWith($key, '"'))
-			{
-				$key = parseQuotedValue($key, $options);
-			}
-			$kvString = $results['remainder'];
-			$accepted = true;
-			$results = getNextToken($kvString, $options);
-			if (startsWith($results['token'],'[') && endsWith($results['token'], ']'))
-			{
-				if ($options['evaluateConditionals'])
-				{
-					$accepted = checkConditional($results['token'], $options['conditions']);
-				}
-				$kvString = $results['remainder'];
-				$results = getNextToken($kvString, $options);
-			}
-			$value = $results['token'];
-			if ($value === null)
-			{}
-
-			if ($value === '}')
-			{}
-
-			if (startsWith($value,'[') && endsWith($value,']'))
-			{}
-
-			if (startsWith($value,'"') && endsWith($value,'"'))
-			{
-				$value = parseQuotedValue($value, $options);
-			}
-			if ($value === '{')
-			{
-				$results = $this->recursiveLoad($kvString, $options);
-				$value = $results['extracted'];
-				$kvString = $results['remainder'];
-			}
-			else
-			{
-				$kvString = $results['remainder'];
-				$results = getNextToken($kvString, $options);
-				if (startsWith($results['token'],'[') && endsWith($results['token'],']'))
-				{
-					if ($options->evaluateConditionals)
-					{
-						$accepted = checkConditional($results['token'], $options['conditions']);
-					}
-					$kvString = $results['remainder'];
-					$results = getNextToken($kvString, $options);
-				}
-			}
-			if ($accepted)
-			{
-var_dump("recurse",$key,$value);
-				array_push($extracted, new KeyValues($key, $value));
-			}
-		}
-		$closing = getNextToken($kvString, $options);
-		$kvString = $closing['remainder'];
-		$result = array(
-			"extracted" => $extracted,
-			"remainder" => $kvString
-		);
-		return $result;
-	}
-	function load($kvString, $options = array())
-	{
-		$options['escapeCharacters'] = isset($options['escapeCharacters']) ? $options['escapeCharacters'] : true;
-		$options['evaluateConditionals'] = isset($options['evaluateConditionals']) ? $options['evaluateConditionals'] : false;
-		$options['conditions'] = isset($options['conditions']) ? $options['conditions'] : [];
-		$options['retrieveKeyValueFile'] = isset($options['retrieveKeyValueFile']) ? $options['retrieveKeyValueFile'] : null;
-
-		$finished = false;
-		$includes = array();
-		$bases = array();
-		$extracted = array();
-		while (!$finished)
-		{
-			$results = getNextToken($kvString, $options);
-			if ($results['token'] === '')
-			{
-				$finished = true;
-				break;
-			}
-			if ($results['token'] === '#include')
-			{
-				$results = getNextToken($results['remainder']);
-				if (!$results['token'])
-				{}
-
-				array_push($includes, $results['token']);
-				$kvString = $results['remainder'];
-			}
-			else if ($results['token'] === '#base')
-			{
-				$results = getNextToken($results['remainder']);
-				if (!$results['token'])
-				{}
-
-				array_push($bases, $results['token']);
-				$kvString = $results['remainder'];
-			}
-			else
-			{
-				$key = $results['token'];
-				if (startsWith($key,'"') && endsWith($key,'"'))
-				{
-					$key = parseQuotedValue($key, $options);
-				}
-				$kvString = $results['remainder'];
-				$accepted = true;
-				$results = getNextToken($kvString, $options);
-				if (startsWith($results['token'],'[') && endsWith($results['token'],']'))
-				{
-					if ($options['evaluateConditionals'])
-					{
-						$accepted = checkConditional($results['token'], $options['conditions']);
-					}
-					$kvString = $results['remainder'];
-					$results = getNextToken($kvString, $options);
-				}
-				if ($results['token'] !== '{')
-				{}
-
-				$results = $this->recursiveLoad($kvString, $options);
-				$value = $results['extracted'];
-				$kvString = $results['remainder'];
-				if ($accepted)
-				{
-var_dump("load",$key,$value);
-					array_push($extracted, new KeyValues($key, $value));
-				}
-			}
-		}
-		// TODO: Fix include and base handling
-		foreach ($includes as $include) {
-			$extracted[0] = array_merge_recursive($include,$extracted[0]);
-		}
-		foreach ($bases as $base) {
-			$extracted[0]->mergeKeys($base);
-		}
-//var_dump($extracted);
-		if (count($extracted) === 1)
-		{
-			$this->key = $extracted[0]->key;
-			$this->value = $extracted[0]->value;
-		}
-		else
-		{
-			$this->value = $extracted;
-		}
-	}
-
-	function save($options = array())
-	{
-		$options['escapeCharacters'] = isset($options['escapeCharacters']) ? $options['escapeCharacters'] : true;
-		$options['sortKeys'] = isset($options['sortKeys']) ? $options['sortKeys'] : false;
-		$options['allowEmptyStrings'] = isset($options['allowEmptyStrings']) ? $options['allowEmptyStrings'] : false;
-
-		return $this->recursiveSave(0, $options);
-	}
-}
-
-//test displaying tree
-$tree = new Tree(2);
-$tree->printNodes();
-var_dump($tree);
