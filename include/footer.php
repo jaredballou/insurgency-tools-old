@@ -24,6 +24,8 @@ if (isset($use_ob)) {
 	echo $clean;
 //print_r($tidy->getConfig());
 } else {
-	echo $html;
+	if (isset($html)) {
+		echo $html;
+	}
 }
 ?>

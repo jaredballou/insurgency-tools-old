@@ -21,29 +21,31 @@ if (($version != $version_compare) || ($theaterfile != $theaterfile_compare)) {
 	DisplayTheaterCompare();
 }
 
-switch ($_REQUEST['command']) {
-	case 'tc':
-		echo "<pre>\n";
-		var_dump($theater_conditions);
-		exit;
-		break;
-	case 'weaponlog':
-		DisplayLoggerConfig();
-		closePage(1);
-		break;
-	case 'wiki':
-		DisplayWikiView();
-		closePage(1);
-		break;
-	case 'hlstats':
-	case 'hlstatsx':
-		DisplayHLStatsX();
-		closePage(1);
-		break;
-	case 'smtrans':
-		DisplaySMTranslation();
-		closePage(1);
-		break;
+if (isset($_REQUEST['command'])) {
+	switch ($_REQUEST['command']) {
+		case 'tc':
+			echo "<pre>\n";
+			var_dump($theater_conditions);
+			exit;
+			break;
+		case 'weaponlog':
+			DisplayLoggerConfig();
+			closePage(1);
+			break;
+		case 'wiki':
+			DisplayWikiView();
+			closePage(1);
+			break;
+		case 'hlstats':
+		case 'hlstatsx':
+			DisplayHLStatsX();
+			closePage(1);
+			break;
+		case 'smtrans':
+			DisplaySMTranslation();
+			closePage(1);
+			break;
+	}
 }
 
 // Load weapon items
@@ -58,7 +60,7 @@ foreach($theater["weapons"] as $wpnname => $data) {
 }
 ksort($weapons);
 $weapon = current($weapons);
-if ($_REQUEST['weapon']) {
+if (isset($_REQUEST['weapon'])) {
 	if (array_key_exists($_REQUEST['weapon'], $weapons)) {
 		$weapon = $_REQUEST['weapon'];
 	}
@@ -78,7 +80,7 @@ foreach($theater["weapon_upgrades"] as $wpnname => $data) {
 ksort($weapon_upgrades);
 ksort($weapon_upgrade_slots);
 $weapon_upgrade = current($weapon_upgrades);
-if ($_REQUEST['weapon_upgrade']) {
+if (isset($_REQUEST['weapon_upgrade'])) {
 	if (array_key_exists($_REQUEST['weapon_upgrade'], $weapon_upgrades)) {
 		$weapon_upgrade = $_REQUEST['weapon_upgrade'];
 	}
@@ -203,7 +205,7 @@ function closePage($bare=0) {
 function DisplayStatTable() {
 //$stats_tables,$startbody=1) {
 	global $tableclasses,$stats_tables;
-	DisplayStatsHeader($startbody);
+	DisplayStatsHeader();
 	echo "<div style='text-align: center; width: 100%;'><h3>\n";
 //var_dump($stats_tables);
 	$links =array();
@@ -247,7 +249,7 @@ function DisplayStatTable() {
 				if (!$show)
 					continue;
 				echo "				<td valign='top'";
-				$fd = $itemdata[$fieldname];
+				$fd = @$itemdata[$fieldname];
 				if ($fieldname == 'Name') {
 					if (isset($itemdata['Img'])) {
 						echo $itemdata['Img'];
@@ -354,19 +356,19 @@ function GenerateStatTable() {
 			$ammo = getobject("ammo", $item["ammo_clip"]["ammo_type"]);
 			$dmg = damageatrange($ammo['Damage'], $range);
 			$thisitem['Damage'] = $dmg;
-			if ($ammo['bulletcount'] > 1) {
+			if (isset($ammo['bulletcount']) && $ammo['bulletcount'] > 1) {
 				$thisitem['Damage']=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
 			}
 			$thisitem['DamageChart'] = printval($ammo,"Damage");
-			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread']);
+			$thisitem['Spread'] = isset($item["ballistics"]['spread']) ? getspreadgraph($item["ballistics"]['spread']) : '';
 //."<br>{$item["ballistics"]['spread']}";
 //			$thisitem['Spread'] = $item["ballistics"]['spread'];
 			$thisitem['Recoil'] = getrecoilgraph($item['recoil']);
 			$thisitem['Ammo'] = printval($item["ammo_clip"],"ammo_type",1);
-			if (($item["ammo_clip"]["clip_max_rounds"] > 1) && (!($item["ballistics"]["singleReload"]))) {
+			if (isset($item["ammo_clip"]["clip_max_rounds"]) && (!isset($item["ballistics"]["singleReload"]) || !$item["ballistics"]["singleReload"])) {
 				$thisitem['Magazine'] = printval($item["ammo_clip"],"clip_max_rounds");
 				$thisitem['Carry'] = printval($item["ammo_clip"],"clip_default")." (".($item["ammo_clip"]["clip_max_rounds"]*$item["ammo_clip"]["clip_default"]).")\n";
-				$thisitem['Carry Max'] =printval($item["ammo_clip"],"clip_max")." (".($item["ammo_clip"]["clip_max_rounds"]*$item["ammo_clip"]["clip_max"]).")\n";
+				$thisitem['Carry Max'] = isset($item["ammo_clip"]["clip_max"]) ? printval($item["ammo_clip"],"clip_max")." (".($item["ammo_clip"]["clip_max_rounds"]*$item["ammo_clip"]["clip_max"]).")\n" : '';
 			} else {
 				$thisitem['Magazine'] = printval($item["ammo_clip"],"clip_max_rounds");
 				$thisitem['Carry'] = printval($item["ammo_clip"],"clip_default");
@@ -375,6 +377,8 @@ function GenerateStatTable() {
 		} elseif (isset($item["melee"])) {
 			$thisitem['Damage'] = printval($item["melee"],"MeleeDamage");
 		}
+		$thisitem['Ammo'] = '';
+		$thisitem['Upgrades'] = '';
 		$stats_tables['Weapons']['items'][$wpnname] = $thisitem;
 	}
 	foreach ($theater["weapon_upgrades"] as $upname => $data) {
@@ -392,6 +396,9 @@ function GenerateStatTable() {
 			if (isset($stats_tables['Weapons']['items'][$upgrade['attach_weapon']])) {
 				$stats_tables['Weapons']['items'][$upgrade['attach_weapon']]['Img'] = $img;
 			}
+		}
+		if (!isset($upgrade['upgrade_cost'])) {
+			$upgrade['upgrade_cost'] = 0;
 		}
 		if (substr($upname,0,5) == "ammo_") {
 			$link = "<br><a href='#{$upgrade['ammo_type_override']}'>{$upgrade['ammo_type_override']} [{$upgrade['upgrade_cost']}]</a>";
@@ -432,16 +439,16 @@ function GenerateStatTable() {
 		$thisitem['Carry'] = printval($ammo,"carry");
 		$thisitem['Mag'] = printval($ammo,"magsize");
 		$dmg = damageatrange($ammo['Damage'], $range);
-		if ($ammo['bulletcount'] > 1) {
+		if (isset($ammo['bulletcount']) && $ammo['bulletcount'] > 1) {
 			$dmg=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
 		}
 		$thisitem['Damage'] = $dmg;
 		$thisitem['DamageGraph'] = printval($ammo,"Damage");
 		$thisitem['PenetrationPower'] = damageatrange($ammo["PenetrationPower"], $range);
 		$thisitem['PenetrationGraph'] = printval($ammo,"PenetrationPower");
-		$thisitem['Tracer'] = "Type: {$ammo["tracer_type"]}<br>Frequency: {$ammo["tracer_frequency"]}<br>Low Ammo: {$ammo["tracer_lowammo"]}";
+		$thisitem['Tracer'] = isset($ammo["tracer_frequency"]) ? "Type: {$ammo["tracer_type"]}<br>Frequency: {$ammo["tracer_frequency"]}<br>Low Ammo: {$ammo["tracer_lowammo"]}" : '';
 		$thisitem['Suppression'] = printval($ammo,"SuppressionIncrement");
-		$thisitem['DamageHitgroups'] = getbodygraph($ammo, $ammo["DamageHitgroups"],array_keys($armors));
+		$thisitem['DamageHitgroups'] = isset($ammo["DamageHitgroups"]) ? getbodygraph($ammo, $ammo["DamageHitgroups"],array_keys($armors)) : '';
 		$stats_tables['Ammo']['items'][$ammoname] = $thisitem;
 	}
 	foreach ($theater["explosives"] as $explosivename => $data) {
@@ -472,14 +479,14 @@ function GenerateStatTable() {
 		if (count($speeds) > 1) {
 			$thisitem['Speed'] = getgraph($speeds,'Speed','Time');
 		} else {
-			$thisitem['Speed'] = dist($explosive["RocketStartSpeed"],'IN')."/s";
+			$thisitem['Speed'] = isset($explosive["RocketStartSpeed"]) ? dist($explosive["RocketStartSpeed"],'IN')."/s" : '';
 		}
-		$dmg = ($range < $explosive["DetonateDamageRadius"]) ? round(($explosive["DetonateDamage"]) * ($explosive["DetonateDamageRadius"] / ($explosive["DetonateDamageRadius"] - $range)),2) : 0;
+		$dmg = isset($explosive["DetonateDamageRadius"]) ? (($range < $explosive["DetonateDamageRadius"]) ? round(($explosive["DetonateDamage"]) * ($explosive["DetonateDamageRadius"] / ($explosive["DetonateDamageRadius"] - $range)),2) : 0) : 0;
 		$thisitem['Damage'] = $dmg;
 		if (isset($explosive["AreaDamageAmount"])) {
 			$thisitem['DamageGraph'] = "AreaDamageTime: {$explosive["AreaDamageTime"]}<br>AreaDamageFrequency: {$explosive["AreaDamageFrequency"]}<br>AreaDamageMinRadius: ".dist($explosive["AreaDamageMinRadius"],'IN')."<br>AreaDamageMaxRadius: ".dist($explosive["AreaDamageMaxRadius"],'IN')."<br>AreaDamageGrowSpeed: {$explosive["AreaDamageGrowSpeed"]}<br>AreaDamageAmount: {$explosive["AreaDamageAmount"]}<br>DamageType: {$explosive["DamageType"]}";
 		} else {
-			$thisitem['DamageGraph'] =	getcirclegraph($explosive)."<br>DetonateDamage: {$explosive["DetonateDamage"]}<br>DetonatePenetrationRadius: ".dist($explosive["DetonatePenetrationRadius"],'IN')."<br>DetonateDamageRadius: ".dist($explosive["DetonateDamageRadius"],'IN');
+			$thisitem['DamageGraph'] = isset($explosive["DetonateDamageRadius"]) ? (getcirclegraph($explosive)."<br>DetonateDamage: {$explosive["DetonateDamage"]}<br>DetonatePenetrationRadius: ".dist($explosive["DetonatePenetrationRadius"],'IN')."<br>DetonateDamageRadius: ".dist($explosive["DetonateDamageRadius"],'IN')) : '';
 			if (isset($explosive["DetonateFlashDuration"])) {
 				$thisitem['DamageGraph'].= "<br>DetonateFlashDuration: {$explosive["DetonateFlashDuration"]}";
 			}
@@ -491,6 +498,8 @@ function GenerateStatTable() {
 		$thisitem['Name'] = getlookup($classdata['print_name']);
 		$thisitem['Team'] = printval($classdata,"team");
 		$thisitem['Models'] = printval($classdata,"models");
+		$thisitem['Buy order'] = '';
+		$thisitem['Allowed Items'] = '';
 		if (isset($classdata["buy_order"])) {
 			foreach ($classdata["buy_order"] as $order => $buyitem) {
 				foreach ($buyitem as $type => $item) {
@@ -809,6 +818,9 @@ function getspreadgraph($vector, $size=100, $grid=6, $maxspread=1, $margin = 0) 
 Show a graph for recoil
 */
 function getrecoilgraph($recoil, $size=100, $maxrecoil=9, $margin = 0) {
+	if (!isset($recoil['recoil_lateral_range']) || !isset($recoil['recoil_vertical_range'])) {
+		return;
+	}
 	$vector = "{$recoil['recoil_lateral_range']} {$recoil['recoil_vertical_range']}";
 	$coords = explode(" ", $vector);
 
@@ -905,7 +917,7 @@ function getbodygraph($object, $hitgroups, $disparmor='', $headers=1, $dec=0) {
 					$eq.= "armor hitgroup: * {$val}\n";
 					$result*=$val;
 				}
-				if ($object['bulletcount'] > 1) {
+				if (isset($object['bulletcount']) && $object['bulletcount'] > 1) {
 					$eq.= "bullet count: * {$object['bulletcount']}\n";
 					$result*=$object['bulletcount'];
 				}
@@ -951,7 +963,9 @@ function getobject($type, $key, $recurse=0) {
 		unset($import['IsBase']);
 		$object = theater_array_replace($import, $object);
 	}
-	return $object;
+	if (isset($object)) {
+		return $object;
+	}
 }
 /* printarray
 Display the damage of bullets, this is used to show damage at distances
@@ -977,7 +991,7 @@ function printarray($object, $index, $link=0, $nulldisp='&nbsp;', $prefix='') {
 		} else {
 			$disprange = ($graph) ? dist($rangedist,'IN') : $rangedist;
 			$dmg[$rangedist] = $rangedmg;
-			if ($index == 'Damage' && ($object['bulletcount'] > 1)) {
+			if ($index == 'Damage' && (isset($object['bulletcount']) && $object['bulletcount'] > 1)) {
 				$totaldmg = $rangedmg * $object['bulletcount'];
 				$dmg[$rangedist] = $totaldmg;
 				$arr[] = "{$prefix}{$disprange}: {$totaldmg}";

@@ -17,7 +17,26 @@ include "{$includepath}/config.php";
 */
 
 // Load custom library paths for include
-parseLibPath();
+//parseLibPath();
+
+use phpFastCache\CacheManager;
+//require_once("phpfastcache/phpfastcache.php");
+//phpFastCache::setup
+
+
+
+CacheManager::setup(array(
+	"path"		=> $cachepath,
+	"allow_search"	=> true,
+));
+CacheManager::CachingMethod("phpfastcache");
+
+
+$cache = CacheManager::Files();
+
+//new phpFastCache("files");
+//$cache->driver_set('path',$cachepath);
+//$cache->driver_set('securitykey','cache.folder');
 
 // Connect to HLStatsX database if requested
 if (isset($use_hlstatsx_db)) {
@@ -981,6 +1000,9 @@ function FormatCacheFileName($filename,$format='json') {
 }
 
 function PutCacheFile($filename,$data,$format='json') {
+	global $cache;
+	$cache->set($filename,$data,0);
+/*
 	$path = FormatCacheFileName($filename,$format);
 	switch ($format) {
 		case 'json':
@@ -993,9 +1015,15 @@ function PutCacheFile($filename,$data,$format='json') {
 		mkdir(dirname($path),0755,true);
 	}
 	file_put_contents($path,$data);
+*/
 }
 
 function GetCacheFile($filename,$format='json') {
+	global $cache;
+	$data = $cache->get($filename);
+	return $data;
+	if (is_null($data)) {
+	}
 	$path = FormatCacheFileName($filename,$format);
 	if (!file_exists($path)) {
 		return;
