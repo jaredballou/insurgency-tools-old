@@ -12,11 +12,11 @@
 		background-color: #FFFFFF;
 	}
 	td.details-control {
-		background: url("images/details_open.png") no-repeat center center;
+		background: url("../images/details_open.png") no-repeat center center;
 		cursor: pointer;
 	}
 	tr.shown td.details-control {
-		background: url("images/details_close.png") no-repeat center center;
+		background: url("../images/details_close.png") no-repeat center center;
 	}
 	.beta {
 		background: #cc0000;
@@ -28,7 +28,7 @@
 		position: relative;
 		height: 340px;
 		width: 157px;
-		background-image: url("images/stats/body.png");
+		background-image: url("../images/stats/body.png");
 	}
 	.vgui {
 		background-size: 256px 128px;

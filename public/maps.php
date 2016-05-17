@@ -174,6 +174,7 @@ if ($_REQUEST['command'] == 'mapcycle') {
 		echo "</div></div>\n";
 	}
 	echo "<div style='border: 1px solid black; position: relative; float: left; text-align: center; margin: 10px;'>\n<h2>Maps</h2>";
+/*
 	foreach ($mldata as $author => $mymaps) {
 		echo "<input type='checkbox' id='{$author}' class='mapselector' CHECKED>{$author}<br>\n";
 		foreach ($mymaps as $mymap => $mymapdata) {
@@ -183,6 +184,7 @@ if ($_REQUEST['command'] == 'mapcycle') {
 		}
 	}
 //var_dump($maps);
+*/
 	echo "<input type='checkbox' id='custom' class='mapselector' CHECKED>custom<br>\n";
 	echo "<select name='maps[]' multiple size='10' id='mapbox'>";
 	foreach ($maps as $mapname => $mapdata) {

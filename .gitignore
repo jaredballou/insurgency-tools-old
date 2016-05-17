@@ -12,3 +12,5 @@ roster/
 test.php
 working/theater/out/*
 .vscode/*
+/vendor/
+composer.lock

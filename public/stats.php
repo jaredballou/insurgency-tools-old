@@ -246,7 +246,7 @@ function DisplayStatTable() {
 			foreach ($sectiondata['fields'] as $fieldname => $show) {
 				if (!$show)
 					continue;
-				echo "				<td";
+				echo "				<td valign='top'";
 				$fd = $itemdata[$fieldname];
 				if ($fieldname == 'Name') {
 					if (isset($itemdata['Img'])) {
@@ -358,8 +358,9 @@ function GenerateStatTable() {
 				$thisitem['Damage']=($dmg*$ammo['bulletcount'])." max ({$ammo['bulletcount']} pellets)";
 			}
 			$thisitem['DamageChart'] = printval($ammo,"Damage");
-//			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread'])."<br>{$item["ballistics"]['spread']}";
-			$thisitem['Spread'] = $item["ballistics"]['spread'];
+			$thisitem['Spread'] = getspreadgraph($item["ballistics"]['spread']);
+//."<br>{$item["ballistics"]['spread']}";
+//			$thisitem['Spread'] = $item["ballistics"]['spread'];
 			$thisitem['Recoil'] = getrecoilgraph($item['recoil']);
 			$thisitem['Ammo'] = printval($item["ammo_clip"],"ammo_type",1);
 			if (($item["ammo_clip"]["clip_max_rounds"] > 1) && (!($item["ballistics"]["singleReload"]))) {
@@ -784,7 +785,8 @@ function getcirclegraph($object, $size=100, $maxdamage=1200, $margin = 0) {
 /* getspreadgraph
 Show a graph for spread
 */
-function getspreadgraph($vector, $size=100, $maxspread=2, $margin = 0) {
+function getspreadgraph($vector, $size=100, $grid=6, $maxspread=1, $margin = 0) {
+	$step = ($size/$grid);
 	$coords = explode(' ', $vector);
 	$half = $margin / 2;
 	$dm = ($maxspread / $size);
@@ -792,25 +794,47 @@ function getspreadgraph($vector, $size=100, $maxspread=2, $margin = 0) {
 	$radr = (($coords[0] / $maxspread) * $size)/2;
 	$svg = "							<svg xmlns='http://www.w3.org/2000/svg' height='".($size+$margin)."' width='".($size+$margin)."'>
 								<defs>
-									<pattern id='grid' width='9' height='9' patternUnits='userSpaceOnUse'>
-										<path d='M 9 0 L 0 0 0 9' fill='none' stroke='gray' stroke-width='1'/>
+									<pattern id='grid' width='{$step}' height='{$step}' patternUnits='userSpaceOnUse'>
+										<path d='M {$step} 0 L 0 0 0 {$step}' fill='none' stroke='gray' stroke-width='1'/>
 									</pattern>
 								</defs>
-								<rect x='{$half}' y='{$half}' height='{$size}' width='{$size}' fill='url(#grid)' />
+								<rect x='{$half}' y='{$half}' height='{$size}' width='{$size}' fill='url(#grid)' stroke='gray' stroke-width='1'/>
 								<circle cx='{$c}' cy='{$c}' r='{$radr}' stroke='black' stroke-width='3' fill='red' />
 								<circle cx='{$c}' cy='{$c}' r='1' stroke='black' stroke-width='1' fill='black' />
 							</svg>\n";
+	$svg.="<div style='text-align: center;'>{$coords[0]}</div>\n";
 	return $svg;
 }
 /* getrecoilgraph
 Show a graph for recoil
 */
-function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
-	$lateral = explode(' ', $recoil['recoil_lateral_range']);
-	$vertical = explode(' ', $recoil['recoil_vertical_range']);
-	asort($lateral);
-	asort($vertical);
-	return("<table>
+function getrecoilgraph($recoil, $size=100, $maxrecoil=9, $margin = 0) {
+	$vector = "{$recoil['recoil_lateral_range']} {$recoil['recoil_vertical_range']}";
+	$coords = explode(" ", $vector);
+
+	$c = ($size+$margin)/2;
+	$step = ($size / $maxrecoil);
+	$half = $maxrecoil / 2;
+
+	$rx = ($half - abs($coords[0])) * $step;
+	$ry = ($maxrecoil - $coords[3]) * $step;
+	$rwidth = ((abs($coords[0]) + abs($coords[1])) * $step);
+	$rheight = (($coords[3] - $coords[2]) * $step);
+	$svg = "
+<svg xmlns='http://www.w3.org/2000/svg' height='".($size+$margin)."' width='".($size+$margin)."'>
+<defs>
+<pattern id='grid' width='{$step}' height='{$step}' patternUnits='userSpaceOnUse'>
+<path d='M {$step} 0 L 0 0 0 {$step}' fill='none' stroke='gray' stroke-width='1'/>
+</pattern>
+</defs>
+<rect width='100%' height='100%' fill='url(#grid)' stroke='gray' stroke-width='1'/>
+<circle cx='{$c}' cy='{$size}' r='4' stroke='black' stroke-width='3' fill='red' />
+<rect x='{$rx}' y='{$ry}' height='{$rheight}' width='{$rwidth}' style='fill:rgb(255,0,0);stroke-width:1;stroke:rgb(0,0,0)' />
+</svg>\n";
+
+	$svg.="<div style='text-align: center;'>{$coords[3]}<br>{$recoil['recoil_lateral_range']}<br>{$coords[2]}</div>\n";
+	return $svg;
+	$svg.="<table>
 <tr>
 <td>&nbsp;</td>
 <td>{$vertical[1]}</td>
@@ -825,10 +849,9 @@ function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
 <td>&nbsp;</td>
 <td>{$vertical[0]}</td>
 <td>&nbsp;</td>
-</tr></table>\n");
-	$c = ($size+$margin)/2;
-	$step = ($size / $maxspread);
-	$half = $maxspread / 2;
+</tr></table>\n";
+
+/*
 
 	$rwidth = (abs($lateral[1] - $lateral[0]) * $step);
 	$rheight = (abs($vertical[1] - $vertical[0]) * $step);
@@ -846,7 +869,8 @@ function getrecoilgraph($recoil, $size=100, $maxspread=10, $margin = 0) {
 								<rect x='{$px}' y='{$py}' height='{$pheight}' width='{$pwidth}' style='fill:rgb(255,0,255);stroke-width:1;stroke:rgb(0,0,0)' />\n";
 	$svg.="								 <line </svg>\n";
 	$svg.="							 </svg>\n";
-	return $svg;
+
+*/
 }
 function getbodygraph($object, $hitgroups, $disparmor='', $headers=1, $dec=0) {
 
@@ -858,13 +882,15 @@ function getbodygraph($object, $hitgroups, $disparmor='', $headers=1, $dec=0) {
 		$disparmor = array($disparmor);
 	}
 	foreach ($disparmor as $armor) {
-		$graph.="<td><div class='bodygraph'>";
+		$graph.="<td><div class='bodygraph'>\n";
+// style='background: url(images/stats/body.png);'>\n";
+//<img src='images/stats/body.png' style='position: absolute; left: 0; top: 0;>";
 		$armordata = array();
 		foreach ($positions as $key => $val) {
 			$armordata[$key] = isset($armors[$armor][$key]) ? round($armors[$armor][$key],2) : 1;
 		}
 		$dist = dist($GLOBALS['range'],'IN');
-		$header.="<th>{$armor} @ {$dist}</th>";
+		$header.="<th>{$armor} @ {$dist}</th>\n";
 		foreach ($armordata as $key => $val) {
 			$eq='';
 			if (isset($object["Damage"])) {
@@ -889,9 +915,9 @@ function getbodygraph($object, $hitgroups, $disparmor='', $headers=1, $dec=0) {
 			}
 			$result = round($result, $dec);
 			$coords = explode(',', $positions[$key]);
-			$graph.="<div title='{$eq}' style='position: absolute; left: {$coords[0]}px; top: {$coords[1]}px; width: 100px; text-align: center; transform: translate(-50%, -50%);'>{$result}</div>";
+			$graph.="<div title='{$eq}' style='position: absolute; left: {$coords[0]}px; top: {$coords[1]}px; width: 100px; text-align: center; transform: translate(-50%, -50%);'>{$result}</div>\n";
 		}
-		$graph.="</div></td>";
+		$graph.="</div></td>\n";
 	}
 	if ($headers) {
 		$retval = "<table><tr>{$header}</tr><tr>{$graph}</tr></table>";

@@ -221,7 +221,7 @@ if (isset($_REQUEST['theater_compare'])) {
 
 
 // Load maplist and gametypes
-$mldata = json_decode(file_get_contents("{$datapath}/thirdparty/maplist.json"),true);
+//$mldata = json_decode(file_get_contents("{$datapath}/thirdparty/maplist.json"),true);
 $gtlist = json_decode(file_get_contents("{$datapath}/thirdparty/gamemodes.json"),true);
 $gametypelist = array();
 foreach ($gtlist as $type=>$modes) {
@@ -875,7 +875,7 @@ function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters
 		$theaterpath,
 		$datapath,
 		$steam_ver,
-		$mods, $mod;
+		$mods;
 	if ($version == '')
 		$version = $newest_version;
 	$basename = basename($filename);
@@ -912,67 +912,66 @@ function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters
 				$filemd5 = md5($bfpath);
 			}
 			// If a component file is modified, do not use the cache.
-			if ($filemd5  != $md5) {
-				unset($cachedata['theater']);
+			if ($filemd5 != $md5) {
+//var_dump("md5 no match for {$file} - {$filemd5} != {$md5}");
+				$cachedata['theater'] = '';
+				break;
 			}
 		}
 	}
-	if (isset($cachedata['theater'])) {
-		return $cachedata['theater'];
-	}
-	// Load raw theater file
-	$data = file_get_contents($filepath);
-	// Parse KeyValues data
-	$thisfile = parseKeyValues($data);
-	// Get theater array
-	$theater = $thisfile["theater"];
-//var_dump(array_keys($theater['weapons']));
-	// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
-	// This appears to be the way the game processes these files it appears.
-	if (isset($thisfile["#base"])) {
-		$basedata = array();
-		// Create an array of base files
-		if (is_array($thisfile["#base"])) {
-			$bases = $thisfile["#base"];
+	if (!is_array($cachedata['theater'])) {
+//var_dump("processing {$filename}");
+		// Load raw theater file
+		$data = file_get_contents($filepath);
+
+		// Parse KeyValues data
+		$thisfile = parseKeyValues($data);
+//var_dump($thisfile);
+		// Get theater array
+		// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
+		// This appears to be the way the game processes these files it appears.
+		if (isset($thisfile["#base"])) {
+			$basedata = array();
+			// Create an array of base files
+			if (is_array($thisfile["#base"])) {
+				$bases = $thisfile["#base"];
+			} else {
+				$bases = array($thisfile["#base"]);
+			}
+			// Merge all base files into basedata array
+			foreach ($bases as $base) {
+//var_dump("base {$base}");
+				$base_file = GetDataURL("scripts/theaters/{$base}",$mod,$version);
+				$cachedata['base'][$base] = md5($base_file);
+				if (in_array($base,array_keys($base_theaters)) === true)
+					continue;
+				$base_theaters[$base] = $cachedata['base'][$base];
+//var_dump("processing base {$base}");
+				$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters,$depth+1),$basedata);
+			}
+			// Merge this theater on top of combined base
+			$cachedata['theater'] = theater_array_replace_recursive($basedata,$thisfile['theater']);
 		} else {
-			$bases = array($thisfile["#base"]);
+			$cachedata['theater'] = $thisfile["theater"];
 		}
-		// Merge all base files into basedata array
-		foreach ($bases as $base) {
-			$base_file = GetDataURL("scripts/theaters/{$base}",$mod,$version);
-			if (in_array($base,array_keys($base_theaters)) === true)
-				continue;
-			$base_theaters[$base] = md5($base_file);
-			$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters,$depth+1),$basedata);
-		}
-		// Merge this theater on top of combined base
-		//$basedata = theater_array_replace_recursive($theater,$basedata);
-		$theater = theater_array_replace_recursive($basedata,$theater);
-// array_merge_recursive($basedata,$theater);
-	}
 /*
-	// Include parts that might be conditional in their parents, basically put everything in flat arrays
-	// This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
-	foreach ($theater as $sec => $data) {
-		foreach ($data as $key => $val) {
-			if (($key[0] == '?') && (is_array($val))) {
-				unset($theater[$sec][$key]);
-				$theater[$sec] = $val;// theater_array_replace_recursive($theater[$sec],$val);
+		// Include parts that might be conditional in their parents, basically put everything in flat arrays
+		// This isn't congruent with how the game handles them, I believe this ougght to be a selector in the UI that can handle this better
+		foreach ($cachedata['theater'] as $sec => $data) {
+			foreach ($data as $key => $val) {
+				if (($key[0] == '?') && (is_array($val))) {
+					unset($cachedata['theater'][$sec][$key]);
+					$cachedata['theater'][$sec] = $val;// theater_array_replace_recursive($cachedata['theater'][$sec],$val);
+				}
 			}
 		}
-	}
 */
-	// Prepare data to go to cache
-	$cache = array(
-		'base' => $base_theaters,
-		'theater' => $theater,
-	);
-
-	// Save cache data
-	PutCacheFile($cachefile,$cache);
-
+		// Save cache data
+//var_dump($cachedata);
+		PutCacheFile($cachefile,$cachedata);
+	}
 	// Send back theater object
-	return $theater;
+	return $cachedata['theater'];
 }
 
 function FormatCacheFileName($filename,$format='json') {
