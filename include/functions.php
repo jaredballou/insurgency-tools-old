@@ -475,13 +475,16 @@ function TypecastValue($val) {
 	}
 	return($val);
 }
+function filterTheaterPath ($val) {
+	return ($val[0] != '?' && $val != '');
+}
 
 function matchTheaterPath($paths,$matches) {
 	if (!is_array($paths)) {
 		$paths=array($paths);
 	}
 	foreach ($paths as $path) {
-		$path_parts = array_filter(explode("/",$path), function($val) {return ($val[0] != '?' && $val != '');});
+		$path_parts = array_filter(explode("/",$path), 'filterTheaterPath');
 		foreach ($matches as $match) {
 			$match_parts = array_filter(explode("/",$match), function($val) {return ($val[0] != '?' && $val != '');});
 			if (count($match_parts) != count($path_parts)) {
@@ -899,7 +902,7 @@ function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters
 	}
 	// Attempt to load file from cache
 	$cachedata = GetCacheFile($cachefile);
-	if (isset($cachedata['base']) && isset($cachedata['theater'])) {
+	if (isset($cachedata['base'])) {
 		// Check all files for MD5
 		foreach ($cachedata['base'] as $file => $md5) {
 			if ($file == $basename) {
@@ -908,23 +911,22 @@ function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters
 				$bfpath = GetDataFile("scripts/theaters/{$file}",$mod,$version);
 				$filemd5 = md5($bfpath);
 			}
+			// If a component file is modified, do not use the cache.
 			if ($filemd5  != $md5) {
-				break 1;
+				unset($cachedata['theater']);
 			}
 		}
-		// If we haven't left the loop yet, and there is data in theater, return that
-		if ($cachedata['theater']) {
-			return $cachedata['theater'];
-		}
 	}
-
+	if (isset($cachedata['theater'])) {
+		return $cachedata['theater'];
+	}
 	// Load raw theater file
 	$data = file_get_contents($filepath);
 	// Parse KeyValues data
 	$thisfile = parseKeyValues($data);
 	// Get theater array
 	$theater = $thisfile["theater"];
-
+//var_dump(array_keys($theater['weapons']));
 	// If the theater sources another theater, process them in order using a merge which blends sub-array values from bottom to top, recursively replacing.
 	// This appears to be the way the game processes these files it appears.
 	if (isset($thisfile["#base"])) {
@@ -944,6 +946,7 @@ function ParseTheaterFile($filename,$mod='',$version='',$path='',&$base_theaters
 			$basedata = array_merge_recursive(ParseTheaterFile($base,$mod,$version,$path,$base_theaters,$depth+1),$basedata);
 		}
 		// Merge this theater on top of combined base
+		//$basedata = theater_array_replace_recursive($theater,$basedata);
 		$theater = theater_array_replace_recursive($basedata,$theater);
 // array_merge_recursive($basedata,$theater);
 	}

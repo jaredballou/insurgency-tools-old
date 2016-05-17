@@ -4,11 +4,11 @@
 # This script attempts to send a command via rcon. It is not currently working.
 
 # Variables to use for default
-SERVER='localhost'
+SERVER='74.91.112.127'
 PORT='27015'
-PASSWORD='testme'
+PASSWORD='serenity'
 SECURE=0
-SECURE_PORT="1234"
+SECURE_PORT="27015"
 PACKET_ID=0
 RCON_HEADER=$(echo -e "\xff\xff\xff\xff")
 ESCAPE_CHAR=$(echo -en "\x1b")
@@ -26,8 +26,8 @@ function rcon_pack_message()
 	COMMAND=$2
 	UNUSED=$3
 	SIZE=$((${#COMMAND}+9))
-	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00"
-	echo "aaaaaa"
+	#echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00"
+	#echo "aaaaaa"
 	echo -ne "${SIZE}${PACKET_ID}${SERVERDATA}${COMMAND}\x00${UNUSED}\x00" | nc -u -w 2 $SERVER $PORT
 }
 #SERVER="ins2.jballou.com"
@@ -40,7 +40,7 @@ function rcon_pack_message()
 # stdout Raw reply from the rcon server
 function rcon_send_raw()
 {
-	echo "$RCON_HEADER${@:2}" \| nc -u -w 1 $1
+	#echo "$RCON_HEADER${@:2}" | nc -u -w 1 $1
 	echo -n "$RCON_HEADER${@:2}" | nc -u -w 1 $1
 }
 
@@ -59,7 +59,7 @@ function rcon_send()
 	local COMMAND=${@:5}
 	case $4 in
 		0)
-			echo rcon_send_raw "$SERVER $PORT" rcon $PASSWORD $COMMAND
+			#echo rcon_send_raw "$SERVER $PORT" rcon $PASSWORD $COMMAND
 			rcon_send_raw "$SERVER $PORT" rcon $PASSWORD $COMMAND | rcon_strip_header n | rcon_recolor
 			;;
 		1)

@@ -14,14 +14,8 @@ $theaterfile="default_checkpoint";
 $theater = ParseTheaterFile("{$theaterfile}.theater",$mod,$version,$theaterpath);
 //$ordered_fields = array('squads','buy_order','allowed_weapons','allowed_items','weapon_upgrade');
 $object_fields=array(
-	'theater/ammo',
-	'theater/explosives',
-	'theater/player_gear',
-	'theater/player_templates',
-	'theater/teams',
+	'theater/*',
 	'theater/teams/*/squads',
-	'theater/weapons',
-	'theater/weapon_upgrades',
 	'theater/weapon_upgrades/*/world_attachments',
 	'theater/weapon_upgrades/*/viewmodel_attachments/*/weapons',
 );
