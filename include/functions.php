@@ -486,7 +486,7 @@ function matchTheaterPath($paths,$matches) {
 	foreach ($paths as $path) {
 		$path_parts = array_filter(explode("/",$path), 'filterTheaterPath');
 		foreach ($matches as $match) {
-			$match_parts = array_filter(explode("/",$match), function($val) {return ($val[0] != '?' && $val != '');});
+			$match_parts = array_filter(explode("/",$match), 'filterTheaterPath');
 			if (count($match_parts) != count($path_parts)) {
 				continue;
 			}
