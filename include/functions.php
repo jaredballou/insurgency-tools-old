@@ -1044,21 +1044,28 @@ Get the material path
 */
 function GetMaterial($name,$type='img',$path='') {
 	// This is shit path munging, fix it
-	$filepath = implode("/",array_filter(array_merge(explode("/",preg_replace('/\.(vmt|vtf|png)$/','',"{$path}/{$name}")))));
-	// FIXME: What if the PNG exists, but the VTF doesn't?
-	$rp = (file_exists(GetDataFile("{$filepath}.vmt"))) ? "{$filepath}" : "materials/{$filepath}";
+	$pathparts = array_filter(array_merge(explode("/",preg_replace('/\.(vmt|vtf|png)$/','',"{$path}/{$name}"))));
+	if ($pathparts[0] != 'materials') {
+		array_unshift($pathparts,'materials');
+	}
+	$filepath = implode("/",$pathparts);
+
 	// If we have a PNG, just send it
-	if (file_exists(GetDataFile("{$rp}.png"))) {
-		return GetDataURL("{$rp}.png");
+	if (file_exists(GetDataFile("{$filepath}.png"))) {
+		return GetDataURL("{$filepath}.png");
 	}
 
 	// Try to use VMT to get image
-	if (file_exists(GetDataFile("{$rp}.vmt"))) {
-		$vmt = file_get_contents(GetDataFile("{$rp}.vmt"));
+	if (file_exists(GetDataFile("{$filepath}.vmt"))) {
+		$vmt = file_get_contents(GetDataFile("{$filepath}.vmt"));
 		preg_match_all('/basetexture[" ]+([^"\s]*)/',$vmt,$matches);
-		return GetMaterial($matches[1][0],$type,'materials');
+		return GetMaterial($matches[1][0],$type);
+/*
+		if (file_exists(GetDataFile("{$matches[1][0]}.png"))) {
+			return GetDataURL("{$$matches[1][0]}.png");
+		}
+*/
 	}
-
 	// No hope
 	return '';
 }
