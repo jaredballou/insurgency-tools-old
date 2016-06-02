@@ -1,5 +1,22 @@
 <html>
+<head>
+<title>Very Not Fun Servers</title>
+</head>
 <body>
-This is the MOTD
-<h1>IT IS A FRIGGIN WEBPAGE!!!</h1>
+<h1>Very Not Fun Servers</h1>
+Differences in mod:
+<ul>
+<li>Four 
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li><li>
+</li>
 </body></html>

@@ -116,7 +116,7 @@ function ParseMap($mapname,$force=0)
 	$map_objects = array();
 	$map = array();
 	$reader = new KVReader();
-	$dstfile = GetDataFile("maps/parsed/{$mapname}.json",-2);
+	$dstfile = GetDataFile("maps/parsed/{$mapname}.json",null,null,-2);
 
 	if (file_exists($dstfile)) {
 		$dstdata = json_decode(file_get_contents($dstfile),true);
@@ -138,13 +138,19 @@ function ParseMap($mapname,$force=0)
 
 // TODO: Proper KeyValues parser!!!
 // Load cpsetup.txt
+//echo "loading cpsetup\n";
 	$data = $reader->read(strtolower(file_get_contents($srcfiles["CPSetup"])));
+//echo "done loading cpsetup\n";
 
 	// Merge in bases
 	foreach ($data as $name=>$item) {
 		if ($name == "#base") {
+//echo "found bases\n";
+
 			if (!is_array($item)) $item = array($item);
 			foreach ($item as $base) {
+//echo "merging {$base}\n";
+
 				$data = array_merge_recursive($reader->read(strtolower(file_get_contents(GetDataFile("maps/{$base}")))),$data);
 			}
 			unset($data[$name]);
@@ -165,6 +171,7 @@ function ParseMap($mapname,$force=0)
 	}
 //var_dump($map);
 // Load Overview
+//echo "starting load overview\n";
 	//Get overview information (file, position, scale)
 	$lines = file($srcfiles["Overview"], FILE_IGNORE_NEW_LINES);
 	foreach ($lines as $line) {
@@ -173,10 +180,12 @@ function ParseMap($mapname,$force=0)
 			$map['overview'][$data[0]] = (is_numeric($data[1])) ? (float)$data[1] : $data[1];
 		}
 	}
+//echo "done load overview\n";
 
 // Load VMF Source
 	//Parse the decompiled VMF file
 	if (file_exists($srcfiles["VMF Source"])) {
+//echo "start load vmf source\n";
 		// Remove non-printable characters to make processing easier
                 // Change to lowercase to make array indexing simpler
                 $data =  preg_replace('/[\x00-\x08\x14-\x1f]+/', '', strtolower(file_get_contents($srcfiles["VMF Source"])));
@@ -185,7 +194,9 @@ function ParseMap($mapname,$force=0)
                 // Get all nested objects
 		preg_match_all('~[^{}]+ { ( (?>[^{}]+) | (?R) )* } ~x',$data,$matches);
                 // Process entities
-                foreach ($matches[0] as $rawent) {
+//echo "start process entities\n";
+//var_dump($matches[0]);
+		foreach ($matches[0] as $rawent) {
                         // Read in KV
                         $object = $reader->read($rawent);
 			$type = implode('',array_keys($object));
@@ -204,6 +215,7 @@ function ParseMap($mapname,$force=0)
 			);
 
 			if (in_array($entity['classname'],$classnames) !== false) {
+//echo "start processing {$entity['classname']} {$entity['id']}\n";
 				//Special processing for capture zone
 /*
 				if ($entity['classname'] == "trigger_capture_zone") {
@@ -268,6 +280,7 @@ function ParseMap($mapname,$force=0)
 							$point['pos_points'] = implode(' ',$path);
 						}
 					}
+//echo "done processing {$entity['classname']} {$entity['id']}\n";
 				}
 				//Hackly logic to allow merging of cache/control point data gracefully no matter what order the entities come in
 				foreach ($point as $key => $val) {
@@ -276,12 +289,15 @@ function ParseMap($mapname,$force=0)
 					}
 				}
 			}
+//echo "done process entities\n";
 		}
+//echo "done parse vmf\n";
 	}
 
 // Process combined data
 	//Process game type data for this map
 	foreach ($map['gametypes'] as $gtname => $gtdata) {
+//echo "start process gametypes\n";
 		//Create an array called cps with the names of all the control points for this mode
 		if (!isset($gtdata['controlpoint'])) {
 			continue;
@@ -295,7 +311,7 @@ function ParseMap($mapname,$force=0)
 			continue;
 		}
 		foreach ($gtdata[$entities_key] as $entname => $entity) {
-var_dump($entname,$entity);
+//var_dump($entname,$entity);
 			//KV reader now handles multiple like-named resources by creating a numerically indexed array
 			//When doing that, the is_multiple_array flag is set
 			if (isset($entity['is_multiple_array'])) {
@@ -376,6 +392,7 @@ var_dump($entname,$entity);
 			unset($map['gametypes'][$gtname][$entities_key]);
 		}
 */
+//echo "done parse gametypes\n";
 	}
 	recur_ksort($map);
 
