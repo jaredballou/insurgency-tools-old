@@ -10,34 +10,40 @@ $title = "Jared Ballou's Insurgency Tools";
 require_once("{$includepath}/header.php");
 //User to pull the data for
 $githubuser = 'jaredballou';
-/*
-$apiuser = '';
-$apipass = '';
-$apiauth = base64_encode("{$apiuser}:{$apipass}");
-*/
-$cache_file = 'website/content.html';
-$cache_life = '300'; //caching time, in seconds
-$filemtime = @filemtime($cache_file);	 // returns FALSE if file does not exist
 
 startbody();
-echo "<h1>{$title}</h1>\n";
+$content_file = "{$includepath}/content.yaml";
+$content = Spyc::YAMLLoad($content_file);
+echo "<div class='content-wrapper' style='margin: 10px;'>\n";
+echo "<div class='content-heading'><h1>{$title}</h1>\n{$content['heading']}</div>\n";
+foreach ($content['github']['repos'] as $name => $repo) {
+	echo "<div class='content-section'>\n";
+	echo "<div class='content-section-heading'><a name='{$name}' href='https://github.com/{$content['github']['user']}/{$name}' target='_blank'><h2>{$repo['title']}</h2></a></div>\n";
+	echo "<div class='content-section-content'>{$repo['content']}</div>\n";
+	echo "</div>\n";
+}
+echo "</div>\n";
+require_once("{$includepath}/footer.php");
+exit;
 
-echo "This is where I am going to list and document the tools I have been working on for the Insurgency standalone game released in 2014. I release everything I create under the GPLv2, I haven't commented all the code yet since the community is small and we all pretty much know each other, but my intent is to distribute everything free of charge, get feedback and bug fixes back, and build robust and useful tools for players that will help strengthen the community who play it. Everything I do is maintained in <a href='https://github.com/{$githubuser}'>my Github repositories</a> and aren't yet in a state where I have ZIP downloads packaged. <a href='http://steamcommunity.com/id/jballou'>I'm always on Steam, feel free to add me.</a>\n\n";
 
-if ((!file_exists($cache_file)) || !$filemtime || (time() - $filemtime >= $cache_life)) {
+/*
+exit;
 	$data = GetGithubURL("users/{$githubuser}/repos");
-//var_dump($data);
 	$list = json_decode($data,true);
+	foreach ($list as $repo) {
+		echo "{$repo['name']}\n";
+	}
+//var_dump($data);
+exit;
 	$data = array();
-	foreach ($list as $repo)
-	{
+	foreach ($list as $repo) {
 		if (startsWith($repo['name'],'insurgency-'))
 			$data[] = GetReadme($repo['name']);
 	}
 	PutCacheFile($cache_file,implode("\r\n",$data));
 }
 echo GetCacheFile($cache_file);
-
 function GetReadme($repo)
 {
 	$url = "repos/{$GLOBALS['githubuser']}/{$repo}";
@@ -62,6 +68,6 @@ function startsWith($haystack, $needle) {
 		// search backwards starting from haystack length characters from the end
 		return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
 }
-require_once("{$includepath}/footer.php");
-exit;
+*/
+
 ?>

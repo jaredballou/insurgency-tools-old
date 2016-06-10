@@ -21,6 +21,7 @@ $pages = array(
 	"maps.php" => 'Maps',
 	"cvarlist.php" => 'CVARs',
 	"theater.php" => 'Theater Creator',
+	"https://trello.com/b/4W2CNdnL/very-not-fun-servers' target='_blank" => 'Roadmap',
 	"https://github.com/jaredballou' target='_blank" => 'My Github',
 	"https://www.nfoservers.com/donate.pl?force_recipient=1&recipient=nfoservers@jballou.com' target='_blank" => 'Donate'
 );

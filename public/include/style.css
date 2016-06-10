@@ -100,7 +100,7 @@
 		width: 100px;
 	}
 	body {
-		white-space: nowrap;
+//		white-space: nowrap;
 	}
 	.overlay, .map{
 		top: 0;
