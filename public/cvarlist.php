@@ -1,4 +1,5 @@
 <?php
+if (!isset($rootpath)) { do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/'); }
 /*
 This takes the CVAR list CSV files from data and displays them in a simple
 tabular format.
@@ -27,7 +28,6 @@ $(document).ready(function() {
 		$('#cvarlist').floatThead();
 } );";
 
-do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
 if (isset($_REQUEST['fetch'])) {
 	require_once("{$includepath}/functions.php");
 } else {

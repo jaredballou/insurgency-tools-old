@@ -5,7 +5,7 @@ and then displays the content in a single page. It uses caching to keep the
 request count low and not spam GitHub.
 */
 //Root Path Discovery
-do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
+if (!isset($rootpath)) { do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/'); }
 require_once("{$includepath}/functions.php");
 //User to pull the data for
 $githubuser = 'jaredballou';

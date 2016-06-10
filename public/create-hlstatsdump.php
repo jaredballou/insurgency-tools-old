@@ -5,7 +5,7 @@ in data to get the information and then dumps it in an idempotent query to
 create or update the items in HLStatsX.
 */
 //Root Path Discovery
-do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/');
+if (!isset($rootpath)) { do { $rd = (isset($rd)) ? dirname($rd) : realpath(dirname(__FILE__)); $tp="{$rd}/rootpath.php"; if (file_exists($tp)) { require_once($tp); break; }} while ($rd != '/'); }
 $use_hlstatsx_db = 1;
 require_once("{$includepath}/header.php");
 $values = array();
